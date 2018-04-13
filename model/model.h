@@ -2,16 +2,15 @@
 
 #include <cassert>
 #include <cstdint> // uint64_t
+#include <unordered_map>
+#include <vector>
 
 #include "../util/Alloc.h"
 #include "../util/Option.h"
 #include "../util/StringSlice.h"
 
 struct Identifier {
-//TODO: private:
-public:
 	ArenaString str;
-	Identifier(ArenaString _str) : str(_str) {}
 	operator StringSlice() const {
 		return str;
 	}
@@ -19,7 +18,7 @@ public:
 };
 
 enum class Effect { Pure, Get, Set, Io };
-const char* effect_name(Effect e);
+StringSlice effect_name(Effect e);
 
 struct TypeParameter {
 	Identifier name;
@@ -31,37 +30,56 @@ struct TypeParameter {
 struct StructField;
 
 class StructBody {
-	enum class Kind { Fields, CppName };
+public:
+	enum class Kind { Fields, CppName, CppBody };
+private:
 	union Data {
 		DynArray<StructField> fields;
-		ArenaString cpp_name; //TODO: we're not invoking the dtor, use a string ptr to an arena string
+		ArenaString cpp_name_or_body;
 
 		Data() {} //uninitialized
 		~Data() {}
 	};
-	Kind kind;
+	Kind _kind;
 	Data data;
 
 public:
-	StructBody(DynArray<StructField> fields) : kind(Kind::Fields) {
+	Kind kind() const { return _kind; }
+
+	StructBody(const StructBody& other) : _kind(other._kind) {
+		switch (_kind) {
+			case Kind::Fields:
+				data.fields = other.data.fields;
+				break;
+			case Kind::CppName:
+			case Kind::CppBody:
+				data.cpp_name_or_body = other.data.cpp_name_or_body;
+				break;
+		}
+	}
+	StructBody(DynArray<StructField> fields) : _kind(Kind::Fields) {
 		data.fields = fields;
 	}
-	StructBody(ArenaString cpp_name) : kind(Kind::CppName) {
-		data.cpp_name = cpp_name;
+	StructBody(Kind kind, ArenaString cpp_name_or_body) : _kind(kind) {
+		assert(_kind == Kind::CppName || _kind == Kind::CppBody);
+		data.cpp_name_or_body = cpp_name_or_body;
 	}
 
-	bool is_fields() const { return kind == Kind::Fields; }
 	DynArray<StructField>& fields() {
-		assert(is_fields());
+		assert(_kind == Kind::Fields);
 		return data.fields;
 	}
 	const DynArray<StructField>& fields() const {
-		assert(is_fields());
+		assert(_kind == Kind::Fields);
 		return data.fields;
 	}
 	const ArenaString& cpp_name() const {
-		assert(kind == Kind::CppName);
-		return data.cpp_name;
+		assert(_kind == Kind::CppName);
+		return data.cpp_name_or_body;
+	}
+	const ArenaString& cpp_body() const {
+		assert(_kind == Kind::CppBody);
+		return data.cpp_name_or_body;
 	}
 };
 
@@ -70,10 +88,7 @@ struct StructDeclaration {
 	DynArray<TypeParameter> type_parameters;
 	StructBody body;
 
-	StructDeclaration(Identifier _name, DynArray<TypeParameter> _type_parameters, DynArray<StructField> _fields)
-		: name(_name), type_parameters(_type_parameters), body(_fields) {}
-	StructDeclaration(Identifier _name, DynArray<TypeParameter> _type_parameters, ArenaString _cpp_name)
-		: name(_name), type_parameters(_type_parameters), body(_cpp_name) {}
+	StructDeclaration(Identifier _name, DynArray<TypeParameter> _type_parameters, StructBody _body) : name(_name), type_parameters(_type_parameters), body(_body) {}
 	StructDeclaration(const StructDeclaration& other) = delete;
 
 	size_t arity() const {
@@ -214,7 +229,8 @@ public:
 		//TODO: local reference
 				Call, // x factorial, x + y
 		StructCreate,
-		UintLiteral, // 0
+		//This is the argument passed to a call to `literal`.
+		StringLiteral,
 		When,
 	};
 
@@ -227,7 +243,7 @@ private:
 		ref<const Let> let;
 		Call call;
 		StructCreate struct_create;
-		uint64_t uint_literal;
+		ArenaString string_literal;
 		When when;
 
 		Data() {} // uninitialized
@@ -269,8 +285,8 @@ public:
 		data.struct_create = create;
 	}
 
-	Expression(uint64_t value) : _kind(Kind::UintLiteral) {
-		data.uint_literal = value;
+	explicit Expression(ArenaString value) : _kind(Kind::StringLiteral) {
+		data.string_literal = value;
 	}
 
 	Expression(When when) : _kind(Kind::When) {
@@ -305,9 +321,9 @@ public:
 		assert(_kind == Kind::StructCreate);
 		return data.struct_create;
 	}
-	const uint64_t& uint() const {
-		assert(_kind == Kind::UintLiteral);
-		return data.uint_literal;
+	const ArenaString& string_literal() const {
+		assert(_kind == Kind::StringLiteral);
+		return data.string_literal;
 	}
 	const When& when() const {
 		assert(_kind == Kind::When);
@@ -315,7 +331,6 @@ public:
 	}
 
 	void operator=(const Expression& e) {
-		assert(_kind == Kind::Nil);
 		_kind = e._kind;
 		switch (_kind) {
 			case Kind::Nil:
@@ -338,8 +353,8 @@ public:
 			case Kind::StructCreate:
 				data.struct_create = e.data.struct_create;
 				break;
-			case Kind::UintLiteral:
-				data.uint_literal = e.data.uint_literal;
+			case Kind::StringLiteral:
+				data.string_literal = e.data.string_literal;
 				break;
 			case Kind::When:
 				data.when = e.data.when;
@@ -438,12 +453,46 @@ struct Fun {
 	uint arity() const {
 		return uint(parameters.size());
 	}
+};
 
-	bool is_generic() const {
-		return !type_parameters.empty();
+
+template <typename T>
+class Table {
+	std::unordered_map<StringSlice, T> map;
+
+public:
+	Option<const T&> get(StringSlice slice) const {
+		try {
+			return map.at(slice);
+		} catch (std::out_of_range) {
+			return {};
+		}
+	}
+
+	T& get_or_create(StringSlice slice) {
+		return map[slice];
+	}
+
+	// Creates a new element constructed with T { std::string(slice) }
+	// Returns false if unable to insert.
+	bool insert(StringSlice slice, T value) {
+		return map.insert({ slice, value }).second;
+	}
+
+	typename std::unordered_map<StringSlice, T>::const_iterator begin() const {
+		return map.begin();
+	}
+	typename std::unordered_map<StringSlice, T>::const_iterator end() const {
+		return map.cend();
 	}
 };
 
+// Group of functions with the same name.
+struct OverloadGroup {
+	std::vector<ref<const Fun>> funs;
+};
+using StructsTable = Table<ref<const StructDeclaration>>;
+using FunsTable = Table<OverloadGroup>;
 
 using Structs = NonMovingCollection<StructDeclaration>;
 using Funs = NonMovingCollection<Fun>;
@@ -451,6 +500,8 @@ using Funs = NonMovingCollection<Fun>;
 struct Module {
 	Structs structs;
 	Funs funs;
+	StructsTable structs_table;
+	FunsTable funs_table;
 	Arena arena;
 
 	Module() = default;

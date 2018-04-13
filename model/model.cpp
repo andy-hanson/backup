@@ -1,6 +1,6 @@
 #include "model.h"
 
-const char* effect_name(Effect e) {
+StringSlice effect_name(Effect e) {
 	switch (e) {
 		case Effect::Pure: return "pure";
 		case Effect::Get: return "get";

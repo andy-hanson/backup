@@ -24,11 +24,11 @@ add_executable(oohoo
 	parse/parser_internal.h
 	parse/parser.cpp
 	parse/parser.h
+	util/Alloc.h
 	util/ptr.h
 	util/StringSlice.cpp
 	util/StringSlice.h
 	parse/type_utils.cpp
 	parse/type_utils.h
-	util/UnorderedCollection.h
-	util/util.h
-	util/collection_util.h)
+		util/util.h
+	util/collection_util.h util/Map.h)

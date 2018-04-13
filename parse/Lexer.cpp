@@ -38,21 +38,23 @@ namespace {
 			++ptr;
 	}
 
-	// Returns 10 on failure
-	uint64_t digit_to_number(char c) {
-		return '0' <= c && c <= '9' ? uint64_t(c - '0') : 10;
-	}
-
-	uint64_t read_uint_literal(const char* &ptr) {
-		uint64_t value = digit_to_number(*ptr);
-		assert(0 <= value && value <= 9);
-		while (true) {
-			uint64_t d = digit_to_number(*ptr);
-			if (d == 10) break;
-			value = value * 10 + d;
+	ArenaString take_string_literal(const char* &ptr, const char* end, Arena& arena) {
+		Arena::StringBuilder b = arena.string_builder(to_unsigned(end - ptr));
+		++ptr;
+		while (*ptr != '"' && *ptr != '\0') {
+			//TODO:ESCAPING
+			b << *ptr;
 			++ptr;
 		}
-		return value;
+		if (*ptr != '\0') ++ptr;
+		return b.finish();
+	}
+
+	// Literals are allowed to be written as +123.456.789 instead of "+123.456.789" since numeric literals are common.
+	ArenaString take_numeric_literal(const char* &ptr, Arena& arena) {
+		const char* begin = ptr;
+		while (is_digit(*ptr) || *ptr == '.') ++ptr;
+		return arena.str({ begin, ptr });
 	}
 
 	// Assumes the first char is validated already.
@@ -98,7 +100,7 @@ Effect Lexer::try_take_effect() {
 		case 'i':
 			++ptr;
 			if (c == 'i') take('o'); else expect("et");
-			take_space();
+			take(' ');
 			return c == 'g' ? Effect::Get : c == 's' ? Effect::Set : Effect::Io;
 		default:
 			return Effect::Pure;
@@ -153,10 +155,8 @@ void Lexer::skip_to_end_of_line() {
 	while (*ptr != '\n') ++ptr;
 }
 
-uint Lexer::skip_indent_and_indented_lines() {
+uint Lexer::skip_indented_lines() {
 	assert(_indent == 0);
-	take('\n');
-	take('\t');
 	uint lines = 1;
 	while (true) {
 		skip_to_end_of_line();
@@ -165,6 +165,22 @@ uint Lexer::skip_indent_and_indented_lines() {
 		++lines;
 	}
 	return lines;
+}
+
+uint Lexer::skip_indent_and_indented_lines() {
+	assert(_indent == 0);
+	take('\n');
+	take('\t');
+	return skip_indented_lines();
+}
+
+void Lexer::skip_to_end_of_line_and_optional_indented_lines() {
+	assert(_indent == 0);
+	skip_to_end_of_line();
+	take('\n');
+	if (try_take('\t')) {
+		skip_indented_lines();
+	}
 }
 
 void Lexer::skip_to_end_of_line_and_indented_lines() {
@@ -188,10 +204,10 @@ ArenaString Lexer::take_indented_string(Arena& arena) {
 		char c = next();
 		if (c == '\0') throw "todo"; // file ought to end in a blank line, complain
 		if (c != '\n') {
-			b.add(c);
+			b << c;
 		} else {
-			b.add('\n');
-			for (; *ptr == '\n'; ++ptr) b.add('\n');
+			b << '\n';
+			for (; *ptr == '\n'; ++ptr) b << '\n';
 			if (*ptr == '\t') {
 				++ptr;
 			} else {
@@ -226,29 +242,31 @@ StringSlice Lexer::take_type_name() {
 StringSlice Lexer::take_cpp_type_name() {
 	//TODO: allow more
 	if (!is_lower_case_letter(*ptr)) throw "todo";
-	return take_name_helper(ptr, is_type_name_continue);
+	return take_name_helper(ptr, [](char c) { return c != '\n' && c != '\0'; });
+}
+
+namespace {
+	const StringSlice AS { "as" };
+	const StringSlice WHEN { "when" };
 }
 
 // Take a token in an expression.
-ExpressionToken Lexer::take_expression_token() {
+ExpressionToken Lexer::take_expression_token(Arena& arena) {
 	char c = *ptr;
-	switch (c) {
-		case '(':
-			++ptr;
-			return ExpressionToken(ExpressionToken::Kind::Lparen);
-
-		default: {
-			if (is_operator_char(c)) {
-				return { ExpressionToken::Kind::Name, take_name_helper(ptr, is_operator_char) };
-			} else if (is_lower_case_letter(c)) {
-				return { ExpressionToken::Kind::Name, take_name_helper(ptr, is_value_name_continue) };
-			} else if (is_upper_case_letter(c)) {
-				return { ExpressionToken::Kind::TypeName, take_name_helper(ptr, is_type_name_continue) };
-			} else if (is_digit(c)) {
-				return { read_uint_literal(ptr) };
-			} else {
-				throw "todo";
-			}
-		}
+	if (c == '(') {
+		return { ExpressionToken::Kind::Lparen, {} };
+	} else if (c == '"') {
+		return { ExpressionToken::Kind::Literal, { take_string_literal(ptr, end, arena) } };
+	} else if (is_operator_char(c)) {
+		return { ExpressionToken::Kind::Name, { take_name_helper(ptr, is_operator_char) } };
+	} else if (is_lower_case_letter(c)) {
+		StringSlice name = take_name_helper(ptr, is_value_name_continue);
+		return { name == AS ? ExpressionToken::Kind::As : name == WHEN ? ExpressionToken::Kind::When : ExpressionToken::Kind::Name, { name } };
+	} else if (is_upper_case_letter(c)) {
+		return { ExpressionToken::Kind::TypeName, { take_name_helper(ptr, is_type_name_continue) } };
+	} else if (is_digit(c) || c == '+' || c == '-') {
+		return { ExpressionToken::Kind::Literal, { take_numeric_literal(ptr, arena) } };
+	} else {
+		throw "todo";
 	}
 }

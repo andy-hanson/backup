@@ -10,7 +10,7 @@ class Option {
 
 	bool is_present;
 	union OptionStorage {
-		char dummy;
+		char dummy __attribute__((unused));
 		T value;
 
 		OptionStorage() {} // leave uninitialized
@@ -63,24 +63,6 @@ public:
 };
 
 template <typename T>
-class Option<ref<T>> {
-	T* ptr;
-
-public:
-	Option() : ptr(nullptr) {}
-	Option(ref<T> value) : ptr(value.ptr()) {}
-
-	operator bool() const {
-		return ptr != nullptr;
-	}
-
-	ref<T> get() {
-		assert(ptr != nullptr);
-		return ref<T>(ptr);
-	}
-} __attribute__((unused)); // clion thinks this is unused
-
-template <typename T>
 class Option<T&> {
 	T* ref;
 
@@ -96,8 +78,11 @@ public:
 		assert(ref != nullptr);
 		return *ref;
 	}
-};
 
+	const T& or_else(const T& elze) const {
+		return ref == nullptr ? elze : get();
+	}
+};
 
 template <typename T, typename U>
 struct OptionMap {

@@ -12,13 +12,18 @@ private:
 	const char* _end;
 
 public:
-	template <size_t N>
-	explicit constexpr StringSlice(char const (&c)[N]) : _begin(c), _end(c + N) {}
-	StringSlice(const char* begin, const char* end) : _begin(begin), _end(end) {}
-	//StringSlice(const std::string& s) : StringSlice(s.begin().base(), s.end().base()) {}
+	StringSlice() {}
 
-	const char* begin() { return _begin; }
-	const char* end() { return _end; }
+	template <size_t N>
+	// Note: the char array will include a '\0', but we don't want that included in the slice.
+	constexpr StringSlice(char const (&c)[N]) : StringSlice(c, c + N - 1) {
+		static_assert(N > 0);
+	}
+
+	constexpr StringSlice(const char* begin, const char* end) : _begin(begin), _end(end) {}
+
+	const char* begin() const { return _begin; }
+	const char* end() const { return _end; }
 
 	inline size_t size() const {
 		return to_unsigned(_end - _begin);

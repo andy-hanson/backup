@@ -10,59 +10,6 @@
 #include "ptr.h"
 
 template <typename T>
-class List {
-	friend class NoDropArena;
-
-public: // TODO: not public!
-	struct Node {
-		T value;
-		Node* next;
-	};
-
-	Node* head; // may be nullptr
-	List(Node* _head) : head(_head) {}
-
-public:
-	List() : head(nullptr) {}
-
-	class const_iterator {
-		friend class List;
-		const Node* n;
-		const_iterator(const Node* _n) : n(_n) {}
-
-	public:
-		const T& operator*() {
-			return n->value;
-		}
-
-		void operator++() {
-			n = n->next;
-		}
-
-		bool operator==(const_iterator other) {
-			return n == other.n;
-		}
-		bool operator!=(const_iterator other) {
-			return n != other.n;
-		}
-	};
-
-	const_iterator begin() const {
-		return { head };
-	}
-	const_iterator end() const {
-		return { nullptr };
-	}
-
-	size_t size() const {
-		size_t size = 0;
-		for (const T& _ __attribute__((unused)) : *this) ++size;
-		return size;
-	}
-	bool empty() const { return head == nullptr; }
-};
-
-template <typename T>
 class DynArray {
 	T* data;
 	size_t len;
@@ -149,7 +96,7 @@ class Arena {
 
 public:
 	Arena() {
-		size_t size = 1000;
+		size_t size = 10000;
 		alloc_begin = ::operator new(size);
 		alloc_end = static_cast<char*>(alloc_begin) + size;
 		alloc_next = alloc_begin;
@@ -235,29 +182,6 @@ public:
 		return ArrayMapper(in, new_array<Out>(in.size()));
 	}
 
-	template <typename Out>
-	struct ToArray {
-		Arena& arena;
-
-		template <typename In, typename Cb>
-		DynArray<Out> operator()(const List<In>& ins, Cb cb) {
-			typename List<In>::const_iterator iter = ins.begin();
-			DynArray<Out> res = arena.fill_array<Out>(ins.size())([&](uint _ __attribute__((unused))) {
-				assert(iter != ins.end());
-				Out o = cb(*iter);
-				++iter;
-				return o;
-			});
-			assert(iter == ins.end());
-			return res;
-		}
-	};
-
-	template <typename Out>
-	ToArray<Out> to_array() {
-		return { *this };
-	}
-
 	template <typename T>
 	class SmallArrayBuilder {
 		friend class Arena;
@@ -288,32 +212,6 @@ public:
 		return SmallArrayBuilder<T>(this);
 	}
 
-	template <typename T>
-	class ListBuilder {
-		friend class Arena;
-
-		ref<Arena> arena;
-		typename List<T>::Node* head;
-		typename List<T>::Node* tail;
-
-		ListBuilder(ref<Arena> _arena, typename List<T>::Node* _head, typename List<T>::Node* _tail) : arena(_arena), head(_head), tail(_tail) {}
-
-	public:
-		void add(T value) {
-			typename List<T>::Node* next = arena->emplace<typename List<T>::Node>()(value, nullptr).ptr();
-			(tail == nullptr ? head : tail->next) = next;
-			tail = next;
-		}
-		List<T> finish() {
-			return List<T> { head };
-		}
-	};
-
-	template <typename T>
-	ListBuilder<T> list_builder() {
-		return ListBuilder<T> { this, nullptr, nullptr };
-	}
-
 	class StringBuilder {
 		Arena& arena;
 		char* begin;
@@ -324,10 +222,17 @@ public:
 		StringBuilder(Arena& _arena, char* _begin, char* _end) : arena(_arena), begin(_begin), ptr(_begin), end(_end) {}
 
 	public:
-		void add(char c) {
+		StringBuilder& operator<<(char c) {
 			assert(ptr != end);
 			*ptr = c;
 			++ptr;
+			return *this;
+		}
+
+		StringBuilder& operator<<(StringSlice s) {
+			for (char c : s)
+				*this << c;
+			return *this;
 		}
 
 		char back() {
@@ -347,9 +252,9 @@ public:
 		}
 	};
 
-	StringBuilder string_builder(size_t size) {
-		char* begin = static_cast<char*>(allocate(size));
-		return StringBuilder(*this, begin, begin + size);
+	StringBuilder string_builder(size_t max_size) {
+		char* begin = static_cast<char*>(allocate(max_size));
+		return StringBuilder(*this, begin, begin + max_size);
 	}
 
 	ArenaString str(StringSlice slice) {

@@ -5,6 +5,7 @@ CMakeFiles/oohoo.dir/emit.cpp.o: ../emit.cpp
 CMakeFiles/oohoo.dir/emit.cpp.o: ../emit.h
 CMakeFiles/oohoo.dir/emit.cpp.o: ../model/model.h
 CMakeFiles/oohoo.dir/emit.cpp.o: ../util/Alloc.h
+CMakeFiles/oohoo.dir/emit.cpp.o: ../util/Map.h
 CMakeFiles/oohoo.dir/emit.cpp.o: ../util/MaxSizeVector.h
 CMakeFiles/oohoo.dir/emit.cpp.o: ../util/Option.h
 CMakeFiles/oohoo.dir/emit.cpp.o: ../util/StringSlice.h
@@ -52,7 +53,6 @@ CMakeFiles/oohoo.dir/parse/check_function_body.cpp.o: ../util/Alloc.h
 CMakeFiles/oohoo.dir/parse/check_function_body.cpp.o: ../util/MaxSizeVector.h
 CMakeFiles/oohoo.dir/parse/check_function_body.cpp.o: ../util/Option.h
 CMakeFiles/oohoo.dir/parse/check_function_body.cpp.o: ../util/StringSlice.h
-CMakeFiles/oohoo.dir/parse/check_function_body.cpp.o: ../util/UnorderedCollection.h
 CMakeFiles/oohoo.dir/parse/check_function_body.cpp.o: ../util/collection_util.h
 CMakeFiles/oohoo.dir/parse/check_function_body.cpp.o: ../util/ptr.h
 CMakeFiles/oohoo.dir/parse/check_function_body.cpp.o: ../util/util.h

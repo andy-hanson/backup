@@ -2,27 +2,28 @@
 #include <unordered_set>
 
 #include "emit.h"
+#include "util/Map.h"
 
 namespace {
-	const char* mangle_char(char c) {
+	Option<StringSlice> mangle_char(char c) {
 		switch (c) {
 			case '+':
-				return "$add";
+				return { "$add" };
 			case '-':
-				return "$sub";
+				return { "$sub" };
 			case '*':
-				return "$times";
+				return { "$times" };
 			case '/':
-				return "$div";
+				return { "$div" };
 			case '<':
-				return "$lt";
+				return { "$lt" };
 			case '>':
-				return "$gt";
+				return { "$gt" };
 			case '=':
-				return "$eq";
+				return { "$eq" };
 			default:
 				assert(('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z'));
-				return nullptr;
+				return {};
 		}
 	}
 
@@ -51,26 +52,11 @@ namespace {
 			out += s;
 			return *this;
 		}
-		Writer& operator<<(uint64_t u) {
-			out += std::to_string(u);
-			return *this;
-		}
-		Writer& operator<<(const ArenaString& a) {
-			for (char c : a.slice())
+		Writer& operator<<(const StringSlice& s) {
+			for (char c : s)
 				out += c;
 			return *this;
 		}
-		Writer& operator<<(const Identifier& i) {
-			for (char c : i.slice()) {
-				auto m = mangle_char(c);
-				if (m == nullptr)
-					*this << c;
-				else
-					*this << m;
-			}
-			return *this;
-		}
-
 
 		Writer& operator<<(nl_t) {
 			out += '\n';
@@ -80,6 +66,21 @@ namespace {
 		}
 		Writer& operator<<(indent_t) { ++_indent; return *this; }
 		Writer& operator<<(dedent_t) { --_indent; return *this; }
+	};
+
+	class OverloadNames {
+		Arena arena;
+		Map<ref<const Fun>, ArenaString> names;
+		friend OverloadNames get_overload_names(const FunsTable& funs);
+	public:
+		StringSlice get_name(ref<const Fun> f) const {
+			return names.get(f);
+		}
+	};
+
+	struct Ctx {
+		Writer& out;
+		const OverloadNames& overload_names;
 	};
 
 	Writer& operator<<(Writer& out, const Type& t);
@@ -92,6 +93,16 @@ namespace {
 			out << "typename " << type_parameters[i].name;
 		}
 		out << '>' << nl;
+	}
+
+	struct indented { StringSlice s; };
+	Writer& operator<<(Writer& out, indented i)  {
+		for (char c : i.s) {
+			out << c;
+			if (c == '\n')
+				out << '\t';
+		}
+		return out;
 	}
 
 	Writer& operator<<(Writer& out, const DynArray<Type>& type_arguments) {
@@ -109,24 +120,23 @@ namespace {
 	}
 
 	Writer& operator<<(Writer& out, const Type& t) {
-		if (t.is_parameter())
-			out << t.param()->name;
-		else {
-			const PlainType& p = t.plain();
-			out << "/*" << effect_name(p.effect) << "*/ " << p.inst_struct;
-		}
-		return out;
+		return t.is_parameter() ? out << t.param()->name : out << t.plain().inst_struct;
 	}
 
 	Writer& operator<<(Writer& out, const StructDeclaration& s) {
 		write_type_parameters(out, s.type_parameters);
-		if (s.body.is_fields()) {
-			out << "struct " << s.name << " {\n";
-			for (const StructField& field : s.body.fields())
-				out << '\t' << field.type << ' ' << field.name << ";\n";
-			return out << "};\n\n";
-		} else {
-			return out << "using " << s.name << " = " << s.body.cpp_name() << ";\n\n";
+		switch (s.body.kind()) {
+			case StructBody::Kind::Fields:
+				out << "struct " << s.name << " {\n";
+				for (const StructField& field : s.body.fields()) {
+					const char TAB = '\t'; // https://youtrack.jetbrains.com/issue/CPP-12650
+					out << TAB << field.type << ' ' << field.name << ";\n";
+				}
+				return out << "};\n\n";
+			case StructBody::Kind::CppName:
+				return out << "using " << s.name << " = " << s.body.cpp_name() << ";\n\n";
+			case StructBody::Kind::CppBody:
+				return out << "struct " << s.name << " {\n\t" << indented{s.body.cpp_body()} << "\n};\n\n";
 		}
 	}
 
@@ -137,9 +147,9 @@ namespace {
 			case Expression::Kind::StructFieldAccess:
 			case Expression::Kind::Call:
 			case Expression::Kind::StructCreate:
+			case Expression::Kind::StringLiteral:
 				return false;
 			case Expression::Kind::Let:
-			case Expression::Kind::UintLiteral:
 			case Expression::Kind::When:
 				return true;
 			case Expression::Kind::Nil:
@@ -147,7 +157,26 @@ namespace {
 		}
 	}
 
-	Writer& operator<<(Writer& out, const Expression& e) {
+	void write_string_literal(Writer& out, const StringSlice& slice) {
+		out << '"';
+		for (char c : slice) {
+			switch (c) {
+				case '\n':
+					out << "\\n";
+					break;
+				case '"':
+					out << "\\\"";
+					break;
+				default:
+					out << c;
+					break;
+			}
+		}
+		out << '"';
+	}
+
+	Ctx& operator<<(Ctx& ctx, const Expression& e) {
+		Writer& out = ctx.out;
 		switch (e.kind()) {
 			case Expression::Kind::ParameterReference:
 				out << e.parameter()->name;
@@ -159,7 +188,7 @@ namespace {
 				const StructFieldAccess& sa = e.struct_field_access();
 				bool p = needs_parens_before_dot(*sa.target);
 				if (p) out << '(';
-				out << *sa.target;
+				ctx << *sa.target;
 				if (p) out << ')';
 				out << '.' << sa.field->name;
 				break;
@@ -169,47 +198,60 @@ namespace {
 			case Expression::Kind::Call: {
 				const Call& c = e.call();
 				out << c.called.fun->name << c.called.type_arguments << "(";
-				for (uint i = 0;  i != c.arguments.size(); ++i)
-					out << c.arguments[i] << (i == c.arguments.size() - 1 ? ")" : ", ");
+				for (uint i = 0;  i != c.arguments.size(); ++i) {
+					ctx << c.arguments[i];
+					ctx.out << (i == c.arguments.size() - 1 ? ")" : ", ");
+				}
 				break;
 			}
 			case Expression::Kind::StructCreate: {
 				// StructName { arg1, arg2 }
-				const StructCreate& sc = e.struct_create();
+				const StructCreate &sc = e.struct_create();
 				out << sc.inst_struct;
 				out << " { ";
-				for (uint i = 0;  i != sc.arguments.size(); ++i)
-					out << sc.arguments[i] << (i == sc.arguments.size() - 1 ? " }" : ", ");
+				for (uint i = 0; i != sc.arguments.size(); ++i) {
+					ctx << sc.arguments[i];
+					ctx.out << (i == sc.arguments.size() - 1 ? " }" : ", ");
+				}
 				break;
 			}
-			case Expression::Kind::UintLiteral:
-				out << e.uint();
+			case Expression::Kind::StringLiteral:
+				write_string_literal(out, e.string_literal());
 				break;
 			case Expression::Kind::When:
 				throw "todo";
 			case Expression::Kind::Nil:
 				assert(false);
 		}
-		return out;
+		return ctx;
 	}
 
 	struct statement { const Expression& e; };
-	Writer& operator<<(Writer& out, statement s) {
+	Ctx& operator<<(Ctx& ctx, statement s) {
 		const Expression& e = s.e;
 		switch (e.kind()) {
 			case Expression::Kind::Let: {
 				const Let &l = e.let();
-				out << l.type << ' ' << l.name << " = " << l.init << ';' << nl << statement{l.then};
+				ctx.out << l.type << ' ' << l.name << " = ";
+				ctx << l.init;
+				ctx.out << ';' << nl;
+				ctx << statement{l.then};
 				break;
 			}
 			case Expression::Kind::When: {
 				const When &w = e.when();
 				for (uint i = 0; i != w.cases.size(); ++i) {
 					const Case &c = w.cases[i];
-					if (i != 0) out << "} else ";
-					out << "if (" << c.cond << ") {" << indent << nl << statement{c.then} << dedent << nl;
+					if (i != 0) ctx.out << "} else ";
+					ctx.out << "if (";
+					ctx << c.cond;
+					ctx.out << ") {" << indent << nl;
+					ctx << statement{c.then};
+					ctx.out << dedent << nl;
 				}
-				out << "} else {" << indent << nl << statement{w.elze} << dedent << nl << '}';
+				ctx.out << "} else {" << indent << nl;
+				ctx << statement{w.elze};
+				ctx.out << dedent << nl << '}';
 				break;
 			}
 			case Expression::Kind::ParameterReference:
@@ -217,26 +259,32 @@ namespace {
 			case Expression::Kind::StructFieldAccess:
 			case Expression::Kind::Call:
 			case Expression::Kind::StructCreate:
-			case Expression::Kind::UintLiteral:
+			case Expression::Kind::StringLiteral:
 			case Expression::Kind::Nil:
-				out << "return " << e << ';';
+				ctx.out << "return ";
+				ctx << e;
+				ctx.out << ';';
 		}
-		return out;
+		return ctx;
 	}
 
-	Writer& operator<<(Writer& out, const AnyBody& body) {
+	void write_body(Ctx ctx, const AnyBody& body) {
 		switch (body.kind()) {
 			case AnyBody::Kind::Expression:
-				return out << indent << statement{body.expression()} << dedent;
+				ctx.out << indent;
+				ctx << statement{body.expression()};
+				ctx.out << dedent;
+				break;
 			case AnyBody::Kind::CppSource:
-				return out << body.cpp_source(); //TODO: output indented string
+				ctx.out << indented{body.cpp_source()};
+				break;
 			case AnyBody::Kind::Nil:
 				assert(false);
 		}
 	}
 
-	void emit_just_fun_header(Writer& out, const Fun& f) {
-		out << f.return_type << " " << f.name << '(';
+	void emit_just_fun_header(Writer& out, const Fun& f, const OverloadNames& o) {
+		out << f.return_type << " " << o.get_name(&f) << '(';
 		bool first_param = true;
 		for (const auto& param : f.parameters) {
 			if (first_param)
@@ -248,21 +296,23 @@ namespace {
 		out << ')';
 	}
 
-	void emit_fun_header(Writer& out, const Fun& f) {
-		emit_just_fun_header(out, f);
+	void emit_fun_header(Writer& out, const Fun& f, const OverloadNames& o) {
+		emit_just_fun_header(out, f, o);
 		out << ";\n";
 	}
 
-	Writer& operator<<(Writer& out, const Fun& f) {
-		emit_just_fun_header(out, f);
-		return out << " {\n\t" << f.body << "\n}\n\n";
+	void write_fun(Writer& out, const Fun& f, const OverloadNames& overload_names) {
+		emit_just_fun_header(out, f, overload_names);
+		out << " {\n\t";
+		write_body({ out, overload_names }, f.body);
+		out << "\n}\n\n";
 	}
 
 	enum class EmitState { Nil, Emitted, Emitting };
 
 	template <typename Cb>
 	void each_struct_field(const StructDeclaration& s, Cb cb) {
-		if (s.body.is_fields()) {
+		if (s.body.kind() == StructBody::Kind::Fields) {
 			for (const StructField& f : s.body.fields()) {
 				if (f.type.is_plain())
 					cb(f.type.plain().inst_struct.strukt);
@@ -306,7 +356,7 @@ namespace {
 				case Expression::Kind::ParameterReference:
 				case Expression::Kind::LocalReference:
 				case Expression::Kind::StructFieldAccess:
-				case Expression::Kind::UintLiteral:
+				case Expression::Kind::StringLiteral:
 					break;
 				case Expression::Kind::Let: {
 					const Let& l = e.let();
@@ -340,16 +390,16 @@ namespace {
 		} while (!stack.empty());
 	}
 
-	void emit_funs(Writer& out, const Funs& funs) {
+	void emit_funs(Writer& out, const Funs& funs, const OverloadNames& overload_names) {
 		std::unordered_set<ref<const Fun>> seen;
 		for (const Fun& f : funs) {
 			switch (f.body.kind()) {
 				case AnyBody::Kind::CppSource:
 					break;
 				case AnyBody::Kind::Expression:
-					each_dependent_fun(f.body.expression(), [&out, &seen](ref<const Fun> referenced) {
+					each_dependent_fun(f.body.expression(), [&](ref<const Fun> referenced) {
 						if (!seen.count(referenced)) {
-							emit_fun_header(out, *referenced);
+							emit_fun_header(out, *referenced, overload_names);
 							seen.insert({ referenced });
 						}
 					});
@@ -357,15 +407,61 @@ namespace {
 				case AnyBody::Kind::Nil:
 					assert(false);
 			}
-			out << f;
+			write_fun(out, f, overload_names);
 			seen.insert(ref(&f));
 		}
 	}
+
+	Arena::StringBuilder& operator<<(Arena::StringBuilder& sb, const Identifier& name) {
+		for (char c : name.slice()) {
+			auto m = mangle_char(c);
+			if (m)
+				sb << m.get();
+			else
+				sb << c;
+		}
+		return sb;
+	}
+
+	Arena::StringBuilder& operator<<(Arena::StringBuilder& sb, const Type& type) {
+		switch (type.kind()) {
+			case Type::Kind::Param:
+				return sb << type.param()->name;
+			case Type::Kind::Plain: {
+				const PlainType& p = type.plain();
+				sb << effect_name(p.effect) << '_' << p.inst_struct.strukt->name;
+				if (!p.inst_struct.type_arguments.empty()) throw "todo";
+				return sb;
+			}
+		}
+	}
+
+	ArenaString escape_name(const Identifier& name, Arena& arena) {
+		return (arena.string_builder(100) << name).finish();
+	}
+
+	ArenaString make_overload_name(const Fun& f, Arena& arena) {
+		Arena::StringBuilder sb = arena.string_builder(100);
+		sb << f.name << '_' << f.return_type;
+		for (const Parameter& p : f.parameters)
+			sb << '_' << p.type;
+		return sb.finish();
+	}
+
+	OverloadNames get_overload_names(const FunsTable& funs) {
+		OverloadNames names;
+		for (const std::pair<StringSlice, OverloadGroup>& overload_group : funs) {
+			for (ref<const Fun> f : overload_group.second.funs)
+				names.names.must_insert(f, overload_group.second.funs.size() == 1 ? escape_name(f->name, names.arena) : make_overload_name(*f, names.arena));
+		}
+		return names;
+	}
 }
+
 
 std::string emit(const Module& module) {
 	Writer out;
 	emit_structs(out, module.structs);
-	emit_funs(out, module.funs);
+	emit_funs(out, module.funs, get_overload_names(module.funs_table));
 	return out.finish();
 }

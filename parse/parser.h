@@ -2,4 +2,4 @@
 
 #include "../model/model.h"
 
-Module parse_file(const char* file);
+Module parse_file(StringSlice file);

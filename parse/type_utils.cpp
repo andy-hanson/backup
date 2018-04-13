@@ -24,7 +24,6 @@ bool types_exactly_equal(const Type& a, const Type& b) {
 	}
 }
 
-
 bool try_match_types(const Type& type_from_candidate, const Type& type_from_external, Candidate& candidate) {
 	switch (type_from_candidate.kind()) {
 		case Type::Kind::Plain:

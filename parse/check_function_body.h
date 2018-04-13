@@ -12,4 +12,5 @@ Expression convert(
 	const StructsTable& structs_table,
 	const DynArray<Parameter>& parameters,
 	const Option<Type>& bool_type,
+	const Option<Type>& string_type,
 	const Type& return_type);

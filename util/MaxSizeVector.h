@@ -8,7 +8,7 @@ class MaxSizeVector {
 	uint _size;
 	// Use a union to avoid initializing automatically
 	union Data {
-		char dummy;
+		char dummy __attribute__((unused));
 		T values[capacity];
 
 		Data() {} // uninitialized
@@ -31,8 +31,14 @@ public:
 		}
 	}
 
-	uint size() const {
-		return _size;
+	size_t size() const { return _size; }
+
+	template <typename... Arguments>
+	ref<T> emplace(Arguments&&... arguments) {
+		assert(_size != capacity);
+		T* ref = new (data.values + _size) T(std::forward<Arguments>(arguments)...);
+		++_size;
+		return ref;
 	}
 
 	bool empty() const { return _size == 0; }
@@ -43,19 +49,15 @@ public:
 		++_size;
 	}
 
-	template <typename... Arguments>
-	ref<T> emplace(Arguments&&... arguments) {
-		assert(_size != capacity);
-		T* ref = new (data.values + _size) T(std::forward<Arguments>(arguments)...);
-		++_size;
-		return ref;
-	}
-
 	const T& peek() const {
 		return (*this)[_size - 1];
 	}
 
-	const T& operator[](uint i) const {
+	T& operator[](size_t i) {
+		assert(i < _size);
+		return data.values[i];
+	}
+	const T& operator[](size_t i) const {
 		assert(i < _size);
 		return data.values[i];
 	}
@@ -71,15 +73,11 @@ public:
 		return res;
 	}
 
-	T* begin() {
-		return &data.values[0];
-	}
-	T* end() {
-		return begin() + _size;
-	}
+	__attribute__((unused)) // https://youtrack.jetbrains.com/issue/CPP-2151
 	const T* begin() const {
 		return &data.values[0];
 	}
+	__attribute__((unused)) // https://youtrack.jetbrains.com/issue/CPP-2151
 	const T* end() const {
 		return begin() + _size;
 	}

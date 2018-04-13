@@ -13,6 +13,8 @@ unordered_set
 -
 emit.h
 /home/andy/CLionProjects/oohoo/emit.h
+util/Map.h
+/home/andy/CLionProjects/oohoo/util/Map.h
 
 /home/andy/CLionProjects/oohoo/emit.h
 string
@@ -24,6 +26,8 @@ model/model.h
 sys/resource.h
 -
 iostream
+-
+limits
 -
 emit.h
 /home/andy/CLionProjects/oohoo/emit.h
@@ -38,6 +42,10 @@ model.h
 cassert
 -
 cstdint
+-
+unordered_map
+-
+vector
 -
 ../util/Alloc.h
 /home/andy/CLionProjects/oohoo/util/Alloc.h
@@ -63,8 +71,6 @@ type_utils.h
 /home/andy/CLionProjects/oohoo/parse/type_utils.h
 ../util/collection_util.h
 /home/andy/CLionProjects/oohoo/util/collection_util.h
-../util/UnorderedCollection.h
-/home/andy/CLionProjects/oohoo/util/UnorderedCollection.h
 
 /home/andy/CLionProjects/oohoo/parse/check_function_body.h
 ../model/model.h
@@ -138,6 +144,10 @@ StringSlice.h
 ptr.h
 /home/andy/CLionProjects/oohoo/util/ptr.h
 
+/home/andy/CLionProjects/oohoo/util/Map.h
+unordered_map
+-
+
 /home/andy/CLionProjects/oohoo/util/MaxSizeVector.h
 Option.h
 /home/andy/CLionProjects/oohoo/util/Option.h
@@ -163,10 +173,6 @@ string
 -
 util.h
 /home/andy/CLionProjects/oohoo/util/util.h
-
-/home/andy/CLionProjects/oohoo/util/UnorderedCollection.h
-vector
--
 
 /home/andy/CLionProjects/oohoo/util/collection_util.h
 Option.h

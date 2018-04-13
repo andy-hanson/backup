@@ -132,6 +132,12 @@
 		<Unit filename="/home/andy/CLionProjects/oohoo/parse/type_utils.h">
 			<Option target="oohoo"/>
 		</Unit>
+		<Unit filename="/home/andy/CLionProjects/oohoo/util/Alloc.h">
+			<Option target="oohoo"/>
+		</Unit>
+		<Unit filename="/home/andy/CLionProjects/oohoo/util/Map.h">
+			<Option target="oohoo"/>
+		</Unit>
 		<Unit filename="/home/andy/CLionProjects/oohoo/util/MaxSizeVector.h">
 			<Option target="oohoo"/>
 		</Unit>
@@ -142,9 +148,6 @@
 			<Option target="oohoo"/>
 		</Unit>
 		<Unit filename="/home/andy/CLionProjects/oohoo/util/StringSlice.h">
-			<Option target="oohoo"/>
-		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/util/UnorderedCollection.h">
 			<Option target="oohoo"/>
 		</Unit>
 		<Unit filename="/home/andy/CLionProjects/oohoo/util/collection_util.h">
