@@ -84,79 +84,97 @@
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/home/andy/CLionProjects/oohoo/emit.cpp">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/diag/diag.h">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/emit.h">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/diag/parse_diag.h">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/main.cpp">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/emit/Writer.cpp">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/model/model.cpp">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/emit/Writer.h">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/model/model.h">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/emit/emit.cpp">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/parse/Lexer.cpp">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/emit/emit.h">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/parse/Lexer.h">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/emit/mangle.cpp">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/parse/check_function_body.cpp">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/emit/mangle.h">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/parse/check_function_body.h">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/main.cpp">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/parse/parse_expr.cpp">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/model/model.cpp">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/parse/parse_expr.h">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/model/model.h">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/parse/parser.cpp">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/parse/Lexer.cpp">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/parse/parser.h">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/parse/Lexer.h">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/parse/parser_internal.h">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/parse/check_function_body.cpp">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/parse/type_utils.cpp">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/parse/check_function_body.h">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/parse/type_utils.h">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/parse/parse_expr.cpp">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/util/Alloc.h">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/parse/parse_expr.h">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/util/Map.h">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/parse/parser.cpp">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/util/MaxSizeVector.h">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/parse/parser.h">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/util/Option.h">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/parse/parser_internal.h">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/util/StringSlice.cpp">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/parse/type_utils.cpp">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/util/StringSlice.h">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/parse/type_utils.h">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/util/collection_util.h">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/util/Alloc.h">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/util/ptr.h">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/util/Map.h">
 			<Option target="oohoo"/>
 		</Unit>
-		<Unit filename="/home/andy/CLionProjects/oohoo/util/util.h">
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/util/MaxSizeVector.h">
+			<Option target="oohoo"/>
+		</Unit>
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/util/Option.h">
+			<Option target="oohoo"/>
+		</Unit>
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/util/StringSlice.cpp">
+			<Option target="oohoo"/>
+		</Unit>
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/util/StringSlice.h">
+			<Option target="oohoo"/>
+		</Unit>
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/util/collection_util.h">
+			<Option target="oohoo"/>
+		</Unit>
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/util/ptr.h">
+			<Option target="oohoo"/>
+		</Unit>
+		<Unit filename="/home/andy/CLionProjects/oohoo/src/util/util.h">
 			<Option target="oohoo"/>
 		</Unit>
 		<Unit filename="/home/andy/CLionProjects/oohoo/CMakeLists.txt">

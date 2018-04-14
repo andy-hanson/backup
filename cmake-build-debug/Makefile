@@ -123,248 +123,302 @@ oohoo/fast:
 	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/build
 .PHONY : oohoo/fast
 
-emit.o: emit.cpp.o
+src/emit/Writer.o: src/emit/Writer.cpp.o
 
-.PHONY : emit.o
-
-# target to build an object file
-emit.cpp.o:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/emit.cpp.o
-.PHONY : emit.cpp.o
-
-emit.i: emit.cpp.i
-
-.PHONY : emit.i
-
-# target to preprocess a source file
-emit.cpp.i:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/emit.cpp.i
-.PHONY : emit.cpp.i
-
-emit.s: emit.cpp.s
-
-.PHONY : emit.s
-
-# target to generate assembly for a file
-emit.cpp.s:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/emit.cpp.s
-.PHONY : emit.cpp.s
-
-main.o: main.cpp.o
-
-.PHONY : main.o
+.PHONY : src/emit/Writer.o
 
 # target to build an object file
-main.cpp.o:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/main.cpp.o
-.PHONY : main.cpp.o
+src/emit/Writer.cpp.o:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/emit/Writer.cpp.o
+.PHONY : src/emit/Writer.cpp.o
 
-main.i: main.cpp.i
+src/emit/Writer.i: src/emit/Writer.cpp.i
 
-.PHONY : main.i
+.PHONY : src/emit/Writer.i
 
 # target to preprocess a source file
-main.cpp.i:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/main.cpp.i
-.PHONY : main.cpp.i
+src/emit/Writer.cpp.i:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/emit/Writer.cpp.i
+.PHONY : src/emit/Writer.cpp.i
 
-main.s: main.cpp.s
+src/emit/Writer.s: src/emit/Writer.cpp.s
 
-.PHONY : main.s
+.PHONY : src/emit/Writer.s
 
 # target to generate assembly for a file
-main.cpp.s:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/main.cpp.s
-.PHONY : main.cpp.s
+src/emit/Writer.cpp.s:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/emit/Writer.cpp.s
+.PHONY : src/emit/Writer.cpp.s
 
-model/model.o: model/model.cpp.o
+src/emit/emit.o: src/emit/emit.cpp.o
 
-.PHONY : model/model.o
+.PHONY : src/emit/emit.o
 
 # target to build an object file
-model/model.cpp.o:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/model/model.cpp.o
-.PHONY : model/model.cpp.o
+src/emit/emit.cpp.o:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/emit/emit.cpp.o
+.PHONY : src/emit/emit.cpp.o
 
-model/model.i: model/model.cpp.i
+src/emit/emit.i: src/emit/emit.cpp.i
 
-.PHONY : model/model.i
+.PHONY : src/emit/emit.i
 
 # target to preprocess a source file
-model/model.cpp.i:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/model/model.cpp.i
-.PHONY : model/model.cpp.i
+src/emit/emit.cpp.i:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/emit/emit.cpp.i
+.PHONY : src/emit/emit.cpp.i
 
-model/model.s: model/model.cpp.s
+src/emit/emit.s: src/emit/emit.cpp.s
 
-.PHONY : model/model.s
+.PHONY : src/emit/emit.s
 
 # target to generate assembly for a file
-model/model.cpp.s:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/model/model.cpp.s
-.PHONY : model/model.cpp.s
+src/emit/emit.cpp.s:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/emit/emit.cpp.s
+.PHONY : src/emit/emit.cpp.s
 
-parse/Lexer.o: parse/Lexer.cpp.o
+src/emit/mangle.o: src/emit/mangle.cpp.o
 
-.PHONY : parse/Lexer.o
+.PHONY : src/emit/mangle.o
 
 # target to build an object file
-parse/Lexer.cpp.o:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/parse/Lexer.cpp.o
-.PHONY : parse/Lexer.cpp.o
+src/emit/mangle.cpp.o:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/emit/mangle.cpp.o
+.PHONY : src/emit/mangle.cpp.o
 
-parse/Lexer.i: parse/Lexer.cpp.i
+src/emit/mangle.i: src/emit/mangle.cpp.i
 
-.PHONY : parse/Lexer.i
+.PHONY : src/emit/mangle.i
 
 # target to preprocess a source file
-parse/Lexer.cpp.i:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/parse/Lexer.cpp.i
-.PHONY : parse/Lexer.cpp.i
+src/emit/mangle.cpp.i:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/emit/mangle.cpp.i
+.PHONY : src/emit/mangle.cpp.i
 
-parse/Lexer.s: parse/Lexer.cpp.s
+src/emit/mangle.s: src/emit/mangle.cpp.s
 
-.PHONY : parse/Lexer.s
+.PHONY : src/emit/mangle.s
 
 # target to generate assembly for a file
-parse/Lexer.cpp.s:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/parse/Lexer.cpp.s
-.PHONY : parse/Lexer.cpp.s
+src/emit/mangle.cpp.s:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/emit/mangle.cpp.s
+.PHONY : src/emit/mangle.cpp.s
 
-parse/check_function_body.o: parse/check_function_body.cpp.o
+src/main.o: src/main.cpp.o
 
-.PHONY : parse/check_function_body.o
+.PHONY : src/main.o
 
 # target to build an object file
-parse/check_function_body.cpp.o:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/parse/check_function_body.cpp.o
-.PHONY : parse/check_function_body.cpp.o
+src/main.cpp.o:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/main.cpp.o
+.PHONY : src/main.cpp.o
 
-parse/check_function_body.i: parse/check_function_body.cpp.i
+src/main.i: src/main.cpp.i
 
-.PHONY : parse/check_function_body.i
+.PHONY : src/main.i
 
 # target to preprocess a source file
-parse/check_function_body.cpp.i:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/parse/check_function_body.cpp.i
-.PHONY : parse/check_function_body.cpp.i
+src/main.cpp.i:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/main.cpp.i
+.PHONY : src/main.cpp.i
 
-parse/check_function_body.s: parse/check_function_body.cpp.s
+src/main.s: src/main.cpp.s
 
-.PHONY : parse/check_function_body.s
+.PHONY : src/main.s
 
 # target to generate assembly for a file
-parse/check_function_body.cpp.s:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/parse/check_function_body.cpp.s
-.PHONY : parse/check_function_body.cpp.s
+src/main.cpp.s:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/main.cpp.s
+.PHONY : src/main.cpp.s
 
-parse/parse_expr.o: parse/parse_expr.cpp.o
+src/model/model.o: src/model/model.cpp.o
 
-.PHONY : parse/parse_expr.o
+.PHONY : src/model/model.o
 
 # target to build an object file
-parse/parse_expr.cpp.o:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/parse/parse_expr.cpp.o
-.PHONY : parse/parse_expr.cpp.o
+src/model/model.cpp.o:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/model/model.cpp.o
+.PHONY : src/model/model.cpp.o
 
-parse/parse_expr.i: parse/parse_expr.cpp.i
+src/model/model.i: src/model/model.cpp.i
 
-.PHONY : parse/parse_expr.i
+.PHONY : src/model/model.i
 
 # target to preprocess a source file
-parse/parse_expr.cpp.i:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/parse/parse_expr.cpp.i
-.PHONY : parse/parse_expr.cpp.i
+src/model/model.cpp.i:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/model/model.cpp.i
+.PHONY : src/model/model.cpp.i
 
-parse/parse_expr.s: parse/parse_expr.cpp.s
+src/model/model.s: src/model/model.cpp.s
 
-.PHONY : parse/parse_expr.s
+.PHONY : src/model/model.s
 
 # target to generate assembly for a file
-parse/parse_expr.cpp.s:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/parse/parse_expr.cpp.s
-.PHONY : parse/parse_expr.cpp.s
+src/model/model.cpp.s:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/model/model.cpp.s
+.PHONY : src/model/model.cpp.s
 
-parse/parser.o: parse/parser.cpp.o
+src/parse/Lexer.o: src/parse/Lexer.cpp.o
 
-.PHONY : parse/parser.o
+.PHONY : src/parse/Lexer.o
 
 # target to build an object file
-parse/parser.cpp.o:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/parse/parser.cpp.o
-.PHONY : parse/parser.cpp.o
+src/parse/Lexer.cpp.o:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/parse/Lexer.cpp.o
+.PHONY : src/parse/Lexer.cpp.o
 
-parse/parser.i: parse/parser.cpp.i
+src/parse/Lexer.i: src/parse/Lexer.cpp.i
 
-.PHONY : parse/parser.i
+.PHONY : src/parse/Lexer.i
 
 # target to preprocess a source file
-parse/parser.cpp.i:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/parse/parser.cpp.i
-.PHONY : parse/parser.cpp.i
+src/parse/Lexer.cpp.i:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/parse/Lexer.cpp.i
+.PHONY : src/parse/Lexer.cpp.i
 
-parse/parser.s: parse/parser.cpp.s
+src/parse/Lexer.s: src/parse/Lexer.cpp.s
 
-.PHONY : parse/parser.s
+.PHONY : src/parse/Lexer.s
 
 # target to generate assembly for a file
-parse/parser.cpp.s:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/parse/parser.cpp.s
-.PHONY : parse/parser.cpp.s
+src/parse/Lexer.cpp.s:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/parse/Lexer.cpp.s
+.PHONY : src/parse/Lexer.cpp.s
 
-parse/type_utils.o: parse/type_utils.cpp.o
+src/parse/check_function_body.o: src/parse/check_function_body.cpp.o
 
-.PHONY : parse/type_utils.o
+.PHONY : src/parse/check_function_body.o
 
 # target to build an object file
-parse/type_utils.cpp.o:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/parse/type_utils.cpp.o
-.PHONY : parse/type_utils.cpp.o
+src/parse/check_function_body.cpp.o:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/parse/check_function_body.cpp.o
+.PHONY : src/parse/check_function_body.cpp.o
 
-parse/type_utils.i: parse/type_utils.cpp.i
+src/parse/check_function_body.i: src/parse/check_function_body.cpp.i
 
-.PHONY : parse/type_utils.i
+.PHONY : src/parse/check_function_body.i
 
 # target to preprocess a source file
-parse/type_utils.cpp.i:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/parse/type_utils.cpp.i
-.PHONY : parse/type_utils.cpp.i
+src/parse/check_function_body.cpp.i:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/parse/check_function_body.cpp.i
+.PHONY : src/parse/check_function_body.cpp.i
 
-parse/type_utils.s: parse/type_utils.cpp.s
+src/parse/check_function_body.s: src/parse/check_function_body.cpp.s
 
-.PHONY : parse/type_utils.s
+.PHONY : src/parse/check_function_body.s
 
 # target to generate assembly for a file
-parse/type_utils.cpp.s:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/parse/type_utils.cpp.s
-.PHONY : parse/type_utils.cpp.s
+src/parse/check_function_body.cpp.s:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/parse/check_function_body.cpp.s
+.PHONY : src/parse/check_function_body.cpp.s
 
-util/StringSlice.o: util/StringSlice.cpp.o
+src/parse/parse_expr.o: src/parse/parse_expr.cpp.o
 
-.PHONY : util/StringSlice.o
+.PHONY : src/parse/parse_expr.o
 
 # target to build an object file
-util/StringSlice.cpp.o:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/util/StringSlice.cpp.o
-.PHONY : util/StringSlice.cpp.o
+src/parse/parse_expr.cpp.o:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/parse/parse_expr.cpp.o
+.PHONY : src/parse/parse_expr.cpp.o
 
-util/StringSlice.i: util/StringSlice.cpp.i
+src/parse/parse_expr.i: src/parse/parse_expr.cpp.i
 
-.PHONY : util/StringSlice.i
+.PHONY : src/parse/parse_expr.i
 
 # target to preprocess a source file
-util/StringSlice.cpp.i:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/util/StringSlice.cpp.i
-.PHONY : util/StringSlice.cpp.i
+src/parse/parse_expr.cpp.i:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/parse/parse_expr.cpp.i
+.PHONY : src/parse/parse_expr.cpp.i
 
-util/StringSlice.s: util/StringSlice.cpp.s
+src/parse/parse_expr.s: src/parse/parse_expr.cpp.s
 
-.PHONY : util/StringSlice.s
+.PHONY : src/parse/parse_expr.s
 
 # target to generate assembly for a file
-util/StringSlice.cpp.s:
-	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/util/StringSlice.cpp.s
-.PHONY : util/StringSlice.cpp.s
+src/parse/parse_expr.cpp.s:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/parse/parse_expr.cpp.s
+.PHONY : src/parse/parse_expr.cpp.s
+
+src/parse/parser.o: src/parse/parser.cpp.o
+
+.PHONY : src/parse/parser.o
+
+# target to build an object file
+src/parse/parser.cpp.o:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/parse/parser.cpp.o
+.PHONY : src/parse/parser.cpp.o
+
+src/parse/parser.i: src/parse/parser.cpp.i
+
+.PHONY : src/parse/parser.i
+
+# target to preprocess a source file
+src/parse/parser.cpp.i:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/parse/parser.cpp.i
+.PHONY : src/parse/parser.cpp.i
+
+src/parse/parser.s: src/parse/parser.cpp.s
+
+.PHONY : src/parse/parser.s
+
+# target to generate assembly for a file
+src/parse/parser.cpp.s:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/parse/parser.cpp.s
+.PHONY : src/parse/parser.cpp.s
+
+src/parse/type_utils.o: src/parse/type_utils.cpp.o
+
+.PHONY : src/parse/type_utils.o
+
+# target to build an object file
+src/parse/type_utils.cpp.o:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/parse/type_utils.cpp.o
+.PHONY : src/parse/type_utils.cpp.o
+
+src/parse/type_utils.i: src/parse/type_utils.cpp.i
+
+.PHONY : src/parse/type_utils.i
+
+# target to preprocess a source file
+src/parse/type_utils.cpp.i:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/parse/type_utils.cpp.i
+.PHONY : src/parse/type_utils.cpp.i
+
+src/parse/type_utils.s: src/parse/type_utils.cpp.s
+
+.PHONY : src/parse/type_utils.s
+
+# target to generate assembly for a file
+src/parse/type_utils.cpp.s:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/parse/type_utils.cpp.s
+.PHONY : src/parse/type_utils.cpp.s
+
+src/util/StringSlice.o: src/util/StringSlice.cpp.o
+
+.PHONY : src/util/StringSlice.o
+
+# target to build an object file
+src/util/StringSlice.cpp.o:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/util/StringSlice.cpp.o
+.PHONY : src/util/StringSlice.cpp.o
+
+src/util/StringSlice.i: src/util/StringSlice.cpp.i
+
+.PHONY : src/util/StringSlice.i
+
+# target to preprocess a source file
+src/util/StringSlice.cpp.i:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/util/StringSlice.cpp.i
+.PHONY : src/util/StringSlice.cpp.i
+
+src/util/StringSlice.s: src/util/StringSlice.cpp.s
+
+.PHONY : src/util/StringSlice.s
+
+# target to generate assembly for a file
+src/util/StringSlice.cpp.s:
+	$(MAKE) -f CMakeFiles/oohoo.dir/build.make CMakeFiles/oohoo.dir/src/util/StringSlice.cpp.s
+.PHONY : src/util/StringSlice.cpp.s
 
 # Help Target
 help:
@@ -375,33 +429,39 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
 	@echo "... oohoo"
-	@echo "... emit.o"
-	@echo "... emit.i"
-	@echo "... emit.s"
-	@echo "... main.o"
-	@echo "... main.i"
-	@echo "... main.s"
-	@echo "... model/model.o"
-	@echo "... model/model.i"
-	@echo "... model/model.s"
-	@echo "... parse/Lexer.o"
-	@echo "... parse/Lexer.i"
-	@echo "... parse/Lexer.s"
-	@echo "... parse/check_function_body.o"
-	@echo "... parse/check_function_body.i"
-	@echo "... parse/check_function_body.s"
-	@echo "... parse/parse_expr.o"
-	@echo "... parse/parse_expr.i"
-	@echo "... parse/parse_expr.s"
-	@echo "... parse/parser.o"
-	@echo "... parse/parser.i"
-	@echo "... parse/parser.s"
-	@echo "... parse/type_utils.o"
-	@echo "... parse/type_utils.i"
-	@echo "... parse/type_utils.s"
-	@echo "... util/StringSlice.o"
-	@echo "... util/StringSlice.i"
-	@echo "... util/StringSlice.s"
+	@echo "... src/emit/Writer.o"
+	@echo "... src/emit/Writer.i"
+	@echo "... src/emit/Writer.s"
+	@echo "... src/emit/emit.o"
+	@echo "... src/emit/emit.i"
+	@echo "... src/emit/emit.s"
+	@echo "... src/emit/mangle.o"
+	@echo "... src/emit/mangle.i"
+	@echo "... src/emit/mangle.s"
+	@echo "... src/main.o"
+	@echo "... src/main.i"
+	@echo "... src/main.s"
+	@echo "... src/model/model.o"
+	@echo "... src/model/model.i"
+	@echo "... src/model/model.s"
+	@echo "... src/parse/Lexer.o"
+	@echo "... src/parse/Lexer.i"
+	@echo "... src/parse/Lexer.s"
+	@echo "... src/parse/check_function_body.o"
+	@echo "... src/parse/check_function_body.i"
+	@echo "... src/parse/check_function_body.s"
+	@echo "... src/parse/parse_expr.o"
+	@echo "... src/parse/parse_expr.i"
+	@echo "... src/parse/parse_expr.s"
+	@echo "... src/parse/parser.o"
+	@echo "... src/parse/parser.i"
+	@echo "... src/parse/parser.s"
+	@echo "... src/parse/type_utils.o"
+	@echo "... src/parse/type_utils.i"
+	@echo "... src/parse/type_utils.s"
+	@echo "... src/util/StringSlice.o"
+	@echo "... src/util/StringSlice.i"
+	@echo "... src/util/StringSlice.s"
 .PHONY : help
 
 
