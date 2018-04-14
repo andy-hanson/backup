@@ -96,13 +96,11 @@ namespace {
 		exec(file_name + ".exe");
 	}
 
-	__attribute__((unused))
 	void compile_and_run(const std::string& file_name) {
 		compile_nz_file(file_name);
 		run(file_name);
 	}
 }
-
 
 int main() {
 	set_limits();
