@@ -5,9 +5,7 @@
 #include "Lexer.h"
 #include "../util/collection_util.h"
 
-#include "parser_internal.h"
-#include "parse_expr.h"
-#include "check_function_body.h"
+#include "check/check_function_body.h"
 
 namespace {
 	Type parse_type(Lexer& lexer, Arena& arena, const StructsTable& structs_table, const DynArray<TypeParameter>& type_parameters_in_scope);
@@ -17,7 +15,7 @@ namespace {
 		return { Identifier{arena.str(name)}, index };
 	}
 
-	DynArray<TypeParameter> parse_type_parameters(Lexer& lexer, Arena& arena, bool end_in_space) {
+	DynArray<TypeParameter> parse_type_parameters(Lexer& lexer, Arena& arena) {
 		if (!lexer.try_take('<')) return {};
 
 		auto parameters = arena.small_array_builder<TypeParameter>();
@@ -27,7 +25,7 @@ namespace {
 			++index;
 		} while (lexer.try_take_comma_space());
 		lexer.take('>');
-		if (end_in_space) lexer.take(' ');
+		lexer.take(' ');
 		return parameters.finish();
 	}
 
@@ -54,29 +52,15 @@ namespace {
 		return { effect, { strukt, parse_type_arguments(strukt->arity(), lexer, arena, structs_table, type_parameters_in_scope) } };
 	}
 
-	void parse_struct_header(Lexer& lexer, Arena& arena, ref<const Module> containing_module, StructsDeclarationOrder& structs, StructsTable& structs_table) {
-		DynArray<TypeParameter> type_parameters = parse_type_parameters(lexer, arena, /*end_in_space*/ false);
-		lexer.take(' ');
-		StringSlice name = lexer.take_type_name();
-		uint n_fields = lexer.skip_indent_and_indented_lines();
-		ref<StructDeclaration> s = arena.emplace<StructDeclaration>()(containing_module, Identifier{arena.str(name)}, type_parameters, arena.new_array<StructField>(n_fields));
-		structs.push_back(s);
-		bool inserted = structs_table.try_insert(s->name.str, s);
-		if (!inserted) throw "todo";
-	}
-
-	void fill_struct(Lexer& lexer, StructDeclaration& s, Arena& arena, const StructsTable& structs_table) {
-		assert(s.body.is_fields());
-		lexer.skip_to_end_of_line();
+	DynArray<StructField> parse_struct_fields(Lexer& lexer, StructDeclaration& s, Arena& arena, const StructsTable& structs_table) {
 		lexer.take_indent();
-		DynArray<StructField>& fields = s.body.fields();
-		fields.fill([&](uint i) -> StructField {
+		Arena::SmallArrayBuilder<StructField> b = arena.small_array_builder<StructField>();
+		do {
 			Type type = parse_type(lexer, arena, structs_table, s.type_parameters);
 			lexer.take(' ');
-			StringSlice name = lexer.take_value_name();
-			if (i == fields.size() - 1) lexer.take_dedent(); else lexer.take_newline_same_indent();
-			return { type, Identifier{arena.str(name)} };
-		});
+			b.add({ type, Identifier{arena.str(lexer.take_value_name())} });
+		} while (lexer.take_newline_or_dedent() == NewlineOrDedent::Newline);
+		return b.finish();
 	}
 
 	void add_overload(FunsTable& funs_table, ref<Fun> f) {
@@ -84,30 +68,27 @@ namespace {
 		group.funs.push_back(f); // TODO: warn if adding same signature twice
 	}
 
-	void parse_fun_header_skip_body(Lexer& lexer, Arena& arena, ref<const Module> containing_module, FunsDeclarationOrder& funs, const StructsTable& structs_table, FunsTable& funs_table) {
-		DynArray<TypeParameter> type_parameters = parse_type_parameters(lexer, arena, /*end_in_space*/ true);
-		Type return_type = parse_type(lexer, arena, structs_table, type_parameters);
+	void parse_fun_header_skip_body(Lexer& lexer, Arena& arena, Fun& fun, const StructsTable& structs_table, FunsTable& funs_table) {
+		fun.return_type = parse_type(lexer, arena, structs_table, fun.type_parameters);
 		lexer.take(' ');
-		StringSlice fn_name = lexer.take_value_name();
+		fun.name = Identifier{arena.str(lexer.take_value_name())};
+		add_overload(funs_table, &fun);
 
 		Arena::SmallArrayBuilder<Parameter> parameters = arena.small_array_builder<Parameter>();
 
 		lexer.take('(');
 		if (!lexer.try_take(')')) {
 			while (true) {
-				Type param_type = parse_type(lexer, arena, structs_table, type_parameters);
+				Type param_type = parse_type(lexer, arena, structs_table, fun.type_parameters);
 				lexer.take(' ');
-				parameters.emplace(param_type, Identifier{arena.str(lexer.take_value_name())});
-
+				parameters.add({ param_type, Identifier{arena.str(lexer.take_value_name())} });
 				if (lexer.try_take(')')) break;
 				lexer.take(',');
 				lexer.take(' ');
 			}
 		}
 
-		ref<Fun> f = arena.emplace<Fun>()(containing_module, type_parameters, return_type, Identifier{arena.str(fn_name)}, parameters.finish());
-		funs.push_back(f);
-		add_overload(funs_table, f);
+		fun.parameters = parameters.finish();
 
 		lexer.skip_indent_and_indented_lines();
 	}
@@ -123,74 +104,88 @@ namespace {
 		}
 	}
 
-	void parse_type_headers(Lexer& lexer, Arena& arena, ref<const Module> containing_module, StructsDeclarationOrder& structs, StructsTable& structs_table) {
+	// Parses the *existence* of each type and function -- does not parse the contents.
+	// Meaning, for a struct we just *count* fields, and for a sig we just *count* signatures.
+	// When this function is finished, we should have allocated all structs and sigs.
+	void parse_type_headers(Lexer& lexer, Arena& arena, ref<const Module> containing_module, StructsDeclarationOrder& structs, StructsTable& structs_table, FunsDeclarationOrder& funs) {
+		DynArray<TypeParameter> type_parameters = parse_type_parameters(lexer, arena);
 		while (true) {
 			switch (lexer.try_take_top_level_keyword()) {
 				case TopLevelKeyword::KwCppInclude:
 					throw "todo";
 
+				case TopLevelKeyword::KwStruct:
 				case TopLevelKeyword::KwCppStruct: {
-					DynArray<TypeParameter> type_parameters = parse_type_parameters(lexer, arena, /*end_in_space*/ false);
 					lexer.take(' ');
 					StringSlice name = lexer.take_type_name();
-					ref<StructDeclaration> s = arena.emplace<StructDeclaration>()(containing_module, Identifier { arena.str(name) }, type_parameters, parse_cpp_struct_body(lexer, arena));
+					ref<StructDeclaration> s = arena.emplace<StructDeclaration>()(containing_module, Identifier { arena.str(name) }, type_parameters);
 					structs.push_back(s);
 					bool inserted = structs_table.try_insert(s->name.str, s);
 					if (!inserted) throw "todo";
 					break;
 				}
 
-				case TopLevelKeyword::KwCpp: // cpp function
-					lexer.skip_to_end_of_line_and_indented_lines();
-					break;
+				case TopLevelKeyword::KwSig:
+					throw "todo";
 
-				case TopLevelKeyword::KwStruct:
-					parse_struct_header(lexer, arena, containing_module, structs, structs_table);
+				case TopLevelKeyword::KwCpp: // cpp function
+				case TopLevelKeyword::None: { // function
+					ref<Fun> f = arena.emplace<Fun>()(containing_module, type_parameters);
+					funs.push_back(f);
 					break;
+				}
 
 				case TopLevelKeyword::KwEof:
 					return;
-
-				case TopLevelKeyword::None: // function
-					lexer.skip_to_end_of_line_and_indented_lines();
-					break;
 			}
+
+			lexer.skip_to_end_of_line_and_optional_indented_lines();
 		}
 	}
 
-	void parse_fun_headers_and_type_bodies(Lexer& lexer, Arena& arena, ref<const Module> containing_module, StructsDeclarationOrder& structs, FunsDeclarationOrder& funs, StructsTable& structs_table, FunsTable& funs_table) {
+	// Now that we've allocated every struct and sig, fill in every struct and sig, and fill in the header of every function.
+	// Can't check function bodies at this point as it may call a future function -- we need to get the headers of every function first.
+	void parse_fun_headers_and_type_bodies(Lexer& lexer, Arena& arena, StructsDeclarationOrder& structs, FunsDeclarationOrder& funs, StructsTable& structs_table, FunsTable& funs_table) {
 		auto struct_iter = structs.begin();
 		auto struct_end = structs.end();
+		auto fun_iter = funs.begin();
+		auto fun_end = funs.end();
 
 		while (true) {
-			switch (lexer.try_take_top_level_keyword()) {
+			TopLevelKeyword kw = lexer.try_take_top_level_keyword();
+			switch (kw) {
 				case TopLevelKeyword::KwCppInclude:
-					throw "todo";
+					// Already handled
+					lexer.skip_to_end_of_line_and_newline();
+					break;
 
 				case TopLevelKeyword::KwCppStruct:
-					lexer.skip_to_end_of_line_and_optional_indented_lines();
-					break;
-
-				case TopLevelKeyword ::KwCpp: // cpp function
-					parse_fun_header_skip_body(lexer, arena, containing_module, funs, structs_table, funs_table);
-					break;
-
-				case TopLevelKeyword::KwStruct:
+				case TopLevelKeyword::KwStruct: {
 					assert(struct_iter != struct_end);
-					fill_struct(lexer, **struct_iter, arena, structs_table);
+					ref<StructDeclaration> s = *struct_iter;
+					lexer.take(' ');
+					lexer.skip_type_name();
+					s->body = kw == TopLevelKeyword::KwStruct ? parse_struct_fields(lexer, *s, arena, structs_table) : parse_cpp_struct_body(lexer, arena);
 					++struct_iter;
+					break;
+				}
+
+				case TopLevelKeyword::KwSig:
+					throw "todo";
+
+				case TopLevelKeyword::KwCpp: // cpp function
+				case TopLevelKeyword::None: // function
+					assert(fun_iter != fun_end);
+					parse_fun_header_skip_body(lexer, arena, *fun_iter, structs_table, funs_table);
+					++fun_iter;
 					break;
 
 				case TopLevelKeyword::KwEof:
 					return;
-
-				case TopLevelKeyword::None: // function
-					parse_fun_header_skip_body(lexer, arena, containing_module, funs, structs_table, funs_table);
-					break;
 			}
 		}
 
-		assert(struct_iter == struct_end);
+		assert(struct_iter == struct_end && fun_iter == fun_end);
 	}
 
 	const StringSlice BOOL = StringSlice { "Bool" };
@@ -204,12 +199,12 @@ namespace {
 		});
 	}
 
+	// Now that we have the bodies of every type and the headers of every function, we can fill in every function.
 	void parse_fun_bodies(Lexer& lexer, Arena& arena, FunsDeclarationOrder& funs, const StructsTable& structs_table, const FunsTable& funs_table) {
 		Option<Type> bool_type = get_special_named_type(structs_table, BOOL);
 		Option<Type> string_type = get_special_named_type(structs_table, STRING);
 		Option<Type> void_type = get_special_named_type(structs_table, VOID);
 
-		// We know we'll be going over the funs in the same order as before, so don't need to do map lookup to get them.
 		auto fun_iter = funs.begin();
 		auto fun_end = funs.end();
 		auto eat_fun = [&fun_iter, fun_end]() -> Fun& {
@@ -224,19 +219,20 @@ namespace {
 		while (true) {
 			switch (lexer.try_take_top_level_keyword()) {
 				case TopLevelKeyword::KwCppInclude:
-					throw "todo";
+					// Already handled
+					lexer.skip_to_end_of_line_and_newline();
+					break;
 
 				case TopLevelKeyword::KwCppStruct:
+				case TopLevelKeyword::KwStruct:
+				case TopLevelKeyword::KwSig:
+					// Already finished these in the last step.
 					lexer.skip_to_end_of_line_and_optional_indented_lines();
 					break;
 
-				case TopLevelKeyword ::KwCpp: // cpp function
+				case TopLevelKeyword::KwCpp: // cpp function
 					lexer.skip_to_end_of_line();
 					eat_fun().body = lexer.take_indented_string(arena);
-					break;
-
-				case TopLevelKeyword::KwStruct:
-					lexer.skip_to_end_of_line_and_indented_lines();
 					break;
 
 				case TopLevelKeyword::KwEof:
@@ -247,7 +243,8 @@ namespace {
 					lexer.skip_to_end_of_line();
 					lexer.take_indent();
 					Fun& fun = eat_fun();
-					fun.body = convert(parse_body_ast(lexer, scratch_arena, arena), arena, scratch_arena, funs_table, structs_table, fun.parameters, bool_type, string_type, void_type, fun.return_type);
+					fun.body = check_function_body(lexer, arena, scratch_arena, funs_table, structs_table, fun.parameters, bool_type,
+												   string_type, void_type, fun.return_type);
 					scratch_arena.clear();
 					break;
 				}
@@ -260,9 +257,9 @@ namespace {
 		Lexer::validate_file(module_source);
 
 		Lexer lexer { module_source };
-		parse_type_headers(lexer, arena, module, module->structs_declaration_order, module->structs_table);
+		parse_type_headers(lexer, arena, module, module->structs_declaration_order, module->structs_table, module->funs_declaration_order);
 		lexer.reset(module_source);
-		parse_fun_headers_and_type_bodies(lexer, arena, module, module->structs_declaration_order, module->funs_declaration_order, module->structs_table, module->funs_table);
+		parse_fun_headers_and_type_bodies(lexer, arena, module->structs_declaration_order, module->funs_declaration_order, module->structs_table, module->funs_table);
 		lexer.reset(module_source);
 		parse_fun_bodies(lexer, arena, module->funs_declaration_order, module->structs_table, module->funs_table);
 	}

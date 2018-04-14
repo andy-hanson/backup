@@ -371,6 +371,7 @@ namespace {
 
 	void write_type_for_overload_name(Arena::StringBuilder& sb, const Type& type) {
 		switch (type.kind()) {
+			case Type::Kind::Nil: assert(false);
 			case Type::Kind::Param:
 				sb << mangle{type.param()->name};
 				break;

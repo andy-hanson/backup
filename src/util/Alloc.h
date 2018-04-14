@@ -79,6 +79,7 @@ class ArenaString {
 	// Keep this private to avoid using a non-arena slice.
 	ArenaString(StringSlice slice) : _slice(slice) {}
 public:
+	ArenaString() : _slice() {}
 	operator StringSlice() const {
 		return _slice;
 	}

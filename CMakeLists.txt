@@ -10,20 +10,29 @@ set(CMAKE_CXX_FLAGS "-pedantic -Weverything -Wno-c++98-compat -Wno-c++98-compat-
 add_executable(oohoo
 	src/main.cpp
 
+	src/diag/diag.h
+	src/diag/parse_diag.h
+
 	src/emit/emit.cpp
 	src/emit/emit.h
+	src/emit/mangle.cpp
+	src/emit/mangle.h
+	src/emit/Writer.cpp
 	src/emit/Writer.h
 
 	src/model/model.cpp
 	src/model/model.h
 
-	src/parse/check_function_body.cpp
-	src/parse/check_function_body.h
+	src/parse/check/convert_type.h
+	src/parse/check/check_call.cpp
+	src/parse/check/check_call.h
+	src/parse/check/check_common.h
+	src/parse/check/check_function_body.cpp
+	src/parse/check/check_function_body.h
+	src/parse/check/parse_expr.cpp
+	src/parse/check/parse_expr.h
 	src/parse/Lexer.cpp
 	src/parse/Lexer.h
-	src/parse/parse_expr.cpp
-	src/parse/parse_expr.h
-	src/parse/parser_internal.h
 	src/parse/parser.cpp
 	src/parse/parser.h
 
@@ -38,4 +47,4 @@ add_executable(oohoo
 	src/util/ptr.h
 	src/util/StringSlice.cpp
 	src/util/StringSlice.h
-	src/util/util.h src/emit/Writer.h src/emit/Writer.cpp src/diag/diag.h src/diag/parse_diag.h src/emit/mangle.h src/emit/mangle.cpp)
+	src/util/util.h src/parse/check/check_expr.h src/parse/check/check_expr.cpp src/parse/check/expr_ast.h)

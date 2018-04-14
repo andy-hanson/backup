@@ -1,11 +1,12 @@
 #pragma once
 
-#include "../model/model.h"
-#include "parse_expr.h" // ExprAst
-#include "parser_internal.h"
+#include "../../model/model.h"
+#include "./check_common.h"
 
-Expression convert(
-	const ExprAst& ast,
+#include "../Lexer.h"
+
+Expression check_function_body(
+	Lexer& lexer,
 	Arena& arena,
 	Arena& scratch_arena,
 	const FunsTable& funs_table,

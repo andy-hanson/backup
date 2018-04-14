@@ -1,7 +1,7 @@
 #pragma once
 
+#include "Alloc.h"
 #include "Option.h"
-
 
 template <typename T, typename Pred>
 Option<const T&> find(const DynArray<T>& collection, Pred pred) {

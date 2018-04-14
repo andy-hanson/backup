@@ -17,14 +17,15 @@ public:
 	T* ptr() { return _ptr; }
 	const T* ptr() const { return _ptr; }
 
-	//ref<const T> as_const() const {
-	//	return ref<const T>(_ptr);
-	//}
+	// Just as T& implicitly converts to const T&, ref<T> is a ref<const T>
 	operator ref<const T>() const {
 		return ref<const T>(_ptr);
 	}
 	// Since ref is non-null, might as well make coversion to const& implicit
 	operator const T&() const {
+		return *_ptr;
+	}
+	operator T&() {
 		return *_ptr;
 	}
 

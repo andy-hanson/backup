@@ -15,7 +15,7 @@ struct ExpressionToken {
 	};
 };
 
-enum class TopLevelKeyword { None, KwStruct, KwCpp, KwCppInclude, KwCppStruct, KwEof };
+enum class TopLevelKeyword { None, KwStruct, KwSig, KwCpp, KwCppInclude, KwCppStruct, KwEof };
 enum class NewlineOrDedent { Newline, Dedent };
 
 class Lexer {
@@ -32,7 +32,7 @@ class Lexer {
 	void expect(const char* expected);
 	uint take_tabs();
 
-	uint skip_indented_lines();
+	void skip_indented_lines();
 
 public:
 	// Throws a ParseDiagnostic on failure.
@@ -79,13 +79,18 @@ public:
 	void take_newline_same_indent();
 	void take_indent();
 	void skip_to_end_of_line();
-	uint skip_indent_and_indented_lines();
+	inline void skip_to_end_of_line_and_newline() {
+		skip_to_end_of_line();
+		take_newline_same_indent();
+	}
+	void skip_indent_and_indented_lines();
 	void skip_to_end_of_line_and_optional_indented_lines();
 	void skip_to_end_of_line_and_indented_lines();
 	ArenaString take_indented_string(Arena& arena);
 
 	StringSlice take_value_name();
 	StringSlice take_type_name();
+	inline void skip_type_name() { take_type_name(); }
 	StringSlice take_cpp_type_name();
 
 	// arena used to place literals.

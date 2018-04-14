@@ -142,8 +142,14 @@ TopLevelKeyword Lexer::try_take_top_level_keyword() {
 			}
 		case 's':
 			++ptr;
-			expect("truct");
-			return TopLevelKeyword::KwStruct;
+			if (*ptr == 'i') {
+				++ptr;
+				take('g');
+				return TopLevelKeyword::KwSig;
+			} else {
+				expect("truct");
+				return TopLevelKeyword::KwStruct;
+			}
 		case '\0':
 			return TopLevelKeyword::KwEof;
 		default:
@@ -193,23 +199,19 @@ void Lexer::skip_to_end_of_line() {
 }
 
 // Should match the behavior of take_indented_string (but without writing out a result)
-uint Lexer::skip_indented_lines() {
+void Lexer::skip_indented_lines() {
 	assert(_indent == 0);
-	uint lines = 1;
-	while (true) {
+	do {
 		skip_to_end_of_line();
 		skip_blank_lines(ptr);
-		if (!try_take('\t')) break;
-		++lines;
-	}
-	return lines;
+	} while (try_take('\t'));
 }
 
-uint Lexer::skip_indent_and_indented_lines() {
+void Lexer::skip_indent_and_indented_lines() {
 	assert(_indent == 0);
 	take('\n');
 	take('\t');
-	return skip_indented_lines();
+	skip_indented_lines();
 }
 
 void Lexer::skip_to_end_of_line_and_optional_indented_lines() {

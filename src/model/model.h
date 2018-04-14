@@ -56,7 +56,11 @@ public:
 	Kind kind() const { return _kind; }
 	bool is_fields() const { return _kind == StructBody::Kind::Fields; }
 
-	StructBody(const StructBody& other) : _kind(other._kind) {
+	StructBody(const StructBody& other) {
+		*this = other;
+	}
+	void operator=(const StructBody& other) {
+		_kind = other._kind;
 		switch (_kind) {
 			case Kind::Fields:
 				data.fields = other.data.fields;
@@ -101,8 +105,8 @@ struct StructDeclaration {
 	DynArray<TypeParameter> type_parameters;
 	StructBody body;
 
-	StructDeclaration(ref<const Module> _containing_module, Identifier _name, DynArray<TypeParameter> _type_parameters, StructBody _body)
-		: containing_module(_containing_module), name(_name), type_parameters(_type_parameters), body(_body) {}
+	StructDeclaration(ref<const Module> _containing_module, Identifier _name, DynArray<TypeParameter> _type_parameters)
+		: containing_module(_containing_module), name(_name), type_parameters(_type_parameters), body({}) {}
 	StructDeclaration(const StructDeclaration& other) = delete;
 
 	size_t arity() const {
@@ -124,7 +128,7 @@ struct PlainType {
 
 class Type {
 public:
-	enum Kind { Plain, Param };
+	enum Kind { Nil, Plain, Param };
 private:
 	union Data {
 		PlainType plain;
@@ -139,6 +143,7 @@ private:
 public:
 	Kind kind() const { return _kind; }
 
+	Type() : _kind(Kind::Nil) {}
 	//TODO:Kill?
 	Type(const Type& other) {
 		*this = other;
@@ -149,6 +154,7 @@ public:
 	void operator=(const Type& other) {
 		_kind = other._kind;
 		switch (other._kind) {
+			case Kind::Nil: break;
 			case Kind::Plain: data.plain = other.data.plain; break;
 			case Kind::Param: data.param = other.data.param; break;
 		}
@@ -183,18 +189,11 @@ public:
 struct StructField {
 	Type type;
 	Identifier name;
-
-	//TODO: shouldn't need?
-	//StructField(Type type, StringSlice name) : type(type), name(name) {}
-	StructField& operator=(StructField&& other) = default;
-	//StructField(const StructField& other) = delete;
-	//StructField(StructField&& other) = default;
 };
 
 struct Parameter {
 	Type type;
 	Identifier name;
-	Parameter(Type _type, Identifier _name) : type(_type), name(_name) {}
 };
 
 class Expression;
@@ -477,8 +476,9 @@ struct Fun {
 	AnyBody body;
 
 	// Body filled in in a later pass.
-	Fun(ref<const Module> _containing_module, DynArray<TypeParameter> _type_parameters, Type _return_type, Identifier _name, DynArray<Parameter> _parameters)
-		: containing_module(_containing_module), type_parameters(_type_parameters), return_type(_return_type), name(_name), parameters(_parameters) {}
+	//Fun(ref<const Module> _containing_module, DynArray<TypeParameter> _type_parameters, Type _return_type, Identifier _name, DynArray<Parameter> _parameters)
+	//	: containing_module(_containing_module), type_parameters(_type_parameters), return_type(_return_type), name(_name), parameters(_parameters) {}
+	Fun(ref<const Module> _containing_module, DynArray<TypeParameter> _type_parameters) : containing_module(_containing_module), type_parameters(_type_parameters) {}
 	Fun(const Fun& other) = delete;
 	void operator=(const Fun& other) = delete;
 	Fun(Fun&& other) = default;
