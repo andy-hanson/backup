@@ -6,6 +6,10 @@
 #include "./convert_type.h"
 
 namespace {
+	Option<const Parameter&> find_parameter(const ExprContext& ctx, StringSlice name) {
+		return find(ctx.current_fun->signature.parameters, [&](const Parameter& p) { return p.name == name; });
+	}
+
 	InstStruct struct_create_type(
 		const StructDeclaration& containing __attribute__((unused)),
 		ExprContext& ctx __attribute__((unused)),
@@ -48,10 +52,9 @@ namespace {
 
 	Expression check_let(const LetAst& ast, ExprContext& ctx, Expected& expected) {
 		StringSlice name = ast.name;
-		if (find(ctx.parameters, [name](const Parameter& p) { return p.name == name; }))
-			throw "todo";
+		if (find_parameter(ctx, name)) throw "todo: local shadows parameter";
 		ExpressionAndType init = check_and_infer(*ast.init, ctx);
-		ref<Let> l = ctx.arena.emplace<Let>()(init.type, Identifier { ctx.arena.str(name) }, init.expression, Expression {});
+		ref<Let> l = ctx.arena.emplace<Let>()(init.type, Identifier{ctx.arena.str(name)}, init.expression, Expression {});
 		ctx.locals.push(l);
 		l->then = check(*ast.then, ctx, expected);
 		assert(ctx.locals.peek() == l);
@@ -60,16 +63,16 @@ namespace {
 	}
 
 	Expression check_seq(const SeqAst& ast, ExprContext& ctx, Expected& expected) {
-		if (!ctx.void_type) throw "todo";
-		Expression first = check_and_expect(*ast.first, ctx, ctx.void_type.get());
+		if (!ctx.builtin_types.void_type) throw "todo";
+		Expression first = check_and_expect(*ast.first, ctx, ctx.builtin_types.void_type.get());
 		Expression then = check(*ast.then, ctx, expected);
 		return {  ctx.arena.emplace<Seq>()(first, then) };
 	}
 
 	Expression check_when(const WhenAst& ast, ExprContext& ctx, Expected& expected) {
-		if (!ctx.bool_type) throw "todo: must declare Bool somewhere in order to use 'when'";
+		if (!ctx.builtin_types.bool_type) throw "todo: must declare Bool somewhere in order to use 'when'";
 		DynArray<Case> cases = ctx.arena.map_array<CaseAst, Case>(ast.cases)([&](const CaseAst& c) {
-			Expression cond = check_and_expect(c.condition, ctx, ctx.bool_type.get());
+			Expression cond = check_and_expect(c.condition, ctx, ctx.builtin_types.bool_type.get());
 			Expression then = check(c.then, ctx, expected);
 			return Case { cond, then };
 		});
@@ -80,22 +83,21 @@ namespace {
 	const StringSlice LITERAL { "literal" };
 
 	Expression check_no_call_literal_inner(const ArenaString& literal, ExprContext& ctx, Expected& expected) {
-		if (expected.has_expectation_or_inferred_type()) expected.as_if_checked(); else expected.set_inferred(ctx.string_type.get());
+		if (expected.has_expectation_or_inferred_type()) expected.as_if_checked(); else expected.set_inferred(ctx.builtin_types.string_type.get());
 		return Expression(literal);
 	}
 
 	Expression check_no_call_literal(const ArenaString& literal, ExprContext& ctx, Expected& expected) {
-		if (!ctx.string_type) throw "todo: string type missing";
-		const Type& string_type = ctx.string_type.get();
+		if (!ctx.builtin_types.string_type) throw "todo: string type missing";
+		const Type& string_type = ctx.builtin_types.string_type.get();
 		const Option<Type>& current_expectation = expected.get_current_expectation();
 		if (current_expectation && !types_exactly_equal(current_expectation.get(), string_type)) throw "todo";
 		return check_no_call_literal_inner(literal, ctx, expected);
 	}
 
 	Expression check_literal(const LiteralAst& literal, ExprContext& ctx, Expected& expected) {
-		if (!ctx.string_type) throw "todo: string type missing";
-
-		const Type& string_type = ctx.string_type.get();
+		if (!ctx.builtin_types.string_type) throw "todo: string type missing";
+		const Type& string_type = ctx.builtin_types.string_type.get();
 		const Option<Type>& current_expectation = expected.get_current_expectation();
 		if (literal.type_arguments.size() == 0 && literal.arguments.size() == 0 && (!current_expectation || types_exactly_equal(current_expectation.get(), string_type))) {
 			return check_no_call_literal_inner(literal.literal, ctx, expected);
@@ -108,26 +110,29 @@ namespace {
 			return check_call(LITERAL, b.finish(), literal.type_arguments, ctx, expected);
 		}
 	}
+
+	Expression check_identifier(const StringSlice& name, ExprContext& ctx, Expected& expected) {
+		Option<const Parameter&> p_op = find_parameter(ctx, name);
+		if (p_op) {
+			const Parameter& p = p_op.get();
+			expected.check_no_infer(p.type);
+			return Expression(&p);
+		}
+		Option<const ref<const Let>&> l_op = find(ctx.locals, [name](const ref<const Let>& l) { return l->name == name; });
+		if (l_op) {
+			ref<const Let> l = l_op.get();
+			expected.check_no_infer(l->type);
+			return Expression(l, Expression::Kind::LocalReference);
+		}
+		throw "todo: unrecognized identifier";
+
+	}
 }
 
 Expression check(const ExprAst& ast, ExprContext& ctx, Expected& expected) {
 	switch (ast.kind()) {
-		case ExprAst::Kind::Identifier: {
-			StringSlice name = ast.identifier();
-			Option<const Parameter&> p_op = find(ctx.parameters, [name](const Parameter& p) { return p.name == name; });
-			if (p_op) {
-				const Parameter& p = p_op.get();
-				expected.check_no_infer(p.type);
-				return Expression(&p);
-			}
-			Option<const ref<const Let>&> l_op = find(ctx.locals, [name](const ref<const Let>& l) { return l->name == name; });
-			if (l_op) {
-				ref<const Let> l = l_op.get();
-				expected.check_no_infer(l->type);
-				return Expression(l, Expression::Kind::LocalReference);
-			}
-			throw "todo: unrecognized identifier";
-		}
+		case ExprAst::Kind::Identifier:
+			return check_identifier(ast.identifier(), ctx, expected);
 		case ExprAst::Kind::Literal:
 			return check_literal(ast.literal(), ctx, expected);
 		case ExprAst::Kind::NoCallLiteral:

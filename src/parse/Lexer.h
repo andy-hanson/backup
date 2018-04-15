@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../diag/parse_diag.h"
-#include "../model/model.h" // Effect
+#include "../model/model.h" // Effect, Identifier
 #include "../util/StringSlice.h"
 
 struct ExpressionToken {
@@ -15,7 +15,7 @@ struct ExpressionToken {
 	};
 };
 
-enum class TopLevelKeyword { None, KwStruct, KwSig, KwCpp, KwCppInclude, KwCppStruct, KwEof };
+enum class TopLevelKeyword { None, KwStruct, KwSpec, KwCpp, KwCppInclude, KwCppStruct, KwEof };
 enum class NewlineOrDedent { Newline, Dedent };
 
 class Lexer {
@@ -88,9 +88,14 @@ public:
 	void skip_to_end_of_line_and_indented_lines();
 	ArenaString take_indented_string(Arena& arena);
 
-	StringSlice take_value_name();
 	StringSlice take_type_name();
+	StringSlice take_spec_name();
+	StringSlice take_value_name();
 	inline void skip_type_name() { take_type_name(); }
+	inline void skip_spec_name() { take_spec_name(); }
+	inline Identifier take_type_name(Arena& arena) { return Identifier{arena.str(take_type_name())}; }
+	inline Identifier take_spec_name(Arena& arena) { return Identifier{arena.str(take_spec_name())}; }
+	inline Identifier take_value_name(Arena& arena) { return Identifier{arena.str(take_value_name())}; }
 	StringSlice take_cpp_type_name();
 
 	// arena used to place literals.

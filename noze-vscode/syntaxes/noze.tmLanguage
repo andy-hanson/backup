@@ -35,13 +35,13 @@
         <key>name</key>
         <string>support.type</string>
         <key>match</key>
-        <string>[A-Z][a-zA-Z0-9\-]*</string>
+        <string>\$?[A-Z][a-zA-Z0-9\-]*</string>
       </dict>
       <dict>
         <key>name</key>
         <string>keyword</string>
         <key>match</key>
-        <string>\b(_|as|cpp|case|catch|do|else|fun|get|if|io|import|pass|set|struct|try|when|\&lt;|\&gt;|\&lt;\=|\&gt;\=|\+|\-|\*|\/)\b</string>
+        <string>\b(_|as|cpp|case|catch|do|else|get|if|include|io|import|pass|set|spec|struct|try|when|\&lt;|\&gt;|\&lt;\=|\&gt;\=|\+|\-|\*|\/)\b</string>
       </dict>
       <dict>
         <key>name</key>
@@ -96,7 +96,7 @@
         <key>name</key>
         <string>variable.other</string>
         <key>match</key>
-        <string>[\(\)\[\]\{\}]</string>
+        <string>[\(\)\[\]\{\}\&lt;\&gt;]</string>
       </dict>
       <dict>
         <key>name</key>

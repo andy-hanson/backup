@@ -5,14 +5,13 @@
 
 #include "../Lexer.h"
 
+#include "./BuiltinTypes.h"
+
 Expression check_function_body(
 	Lexer& lexer,
 	Arena& arena,
 	Arena& scratch_arena,
 	const FunsTable& funs_table,
 	const StructsTable& structs_table,
-	const DynArray<Parameter>& parameters,
-	const Option<Type>& bool_type,
-	const Option<Type>& string_type,
-	const Option<Type>& void_type,
-	const Type& return_type);
+	const FunDeclaration& fun,
+	const BuiltinTypes& builtin_types);

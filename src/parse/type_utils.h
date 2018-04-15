@@ -1,15 +1,22 @@
 #pragma once
 
 #include "../model/model.h"
+#include "../model/expr.h"
 
 struct Candidate {
-	ref<const Fun> fun;
+	CalledDeclaration called;
+	ref<const FunSignature> signature;
 	// DynArray in a scratch arena.
 	// Note: if explicit type arguments are provided, these will already be filled.
 	// These will be None if not yet inferred.
 	DynArray<Option<Type>> inferring_type_arguments;
-	Candidate(ref<const Fun> _fun, DynArray<Option<Type>> _inferring_type_arguments) : fun(_fun), inferring_type_arguments(_inferring_type_arguments) {}
 };
+
+
+PlainType substitute_type_arguments(const Type& t, const DynArray<TypeParameter>& type_parameters, const DynArray<PlainType>& type_arguments, Arena& arena);
+
+// Recursively replaces every type parameter with a corresponding type argument.
+PlainType substitute_type_arguments(const TypeParameter& t, const DynArray<TypeParameter>& type_parameters, const DynArray<PlainType>& type_arguments, Arena& arena);
 
 bool types_exactly_equal(const Type& a, const Type& b);
 

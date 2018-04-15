@@ -3,10 +3,6 @@
 #include "../util/collection_util.h" // contains_ref, each_corresponds
 
 namespace {
-	bool plain_types_exactly_equal(const PlainType& a, const PlainType& b) {
-		return a.effect == b.effect && a.inst_struct.strukt == b.inst_struct.strukt && each_corresponds(a.inst_struct.type_arguments, b.inst_struct.type_arguments, types_exactly_equal);
-	}
-
 	bool try_match_plain_types(const PlainType& expected_plain, const PlainType& actual_plain) {
 		if (actual_plain.effect < expected_plain.effect) return false;
 		if (actual_plain.inst_struct.strukt != expected_plain.inst_struct.strukt) return false;
@@ -14,15 +10,25 @@ namespace {
 	}
 }
 
-bool types_exactly_equal(const Type& a, const Type& b) {
-	if (a.kind() != b.kind()) return false;
-	switch (a.kind()) {
+PlainType substitute_type_arguments(const Type& t, const DynArray<TypeParameter>& type_parameters, const DynArray<PlainType>& type_arguments, Arena& arena) {
+	switch (t.kind()) {
 		case Type::Kind::Nil: assert(false);
-		case Type::Kind::Plain:
-			return plain_types_exactly_equal(a.plain(), b.plain());
 		case Type::Kind::Param:
-			return a.param() == b.param();
+			return substitute_type_arguments(t.param(), type_parameters, type_arguments);
+		case Type::Kind::Plain: {
+			const PlainType& p = t.plain();
+			if (!some(p.inst_struct.type_arguments, [](Type t) { return t.is_parameter(); }))
+				return t;
+			DynArray<Type> new_type_arguments = arena.map_array(p.inst_struct.type_arguments, [](Type t) { return substitute_type_arguments(t.param(), type_parameters, type_arguments, arena });
+			return PlainType { p.effect, { p.inst_struct.strukt, new_type_arguments } };
+		}
 	}
+}
+
+// Recursively replaces every type parameter with a corresponding type argument.
+PlainType substitute_type_arguments(const TypeParameter& t, const DynArray<TypeParameter>& type_parameters, const DynArray<PlainType>& type_arguments, Arena& arena) {
+	assert(&type_parameters[t.index] == &t);
+	return type_arguments[t.index];
 }
 
 bool try_match_types(const Type& type_from_candidate, const Type& type_from_external, Candidate& candidate) {
@@ -35,7 +41,7 @@ bool try_match_types(const Type& type_from_candidate, const Type& type_from_exte
 		case Type::Kind::Param: {
 			// If a fn returns a type parameter, it must have been a type declared in that function.
 			const TypeParameter& candidate_type_parameter = type_from_candidate.param();
-			assert(contains_ref(candidate.fun->type_parameters, ref<const TypeParameter>(&candidate_type_parameter)));
+			assert(contains_ref(candidate.signature->type_parameters, ref<const TypeParameter>(&candidate_type_parameter)));
 			Option<Type>& inferring = candidate.inferring_type_arguments[candidate_type_parameter.index];
 			if (inferring) {
 				// Already inferred a type for this type parameter, so use that.
@@ -47,7 +53,7 @@ bool try_match_types(const Type& type_from_candidate, const Type& type_from_exte
 						return type_from_external.is_plain() && try_match_plain_types(inferred.plain(), type_from_external.plain());
 					case Type::Kind::Param:
 						// The inferred type was another type parameter -- this can happen. Shouldn't be one of the function's own type parameters.
-						assert(!contains_ref(candidate.fun->type_parameters, inferred.param()));
+						assert(!contains_ref(candidate.signature->type_parameters, inferred.param()));
 						return inferred.param() == type_from_external.param();
 				}
 			} else {
@@ -71,14 +77,14 @@ bool does_type_match_no_infer(const Type& expected, const Type& actual) {
 }
 
 const Type& get_candidate_return_type(const Candidate& candidate) {
-	const Type& rt = candidate.fun->return_type;
+	const Type& rt = candidate.signature->return_type;
 	switch (rt.kind()) {
 		case Type::Kind::Nil: assert(false);
 		case Type::Kind::Plain:
 			return rt;
 		case Type::Kind::Param: {
 			const TypeParameter& candidate_type_parameter = rt.param();
-			assert(contains_ref(candidate.fun->type_parameters, ref<const TypeParameter>(&candidate_type_parameter)));
+			assert(contains_ref(candidate.signature->type_parameters, ref<const TypeParameter>(&candidate_type_parameter)));
 			// Should have checked before this that we inferred everything, so get() should succeed.
 			return candidate.inferring_type_arguments[candidate_type_parameter.index].get();
 		}

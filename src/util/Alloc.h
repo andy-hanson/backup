@@ -44,6 +44,10 @@ public:
 		len = new_len;
 	}
 
+	bool contains_ref(ref<const T> r) const {
+		return begin() <= r.ptr() && r.ptr() < end();
+	}
+
 	using const_iterator = const T*;
 
 	size_t size() const { return len; }
@@ -250,6 +254,22 @@ public:
 			assert(ptr != end);
 			*ptr = c;
 			++ptr;
+			return *this;
+		}
+
+		StringBuilder& operator<<(uint u) {
+			assert(ptr != end);
+			//TODO: better
+			if (u < 10) {
+				*ptr = '0' + char(u);
+				++ptr;
+			} else if (u < 100) {
+				assert(ptr + 1 != end);
+				*ptr = '0' + char(u % 10);
+				*(ptr + 1) = '0' + char(u / 10);
+				++ptr;
+			} else
+				throw "todo";
 			return *this;
 		}
 

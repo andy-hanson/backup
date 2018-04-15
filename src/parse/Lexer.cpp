@@ -72,9 +72,8 @@ namespace {
 	}
 
 	// Assumes the first char is validated already.
-	StringSlice take_name_helper(const char* &ptr, bool next_char_pred(char)) {
-		const char* begin = ptr;
-		++ptr;
+	StringSlice take_name_helper(const char* begin, const char* &ptr, bool next_char_pred(char)) {
+		assert(ptr > begin);
 		while (next_char_pred(*ptr)) ++ptr;
 		return { begin, ptr };
 	}
@@ -142,10 +141,10 @@ TopLevelKeyword Lexer::try_take_top_level_keyword() {
 			}
 		case 's':
 			++ptr;
-			if (*ptr == 'i') {
+			if (*ptr == 'p') {
 				++ptr;
-				take('g');
-				return TopLevelKeyword::KwSig;
+				expect("ec");
+				return TopLevelKeyword::KwSpec;
 			} else {
 				expect("truct");
 				return TopLevelKeyword::KwStruct;
@@ -261,27 +260,40 @@ ArenaString Lexer::take_indented_string(Arena& arena) {
 	return b.finish();
 }
 
+StringSlice Lexer::take_type_name() {
+	const char* begin = ptr;
+	if (!is_upper_case_letter(*ptr)) throw "todo";
+	++ptr;
+	return take_name_helper(begin, ptr, is_type_name_continue);
+}
+
+StringSlice Lexer::take_spec_name() {
+	const char* begin = ptr;
+	if (*ptr != '$') throw "todo";
+	++ptr;
+	if (!is_upper_case_letter(*ptr)) throw "todo";
+	++ptr;
+	return take_name_helper(begin, ptr, is_type_name_continue);
+}
+
 StringSlice Lexer::take_value_name() {
+	const char* begin = ptr;
 	if (is_operator_char(*ptr)) {
-		return take_name_helper(ptr, is_operator_char);
+		++ptr;
+		return take_name_helper(begin, ptr, is_operator_char);
 	} else if (is_lower_case_letter(*ptr)) {
-		return take_name_helper(ptr, is_value_name_continue);
+		++ptr;
+		return take_name_helper(begin, ptr, is_value_name_continue);
 	} else {
 		throw "todo";
 	}
 }
 
-StringSlice Lexer::take_type_name() {
-	if (!is_upper_case_letter(*ptr)) {
-		throw "todo";
-	}
-	return take_name_helper(ptr, is_type_name_continue);
-}
-
 StringSlice Lexer::take_cpp_type_name() {
-	//TODO: allow more
+	const char* begin = ptr;
 	if (!is_lower_case_letter(*ptr)) throw "todo";
-	return take_name_helper(ptr, [](char c) { return c != '\n' && c != '\0'; });
+	++ptr;
+	return take_name_helper(begin, ptr, [](char c) { return c != '\n' && c != '\0'; });
 }
 
 namespace {
@@ -291,18 +303,22 @@ namespace {
 
 // Take a token in an expression.
 ExpressionToken Lexer::take_expression_token(Arena& arena) {
+	const char* begin = ptr;
 	char c = *ptr;
 	if (c == '(') {
 		return { ExpressionToken::Kind::Lparen, {} };
 	} else if (c == '"') {
 		return { ExpressionToken::Kind::Literal, { take_string_literal(ptr, end, arena) } };
 	} else if (is_operator_char(c)) {
-		return { ExpressionToken::Kind::Name, { take_name_helper(ptr, is_operator_char) } };
+		++ptr;
+		return { ExpressionToken::Kind::Name, { take_name_helper(begin, ptr, is_operator_char) } };
 	} else if (is_lower_case_letter(c)) {
-		StringSlice name = take_name_helper(ptr, is_value_name_continue);
+		++ptr;
+		StringSlice name = take_name_helper(begin, ptr, is_value_name_continue);
 		return { name == AS ? ExpressionToken::Kind::As : name == WHEN ? ExpressionToken::Kind::When : ExpressionToken::Kind::Name, { name } };
 	} else if (is_upper_case_letter(c)) {
-		return { ExpressionToken::Kind::TypeName, { take_name_helper(ptr, is_type_name_continue) } };
+		++ptr;
+		return { ExpressionToken::Kind::TypeName, { take_name_helper(begin, ptr, is_type_name_continue) } };
 	} else if (is_digit(c) || c == '+' || c == '-') {
 		return { ExpressionToken::Kind::Literal, { take_numeric_literal(ptr, arena) } };
 	} else {

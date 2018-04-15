@@ -11,7 +11,7 @@ namespace {
 		Option <Type> expected;
 		for (const Candidate& candidate : candidates) {
 			// If we get a generic candidate and haven't inferred this parameter type yet, no expected type.
-			ref<const Type> parameter_type = &candidate.fun->parameters[arg_index].type;
+			ref<const Type> parameter_type = &candidate.signature->parameters[arg_index].type;
 			if (parameter_type->is_parameter()) {
 				Option<const Type&> inferred = candidate.inferring_type_arguments[parameter_type->param()->index].as_ref();
 				if (!inferred) return {}; // If there's at least one uninferred generic parameter here, can't have an expected type.
@@ -32,7 +32,7 @@ namespace {
 
 		const Type& arg_type = expected.inferred_type();
 		filter_unordered(candidates, [arg_index, arg_type](Candidate& candidate) {
-			return try_match_types(candidate.fun->parameters[arg_index].type, arg_type, candidate);
+			return try_match_types(candidate.signature->parameters[arg_index].type, arg_type, candidate);
 		});
 		if (candidates.empty()) throw "todo";
 	}
@@ -59,32 +59,43 @@ namespace {
 		}
 		return {};
 	}
+
+	void maybe_add_candidate(Candidates& candidates, Called called, Arena& scratch_arena, const FunSignature& sig, const DynArray<Type>& explicit_type_arguments, size_t arity) {
+		if (sig.arity() == arity && (explicit_type_arguments.empty() || sig.type_parameters.size() != explicit_type_arguments.size())) {
+			DynArray<Option<Type>> inferring_type_arguments = scratch_arena.fill_array<Option<Type>>(sig.type_parameters.size())([&](uint i) {
+				return explicit_type_arguments.empty() ? Option<Type> {} : Option<Type> { explicit_type_arguments[i] };
+			});
+			candidates.push({ called, &sig, inferring_type_arguments });
+		}
+	}
+
+	Candidates get_initial_candidates(ExprContext& ctx, const StringSlice& fun_name, const DynArray<Type>& explicit_type_arguments, size_t arity) {
+		Candidates candidates;
+
+		Option<const OverloadGroup&> overloads = ctx.funs_table.get(fun_name);
+		if (overloads)
+			for (ref<const FunDeclaration> f : overloads.get().funs)
+				maybe_add_candidate(candidates, f, ctx.scratch_arena, f->signature, explicit_type_arguments, arity);
+
+		for (const SpecUse& spec_use : ctx.current_fun->signature.specs)
+			for (const FunSignature& sig : spec_use.spec->signatures)
+				if (sig.name == fun_name)
+					maybe_add_candidate(candidates, SpecUseSig { &spec_use, &sig }, ctx.scratch_arena, sig, explicit_type_arguments, arity);
+
+		return candidates;
+	}
+
 }
 
 Expression check_call(const StringSlice& fun_name, const DynArray<ExprAst>& argument_asts, const DynArray<TypeAst>& type_argument_asts, ExprContext& ctx, Expected& expected) {
 	DynArray<Type> explicit_type_arguments = convert_type_arguments(type_argument_asts, ctx);
 	size_t arity = argument_asts.size();
-	assert(arity != 0);
 	if (arity == 1 && explicit_type_arguments.empty()) {
 		Option<Expression> e = try_convert_struct_field_access(fun_name, argument_asts[0], ctx, expected);
 		if (e) return e.get();
 	}
 
-	Option<const OverloadGroup&> overloads = ctx.funs_table.get(fun_name);
-	if (!overloads) throw "todo: did not get any overloads";
-
-	Candidates candidates;
-	for (ref<const Fun> f : overloads.get().funs) {
-		if (f->arity() != arity) continue;
-		DynArray<Option<Type>> type_arguments;
-		if (!explicit_type_arguments.empty()) {
-			if (f->type_parameters.size() != explicit_type_arguments.size()) continue;
-			type_arguments = ctx.scratch_arena.map_array<Type, Option<Type>>(explicit_type_arguments)([](const Type& t) -> Option<Type> { return { t }; });
-		} else {
-			type_arguments = ctx.scratch_arena.fill_array<Option<Type>>(f->type_parameters.size())([](uint _ __attribute__((unused))) -> Option<Type> { return {}; });
-		}
-		candidates.emplace(f, type_arguments);
-	}
+	Candidates candidates = get_initial_candidates(ctx, fun_name, explicit_type_arguments, arity);
 
 	if (candidates.empty()) throw "todo: no overload has that arity";
 
@@ -94,7 +105,7 @@ Expression check_call(const StringSlice& fun_name, const DynArray<ExprAst>& argu
 		already_checked_return_type = true;
 		expected.as_if_checked();
 		filter_unordered(candidates, [&expected_return_type](Candidate& candidate) {
-			return try_match_types(candidate.fun->return_type, expected_return_type.get(), candidate);
+			return try_match_types(candidate.signature->return_type, expected_return_type.get(), candidate);
 		});
 		if (candidates.empty()) throw "todo: no overload returns what you wanted";
 	}
@@ -108,7 +119,7 @@ Expression check_call(const StringSlice& fun_name, const DynArray<ExprAst>& argu
 
 	if (candidates.size() > 1) throw "todo: two identical candidates?";
 
-	Candidate candidate = candidates[0];
+	const Candidate& candidate = candidates[0];
 
 	DynArray<Type> candidate_type_arguments = ctx.arena.map_array<Option<Type>, Type>(candidate.inferring_type_arguments)([](const Option<Type>& t){
 		if (!t) throw "todo: didn't infer all type arguments";
@@ -119,5 +130,5 @@ Expression check_call(const StringSlice& fun_name, const DynArray<ExprAst>& argu
 		expected.set_inferred(get_candidate_return_type(candidate));
 	}
 
-	return Call { { candidate.fun, candidate_type_arguments }, arguments };
+	return Call { { candidate.called, candidate_type_arguments }, arguments };
 }

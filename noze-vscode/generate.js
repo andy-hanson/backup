@@ -15,13 +15,14 @@ const keywords = [
 	"catch",
 	"do",
 	"else",
-	"fun",
 	"get",
 	"if",
+	"include",
 	"io",
 	"import",
 	"pass",
 	"set",
+	"spec",
 	"struct",
 	"try",
 	"when",
@@ -41,7 +42,7 @@ const patterns = [
 		2: "support.type",
 		3: "string.quoted",
 	}),
-	match("support.type", /[A-Z][a-zA-Z0-9\-]*/),
+	match("support.type", /\$?[A-Z][a-zA-Z0-9\-]*/),
 	match("keyword", new RegExp(`\\b(${keywords.join("|")})\\b`)),
 	match("", /\b[a-z][a-zA-Z0-9\-]*\b/),
 	match("comment", /\.|\,|=|\\/),
@@ -54,7 +55,7 @@ const patterns = [
 	}),
 
 	match("comment", /\|\s.*/),
-	match("variable.other", /[\(\)\[\]\{\}]/),
+	match("variable.other", /[\(\)\[\]\{\}\<\>]/),
 	match("constant.numeric", /[\+\-]?((0((b[01]+)|(o[0-8]+)|(x[\da-f]+)))|(\d+(\.\d+)?))/),
 ]
 

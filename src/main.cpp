@@ -80,22 +80,28 @@ namespace {
 		return StringSlice { s.begin().base(), s.end().base() };
 	}
 
-	void compile_nz_file(const std::string& file_name) {
+	std::string get_compiled_file(const std::string& file_name) {
 		std::string nz_file_name = file_name + ".nz";
 		std::string nz_file_content = read_file(file_name + ".nz");
 		Arena arena;
 		Identifier module_name = Identifier{arena.str("foo")}; //TODO
 		std::vector<ref<Module>> modules { parse_file(to_slice(nz_file_name), module_name, to_slice(nz_file_content), arena) };
-		std::string emitted = emit(modules);
+		return emit(modules);
+	}
+
+	void compile_nz_file(const std::string& file_name) {
+		std::string emitted = get_compiled_file(file_name);
 		std::string cpp = file_name + ".cpp";
 		write_file(cpp, emitted);
 		compile_cpp_file(cpp, file_name + ".exe");
 	}
 
+	__attribute__((unused))
 	void run(const std::string& file_name) {
 		exec(file_name + ".exe");
 	}
 
+	__attribute__((unused))
 	void compile_and_run(const std::string& file_name) {
 		compile_nz_file(file_name);
 		run(file_name);
@@ -105,7 +111,8 @@ namespace {
 int main() {
 	set_limits();
 
-	compile_and_run("../stdlib/auto");
+	std::cout << get_compiled_file("../stdlib/auto") << std::endl;
+
 
 	//run("../stdlib/auto");
 	//compile_and_run("../stdlib/auto");

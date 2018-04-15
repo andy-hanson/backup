@@ -9,7 +9,7 @@
 class StringSlice {
 private:
 	const char* _begin;
-	const char* _end;
+	const char* _end; // Note: `*end` is NOT guaranteed to be '\0'
 
 public:
 	StringSlice() {}
@@ -20,7 +20,9 @@ public:
 		static_assert(N > 0);
 	}
 
-	constexpr StringSlice(const char* begin, const char* end) : _begin(begin), _end(end) {}
+	constexpr StringSlice(const char* begin, const char* end) : _begin(begin), _end(end) {
+		assert(end > begin);
+	}
 
 	const char* begin() const { return _begin; }
 	const char* end() const { return _end; }

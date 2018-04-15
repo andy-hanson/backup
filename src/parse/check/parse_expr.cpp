@@ -101,7 +101,13 @@ namespace {
 	AstAndShouldParseDot parse_expr_arg_ast_worker(Lexer& lexer, Arenas arenas, ExpressionToken et) {
 		switch (et.kind) {
 			case ExpressionToken::Kind::Name:
-				return { { et.name }, true };
+				if (lexer.try_take('(')) {
+					lexer.take(')');
+					// `f()` is a call with no arguments
+					return { CallAst { et.name, {}, {} }, true };
+				} else {
+					return { { et.name }, true };
+				}
 
 			case ExpressionToken::Kind::TypeName: {
 				if (lexer.try_take(':')) {

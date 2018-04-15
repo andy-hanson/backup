@@ -3,19 +3,17 @@
 #include "../../model/model.h"
 #include "../../util/Alloc.h"
 #include "../type_utils.h"
+#include "./BuiltinTypes.h"
 
 struct ExprContext {
 	Arena& arena;
 	Arena& scratch_arena; // cleared after every convert call.
 	const FunsTable& funs_table;
 	const StructsTable& structs_table;
-	const DynArray<Parameter>& parameters;
+	ref<const FunDeclaration> current_fun;
 	// This is pushed and popped as we add locals and go out of scope.
 	MaxSizeVector<8, ref<const Let>> locals;
-
-	const Option<Type>& bool_type;
-	const Option<Type>& string_type;
-	const Option<Type>& void_type;
+	const BuiltinTypes& builtin_types;
 
 	ExprContext(const ExprContext& other) = delete;
 	void operator=(const ExprContext& other) = delete;

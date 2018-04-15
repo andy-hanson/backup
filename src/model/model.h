@@ -1,39 +1,30 @@
 #pragma once
 
 #include <cassert>
-#include <cstdint> // uint64_t
-#include <unordered_map>
 #include <vector>
 
 #include "../util/Alloc.h"
+#include "../util/hash_util.h"
 #include "../util/Map.h"
 #include "../util/Option.h"
-#include "../util/StringSlice.h"
 #include "../diag/diag.h"
+#include "./Identifier.h"
+#include "../util/collection_util.h"
 
-struct Identifier {
-	ArenaString str;
-	bool operator==(const Identifier& i) const { return str.slice() == i.str.slice(); }
-	bool operator==(const StringSlice& s) const { return str == s; }
-};
-namespace std {
-	template<>
-	struct hash<Identifier> {
-		size_t operator()(Identifier i) const {
-			return hash<StringSlice>{}(i.str.slice());
-		}
-	};
-}
+class Expression;
 
+struct Module;
+
+
+//region Type
 
 enum class Effect { Pure, Get, Set, Io };
 StringSlice effect_name(Effect e);
 
 struct TypeParameter {
 	Identifier name;
-	//Index in the list of type parameters it appeared in.
+	// Index in the list of type parameters it appeared in.
 	uint index;
-	// TODO: constraints, and name might not exist if it's implicit
 };
 
 struct StructField;
@@ -97,8 +88,6 @@ public:
 	}
 };
 
-struct Module;
-
 struct StructDeclaration {
 	ref<const Module> containing_module;
 	Identifier name;
@@ -120,11 +109,31 @@ struct InstStruct {
 	ref<const StructDeclaration> strukt;
 	DynArray<Type> type_arguments;
 };
+namespace std {
+	template <>
+	struct hash<InstStruct> {
+		size_t operator()(const InstStruct& i) const {
+			return hash_combine(hash<::ref<const StructDeclaration>>{}(i.strukt), hash_dyn_array(i.type_arguments));
+		}
+	};
+}
+bool operator==(const InstStruct& a, const InstStruct& b);
 
 struct PlainType {
 	Effect effect;
 	InstStruct inst_struct;
+
+	bool is_deeply_plain() const;
 };
+namespace std {
+	template <>
+	struct hash<PlainType> {
+		size_t operator()(const PlainType& p) const {
+			return hash_combine(size_t(p.effect), p.inst_struct);
+		}
+	};
+}
+bool operator==(const PlainType& a, const PlainType& b);
 
 class Type {
 public:
@@ -160,9 +169,6 @@ public:
 		}
 	}
 
-	//Type(PlainType plain) : _kind(Kind::Plain) {
-	//	data.plain = plain;
-	//}
 	Type(ref<const TypeParameter> param) : _kind(Kind::Param) {
 		data.param = param;
 	}
@@ -184,228 +190,55 @@ public:
 		return data.param;
 	}
 };
-
+namespace std {
+	template <>
+	struct hash<Type> {
+		size_t operator()(const Type& t) const {
+			switch (t.kind()) {
+				case Type::Kind::Nil:
+				case Type::Kind::Param:
+					throw "todo";
+				case Type::Kind::Plain:
+					return hash<PlainType>{}(t.plain());
+			}
+		}
+	};
+}
+bool operator==(const Type& a, const Type& b);
 
 struct StructField {
 	Type type;
 	Identifier name;
 };
 
+//endregion
+
 struct Parameter {
 	Type type;
 	Identifier name;
 };
 
-class Expression;
-struct Fun;
+struct FunSignature;
+struct SpecDeclaration;
 
-struct StructFieldAccess {
-	ref<Expression> target;
-	ref<const StructField> field;
-};
-
-struct InstFun {
-	ref<const Fun> fun;
+struct SpecUse {
+	ref<const SpecDeclaration> spec;
 	DynArray<Type> type_arguments;
 };
 
-struct Call {
-	InstFun called;
-	DynArray<Expression> arguments;
-};
-
-struct StructCreate {
-	InstStruct inst_struct; // Effect is Io
-	DynArray<Expression> arguments;
-};
-
-struct Let;
-struct Seq;
-
-struct Case;
-struct When {
-	DynArray<Case> cases;
-	ref<Expression> elze;
-
-	When(DynArray<Case> _cases, ref<Expression> _elze) : cases(_cases), elze(_elze) {
-		assert(cases.size() != 0);
-	}
-};
-
-class Expression {
-public:
-	enum class Kind {
-		Nil,
-		ParameterReference,
-		LocalReference,
-		StructFieldAccess,
-		Let,
-		Seq,
-		Call,
-		StructCreate,
-		//This is the argument passed to a call to `literal`.
-		StringLiteral,
-		When,
-	};
-
-private:
-	// Note: we are trying to keep this to 2 words. ref is one word.
-	union Data {
-		ref<const Parameter> parameter_reference;
-		ref<const Let> local_reference;
-		StructFieldAccess struct_field_access;
-		ref<const Let> let;
-		ref<const Seq> seq;
-		Call call;
-		StructCreate struct_create;
-		ArenaString string_literal;
-		When when;
-
-		Data() {} // uninitialized
-		~Data() {} // Nothing in here should need to be deleted
-	};
-
-	Kind _kind;
-	Data data;
-
-public:
-	Kind kind() const { return _kind; }
-
-	Expression() : _kind(Kind::Nil) {}
-
-	Expression(const Expression& e) {
-		_kind = Kind::Nil; // operator= asserts this
-		*this = e;
-	}
-
-	Expression(ref<const Parameter> p) : _kind(Kind::ParameterReference) {
-		data.parameter_reference = p;
-	}
-
-	Expression(ref<const Let> l, Kind kind) : _kind(kind) {
-		if (kind == Kind::LocalReference) data.local_reference = l;
-		else if (kind == Kind::Let) data.let = l;
-		else assert(false);
-	}
-
-	Expression(ref<const Seq> seq) : _kind(Kind::Seq) {
-		data.seq = seq;
-	}
-
-	Expression(StructFieldAccess s) : _kind(Kind::StructFieldAccess) {
-		data.struct_field_access = s;
-	}
-
-	Expression(Call call) : _kind(Kind::Call) {
-		data.call = call;
-	}
-
-	Expression(StructCreate create) : _kind(Kind::StructCreate) {
-		data.struct_create = create;
-	}
-
-	explicit Expression(ArenaString value) : _kind(Kind::StringLiteral) {
-		data.string_literal = value;
-	}
-
-	Expression(When when) : _kind(Kind::When) {
-		data.when = when;
-	}
-
-	~Expression() {
-		// Nothing to do, none have destructors
-	}
-
-	ref<const Parameter> parameter() const {
-		assert(_kind == Kind::ParameterReference);
-		return data.parameter_reference;
-	}
-	ref<const Let> local_reference() const {
-		assert(_kind == Kind::LocalReference);
-		return data.local_reference;
-	}
-	const StructFieldAccess& struct_field_access() const {
-		assert(_kind == Kind::StructFieldAccess);
-		return data.struct_field_access;
-	}
-	const Let& let() const {
-		assert(_kind == Kind::Let);
-		return *data.let;
-	}
-	const Seq& seq() const {
-		assert(_kind == Kind::Seq);
-		return *data.seq;
-	}
-	const Call& call() const {
-		assert(_kind == Kind::Call);
-		return data.call;
-	}
-	const StructCreate& struct_create() const {
-		assert(_kind == Kind::StructCreate);
-		return data.struct_create;
-	}
-	const ArenaString& string_literal() const {
-		assert(_kind == Kind::StringLiteral);
-		return data.string_literal;
-	}
-	const When& when() const {
-		assert(_kind == Kind::When);
-		return data.when;
-	}
-
-	void operator=(const Expression& e) {
-		_kind = e._kind;
-		switch (_kind) {
-			case Kind::Nil:
-				break;
-			case Kind::ParameterReference:
-				data.parameter_reference = e.data.parameter_reference;
-				break;
-			case Kind::LocalReference:
-				data.local_reference = e.data.local_reference;
-				break;
-			case Kind::StructFieldAccess:
-				data.struct_field_access = e.data.struct_field_access;
-				break;
-			case Kind::Let:
-				data.let = e.data.let;
-				break;
-			case Kind::Seq:
-				data.seq = e.data.seq;
-				break;
-			case Kind::Call:
-				data.call = e.data.call;
-				break;
-			case Kind::StructCreate:
-				data.struct_create = e.data.struct_create;
-				break;
-			case Kind::StringLiteral:
-				data.string_literal = e.data.string_literal;
-				break;
-			case Kind::When:
-				data.when = e.data.when;
-				break;
-		}
-	}
-};
-
-struct Let {
-	Type type;
+struct FunSignature {
+	DynArray<TypeParameter> type_parameters;
+	Type return_type;
 	Identifier name;
-	Expression init;
-	Expression then;
-	Let(const Let& other) = delete;
-};
+	DynArray<Parameter> parameters;
+	DynArray<SpecUse> specs;
 
-struct Seq {
-	Expression first;
-	Expression then;
-	Seq(const Seq& other) = delete;
-};
+	FunSignature(DynArray<TypeParameter> _type_parameters) : type_parameters(_type_parameters) {}
 
-struct Case {
-	Expression cond;
-	Expression then;
+	uint arity() const { return to_uint(parameters.size()); }
+	bool is_generic() const {
+		return !type_parameters.empty() || !specs.empty();
+	}
 };
 
 struct AnyBody {
@@ -417,7 +250,7 @@ struct AnyBody {
 	Kind _kind;
 
 	union Data {
-		Expression expression;
+		ref<Expression> expression; // Ref so we don't have to depend on the definition of Expression here.
 		ArenaString cpp_source;
 		Data() {} // uninitialized
 		~Data() {} // string freed by ~AnyBody
@@ -452,7 +285,7 @@ public:
 		}
 	}
 
-	void operator=(Expression expression) {
+	void operator=(ref<Expression> expression) {
 		assert(_kind == Kind::Nil);
 		_kind = Kind::Expression;
 		data.expression = expression;
@@ -465,46 +298,49 @@ public:
 	}
 };
 
-
-// This is either an actual Fun declaration, or may be a synthetic fun created for calling a field of a struct.
-struct Fun {
+struct FunDeclaration {
 	ref<const Module> containing_module;
-	DynArray<TypeParameter> type_parameters;
-	Type return_type;
-	Identifier name;
-	DynArray<Parameter> parameters;
+	FunSignature signature;
 	AnyBody body;
 
-	// Body filled in in a later pass.
-	//Fun(ref<const Module> _containing_module, DynArray<TypeParameter> _type_parameters, Type _return_type, Identifier _name, DynArray<Parameter> _parameters)
-	//	: containing_module(_containing_module), type_parameters(_type_parameters), return_type(_return_type), name(_name), parameters(_parameters) {}
-	Fun(ref<const Module> _containing_module, DynArray<TypeParameter> _type_parameters) : containing_module(_containing_module), type_parameters(_type_parameters) {}
-	Fun(const Fun& other) = delete;
-	void operator=(const Fun& other) = delete;
-	Fun(Fun&& other) = default;
+	// Rest filled in in future passes.
+	FunDeclaration(ref<const Module> _containing_module, DynArray<TypeParameter> _type_parameters) : containing_module(_containing_module), signature(_type_parameters) {}
+	FunDeclaration(const FunDeclaration& other) = delete;
+	void operator=(const FunDeclaration& other) = delete;
+};
 
-	uint arity() const {
-		return uint(parameters.size());
-	}
+struct SpecDeclaration {
+	ref<const Module> containing_module;
+	DynArray<TypeParameter> type_parameters;
+	Identifier name;
+	DynArray<FunSignature> signatures;
+
+	SpecDeclaration(ref<const Module> _containing_module, DynArray<TypeParameter> _type_parameters, Identifier _name)
+		: containing_module(_containing_module), type_parameters(_type_parameters), name(_name) {}
 };
 
 // Group of functions with the same name.
-struct OverloadGroup {
-	std::vector<ref<const Fun>> funs;
-};
-using StructsTable = Map<StringSlice, ref<const StructDeclaration>>;
-using FunsTable = Map<StringSlice, OverloadGroup>;
+struct OverloadGroup { std::vector<ref<const FunDeclaration>> funs; };
 
+// Within a single module, maps a struct name to declaration.
+using StructsTable = Map<StringSlice, ref<const StructDeclaration>>;
+// Within a single module, maps a spec name to declaration.
+using SpecsTable = Map<StringSlice, ref<const SpecDeclaration>>;
+// Within a single module, maps a fun name to the list of functions *in that module* with that name.
+using FunsTable = Map<StringSlice, OverloadGroup>;
 using StructsDeclarationOrder = std::vector<ref<StructDeclaration>>;
-using FunsDeclarationOrder = std::vector<ref<Fun>>;
+using SpecsDeclarationOrder = std::vector<ref<SpecDeclaration>>;
+using FunsDeclarationOrder = std::vector<ref<FunDeclaration>>;
 
 // Note: if there is a parse error, this will just be empty.
 struct Module {
 	ArenaString path;
 	Identifier name; // `For foo/bar/a.nz`, this is `a`.
 	StructsDeclarationOrder structs_declaration_order;
+	SpecsDeclarationOrder specs_declaration_order;
 	FunsDeclarationOrder funs_declaration_order;
 	StructsTable structs_table;
+	SpecsTable specs_table;
 	FunsTable funs_table;
 	List<Diagnostic> diagnostics;
 

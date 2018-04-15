@@ -11,8 +11,24 @@ Option<const T&> find(const DynArray<T>& collection, Pred pred) {
 	return {};
 }
 
+template <typename T, typename Pred>
+bool every(const DynArray<T>& collection, Pred pred) {
+	for (const T& t : collection)
+		if (!pred(t))
+			return false;
+	return true;
+}
+
+template <typename T, typename Pred>
+bool some(const DynArray<T>& collection, Pred pred) {
+	for (const T& t : collection)
+		if (pred(t))
+			return true;
+	return false;
+};
+
 template <typename T, typename Cb>
-bool each_corresponds(DynArray<T> da, DynArray<T> db, Cb cb) {
+bool each_corresponds(const DynArray<T>& da, const DynArray<T>& db, Cb cb) {
 	assert(da.size() == db.size());
 	typename DynArray<T>::const_iterator ia = da.begin();
 	typename DynArray<T>::const_iterator ib = db.begin();
@@ -24,6 +40,11 @@ bool each_corresponds(DynArray<T> da, DynArray<T> db, Cb cb) {
 	}
 	assert(ib == db.end());
 	return true;
+}
+
+template <typename T>
+bool operator==(DynArray<T> da, DynArray<T> db) {
+	return each_corresponds(da, db, [](const T& a, const T& b) { return a == b; });
 }
 
 template <typename T>
