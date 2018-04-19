@@ -1,6 +1,15 @@
 cpp struct Int = int
-spec $S
-	Int foo()
+cpp Int zero()
+	return 0;
 
-Int f() $S
+<T> spec $S
+	T foo()
+
+<U> U f() $S<U>
 	foo()
+
+Int foo()
+	zero()
+
+Int main()
+	f<Int>()

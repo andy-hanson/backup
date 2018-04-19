@@ -38,12 +38,6 @@ public:
 		return data[index];
 	}
 
-	// This is in an arena, so don't have to worry about storing the 'capacity'.
-	void discard_after_length(size_t new_len) {
-		assert(new_len < len);
-		len = new_len;
-	}
-
 	bool contains_ref(ref<const T> r) const {
 		return begin() <= r.ptr() && r.ptr() < end();
 	}
@@ -193,22 +187,46 @@ public:
 		return ArrayFiller<T>(new_array<T>(len));
 	}
 
-	template <typename In, typename Out>
+	template <typename Out>
 	struct ArrayMapper {
-		const DynArray<In>& in;
-		DynArray<Out> inner;
-		ArrayMapper(const DynArray<In>& _in, DynArray<Out> _inner) : in(_in), inner(_inner) {}
+		Arena& arena;
 
-		template <typename Cb>
-		DynArray<Out> operator()(Cb cb) {
-			inner.fill([&](uint i) { return cb(in[i]); });
-			return inner;
+		template <typename In, typename Cb>
+		DynArray<Out> operator()(const DynArray<In>& in, Cb cb) {
+			return arena.fill_array<Out>(in.size())([&](uint i) { return cb(in[i]); });
 		}
 	};
-	template <typename In, typename Out>
-	ArrayMapper<In, Out> map_array(const DynArray<In>& in) {
-		return ArrayMapper(in, new_array<Out>(in.size()));
+	template <typename Out>
+	ArrayMapper<Out> map_array() {
+		return ArrayMapper<Out>{*this};
 	}
+
+	template <typename Out>
+	struct ArrayFlatMapper {
+		Arena& arena;
+
+		template <typename In, typename Cb>
+		DynArray<Out> operator()(DynArray<DynArray<In>> inputs, Cb cb) {
+			size_t size = 0;
+			for (const DynArray<In>& d : inputs) size += d.size();
+			DynArray<Out> res = arena.new_array<Out>(size);
+			uint i = 0;
+			for (const DynArray<In>& d : inputs) {
+				for (const In& in : d) {
+					res[i] = cb(in);
+					++i;
+				}
+			}
+			assert(i == size);
+			return res;
+		}
+	};
+
+	template <typename Out>
+	ArrayFlatMapper<Out> flat_map_array() {
+		return ArrayFlatMapper<Out>{*this};
+	}
+
 
 	template <typename T>
 	class SmallArrayBuilder {

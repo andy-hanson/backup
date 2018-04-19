@@ -23,27 +23,23 @@ namespace {
 				return {};
 		}
 	}
+
+	template <typename WriterLike>
+	WriterLike& write_mangled(WriterLike& out, mangle man) {
+		for (char c : man.name.str.slice()) {
+			auto m = mangle_char(c);
+			if (m)
+				out << m.get();
+			else
+				out << c;
+		}
+		return out;
+	}
 }
 
 Writer& operator<<(Writer& out, mangle man) {
-	for (char c : man.name.str.slice()) {
-		auto m = mangle_char(c);
-		if (m)
-			out << m.get();
-		else
-			out << c;
-	}
-	return out;
+	return write_mangled(out, man);
 }
-
-//TODO: share code
 Arena::StringBuilder& operator<<(Arena::StringBuilder& out, mangle man) {
-	for (char c : man.name.str.slice()) {
-		auto m = mangle_char(c);
-		if (m)
-			out << m.get();
-		else
-			out << c;
-	}
-	return out;
+	return write_mangled(out, man);
 }

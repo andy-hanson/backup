@@ -23,7 +23,6 @@ StringSlice effect_name(Effect e);
 
 struct TypeParameter {
 	Identifier name;
-	// Index in the list of type parameters it appeared in.
 	uint index;
 };
 
@@ -157,8 +156,8 @@ public:
 	Type(const Type& other) {
 		*this = other;
 	}
-	Type(Effect effect, InstStruct inst_struct) : _kind(Kind::Plain) {
-		data.plain = PlainType { effect, inst_struct };
+	explicit Type(PlainType p) : _kind(Kind::Plain) {
+		data.plain = p;
 	}
 	void operator=(const Type& other) {
 		_kind = other._kind;
@@ -169,7 +168,7 @@ public:
 		}
 	}
 
-	Type(ref<const TypeParameter> param) : _kind(Kind::Param) {
+	explicit Type(ref<const TypeParameter> param) : _kind(Kind::Param) {
 		data.param = param;
 	}
 
@@ -205,6 +204,7 @@ namespace std {
 	};
 }
 bool operator==(const Type& a, const Type& b);
+inline bool operator!=(const Type& a, const Type& b) { return !(a == b); }
 
 struct StructField {
 	Type type;
@@ -224,6 +224,7 @@ struct SpecDeclaration;
 struct SpecUse {
 	ref<const SpecDeclaration> spec;
 	DynArray<Type> type_arguments;
+	SpecUse(ref<const SpecDeclaration> _spec, DynArray<Type> _type_arguments);
 };
 
 struct FunSignature {
@@ -303,6 +304,8 @@ struct FunDeclaration {
 	FunSignature signature;
 	AnyBody body;
 
+	Identifier name() const { return signature.name; }
+
 	// Rest filled in in future passes.
 	FunDeclaration(ref<const Module> _containing_module, DynArray<TypeParameter> _type_parameters) : containing_module(_containing_module), signature(_type_parameters) {}
 	FunDeclaration(const FunDeclaration& other) = delete;
@@ -319,15 +322,12 @@ struct SpecDeclaration {
 		: containing_module(_containing_module), type_parameters(_type_parameters), name(_name) {}
 };
 
-// Group of functions with the same name.
-struct OverloadGroup { std::vector<ref<const FunDeclaration>> funs; };
-
 // Within a single module, maps a struct name to declaration.
 using StructsTable = Map<StringSlice, ref<const StructDeclaration>>;
 // Within a single module, maps a spec name to declaration.
 using SpecsTable = Map<StringSlice, ref<const SpecDeclaration>>;
 // Within a single module, maps a fun name to the list of functions *in that module* with that name.
-using FunsTable = Map<StringSlice, OverloadGroup>;
+using FunsTable = MultiMap<StringSlice, ref<const FunDeclaration>>;
 using StructsDeclarationOrder = std::vector<ref<StructDeclaration>>;
 using SpecsDeclarationOrder = std::vector<ref<SpecDeclaration>>;
 using FunsDeclarationOrder = std::vector<ref<FunDeclaration>>;

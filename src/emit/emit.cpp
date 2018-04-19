@@ -14,7 +14,6 @@
 #include "./Writer.h"
 
 namespace {
-
 	void write_type_parameters(Writer& out, const DynArray<TypeParameter>& type_parameters) {
 		if (type_parameters.empty()) return;
 		out << "template <";
@@ -33,7 +32,9 @@ namespace {
 				out << "struct " << name << " {\n";
 				for (const StructField& field : s.body.fields()) {
 					const char TAB = '\t'; // https://youtrack.jetbrains.com/issue/CPP-12650
-					out << TAB << field.type << ' ' << names.get_name(&field) << ";\n";
+					out << TAB;
+					write_type(out, field.type, names);
+					out << ' ' << names.get_name(&field) << ";\n";
 				}
 				out << "};\n\n";
 				break;
@@ -47,14 +48,18 @@ namespace {
 	}
 
 	void write_fun_header(Writer& out, const ConcreteFun &f, const Names& names, Arena& scratch_arena) {
-		out << substitute_type_arguments(f.fun_declaration->signature.return_type, f, scratch_arena) << " " << names.get_name(&f) << '(';
+		write_plain_type(out, substitute_type_arguments(f.fun_declaration->signature.return_type, f, scratch_arena), names);
+		out << ' ' << names.get_name(&f) << '(';
 		bool first_param = true;
 		for (const auto& param : f.fun_declaration->signature.parameters) {
 			if (first_param)
 				first_param = false;
 			else
 				out << ", ";
-			out << "const " << substitute_type_arguments(param.type, f, scratch_arena) << "& " << mangle{param.name};
+			out << "const ";
+			write_plain_type(out, substitute_type_arguments(param.type, f, scratch_arena), names);
+			out << "& ";
+			out << mangle{param.name};
 		}
 		out << ')';
 	}
@@ -97,7 +102,7 @@ namespace {
 
 	void emit_fun_header(Writer& out, const ConcreteFun& f, const Names& names, Arena& scratch_arena) {
 		write_fun_header(out, f, names, scratch_arena);
-		out << ';';
+		out << ";\n\n";
 	}
 
 	void emit_fun_with_body(Writer& out, ref<const ConcreteFun> f, const Names& names, const ResolvedCalls& resolved_calls, Arena& scratch_arena) {
@@ -106,6 +111,16 @@ namespace {
 		// Writing the body will be slightly different each time because we map each Called in the body to a different ConcreteFun depending on 'f'.
 		emit_body(out, f, names, resolved_calls, scratch_arena);
 		out << "\n}\n\n";
+	}
+
+	template <typename /*ref<constConcreteFun>> => void>*/ Cb>
+	void each_concrete_fun(const Module& module, const FunInstantiations& fun_instantiations, Cb cb) {
+		for (ref<const FunDeclaration> f : module.funs_declaration_order) {
+			Option<const Sett<ConcreteFun>&> instantiations = fun_instantiations.get(f);
+			if (instantiations)
+				for (const ConcreteFun& cf : instantiations.get())
+					cb(&cf);
+		}
 	}
 }
 
@@ -118,17 +133,11 @@ std::string emit(const std::vector<ref<Module>>& modules) {
 	// First, emit all structs and function headers.
 	for (const Module& module : modules) {
 		emit_structs(out, module.structs_declaration_order, names);
-		for (ref<const FunDeclaration> f : module.funs_declaration_order)
-			for (const ConcreteFun& cf : every_concrete_fun.fun_instantiations.must_get(f))
-				emit_fun_header(out, cf, names, scratch_arena);
+		each_concrete_fun(module, every_concrete_fun.fun_instantiations, [&](ref<const ConcreteFun> cf) { emit_fun_header(out, cf, names, scratch_arena); });
 	}
 
-	for (const Module& module : modules) {
-		for (ref<const FunDeclaration> f : module.funs_declaration_order) {
-			for (const ConcreteFun& cf : every_concrete_fun.fun_instantiations.must_get(f))
-				emit_fun_with_body(out, &cf, names, every_concrete_fun.resolved_calls, scratch_arena);
-		}
-	}
+	for (const Module& module : modules)
+		each_concrete_fun(module, every_concrete_fun.fun_instantiations, [&](ref<const ConcreteFun> cf) { emit_fun_with_body(out, cf, names, every_concrete_fun.resolved_calls, scratch_arena); });
 
 	return out.finish();
 }

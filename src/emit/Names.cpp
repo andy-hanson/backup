@@ -62,8 +62,9 @@ namespace {
 				sb << '_';
 				write_type_for_fun_name(sb, t);
 			}
-			for (ref<const ConcreteFun> s : f.spec_impls)
-				sb << '_' << ids.get_id(s);
+			for (const DynArray<ref<const ConcreteFun>>& spec_impl : f.spec_impls)
+				for (ref<const ConcreteFun> c : spec_impl)
+					sb << '_' << ids.get_id(c);
 		}
 		return sb.finish();
 	}
@@ -78,23 +79,19 @@ Names get_names(const std::vector<ref<Module>>& modules, const FunInstantiations
 	for (ref<const Module> module : modules) {
 		for (ref<const StructDeclaration> s : module->structs_declaration_order)
 			global_structs_table.add(s->name, s);
-		//for (ref<const FunDeclaration> f : module->funs_declaration_order)
-		//	global_funs_table.add(f->signature.name, f);
 		module_names.must_insert(module->name); //TODO: if 2 modules have the same name, harder to generate overload names
 	}
 
 	Names names;
 	for (const auto& a : global_structs_table) {
 		const Identifier& name = a.first;
-		ref<const StructDeclaration> s = a.second;
-		//const std::vector<ref<const StructDeclaration>>& structs = a.second;
-		//for (ref<const StructDeclaration> s : structs)
-		names.struct_names.must_insert(s, escape_struct_name(s->containing_module->name, name, arena, global_structs_table.count(a.first) == 1));
+		ref<const StructDeclaration> strukt = a.second;
+		names.struct_names.must_insert(strukt, escape_struct_name(strukt->containing_module->name, name, arena, global_structs_table.count(a.first) != 1));
 	}
 
 	// Map from a name to all funs with that name.
 	MultiMap<Identifier, ref<const Sett<ConcreteFun>>> global_funs_table;
-	for (const auto& a : fun_instantiations) global_funs_table.add(a.first->signature.name, &a.second);
+	for (const auto& a : fun_instantiations) global_funs_table.add(a.first->name(), &a.second);
 
 	FunIds ids;
 
@@ -107,13 +104,6 @@ Names get_names(const std::vector<ref<Module>>& modules, const FunInstantiations
 			names.fun_names.must_insert(&f, escape_fun_name(f, /*is_overloaded*/ global_funs_table.count(name) > 1, /*is_instantiated*/ fn_instances.size() > 1, ids, arena));
 		}
 	}
-
-	/*for (const auto& a : global_funs_table) {
-		const Identifier& name = a.first;
-		const std::vector<ref<const FunDeclaration>>& funs = a.second;
-		for (ref<const FunDeclaration> f : funs)
-			names.fun_names.must_insert(f, funs.size() == 1 ? escape_name(name, arena) : escape_fun_name(f->containing_module, f->signature, arena));
-	}*/
 
 	return names;
 }

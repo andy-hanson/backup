@@ -6,7 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_COMPILER "/home/andy/bin/clang+llvm-6.0.0-x86_64-linux-gnu-ubuntu-14.04/bin/clang++")
 # Must have -Wno-used-but-marked-unused because of https://youtrack.jetbrains.com/issue/CPP-2151
 # -Wno-missing-no-return because I often write `f() { throw "todo"; }`
-set(CMAKE_CXX_FLAGS "-pedantic -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-used-but-marked-unused -Wno-missing-noreturn -Werror")
+# -stdlib=libstdc++ supposedly improves debugging (https://blog.jetbrains.com/clion/2015/05/debug-clion/)
+set(CMAKE_CXX_FLAGS "-pedantic -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-used-but-marked-unused -Wno-missing-noreturn -Werror -stdlib=libstdc++")
 
 add_executable(oohoo
 	src/main.cpp
@@ -20,6 +21,7 @@ add_executable(oohoo
 	src/emit/emit.h
 	src/emit/emit_body.cpp
 	src/emit/emit_body.h
+	src/emit/emit_type.h
 	src/emit/function_names.h
 	src/emit/mangle.cpp
 	src/emit/mangle.h
@@ -34,6 +36,7 @@ add_executable(oohoo
 	src/model/Identifier.h
 
 	src/parse/check/BuiltinTypes.h
+	src/parse/check/convert_type.cpp
 	src/parse/check/convert_type.h
 	src/parse/check/check_call.cpp
 	src/parse/check/check_call.h
@@ -49,7 +52,6 @@ add_executable(oohoo
 	src/parse/Lexer.h
 	src/parse/parser.cpp
 	src/parse/parser.h
-
 	src/parse/type_utils.cpp
 	src/parse/type_utils.h
 
@@ -62,4 +64,4 @@ add_executable(oohoo
 	src/util/StringSlice.cpp
 	src/util/StringSlice.h
 	src/util/util.h
-	src/util/hash_util.h src/emit/emit_type.h)
+	src/util/hash_util.h)

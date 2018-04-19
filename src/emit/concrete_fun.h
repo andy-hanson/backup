@@ -12,12 +12,16 @@
 struct ConcreteFun {
 	const ref<const FunDeclaration> fun_declaration;
 	const DynArray<PlainType> type_arguments;
-	const DynArray<ref<const ConcreteFun>> spec_impls;
+	// Maps spec index -> signature index -> implementation
+	const DynArray<DynArray<ref<const ConcreteFun>>> spec_impls;
 
-	ConcreteFun(ref<const FunDeclaration> _fun_declaration, DynArray<PlainType> _type_arguments, DynArray<ref<const ConcreteFun>> _spec_impls)
+	ConcreteFun(ref<const FunDeclaration> _fun_declaration, DynArray<PlainType> _type_arguments, DynArray<DynArray<ref<const ConcreteFun>>> _spec_impls)
 		: fun_declaration(_fun_declaration), type_arguments(_type_arguments), spec_impls(_spec_impls) {
 		assert(fun_declaration->signature.type_parameters.size() == type_arguments.size());
 		assert(fun_declaration->signature.specs.size() == spec_impls.size());
+		assert(each_corresponds(fun_declaration->signature.specs, spec_impls, [](const SpecUse& spec_use, const DynArray<ref<const ConcreteFun>>& sig_impls) {
+			return spec_use.spec->signatures.size() == sig_impls.size();
+		}));
 		assert(every(type_arguments, [](const PlainType& p) { return p.is_deeply_plain(); }));
 	}
 };
@@ -52,7 +56,7 @@ inline bool operator==(const ConcreteFunAndCalled& a, const ConcreteFunAndCalled
 	return a.fun == b.fun && a.called == b.called;
 }
 
-inline PlainType substitute_type_arguments(Type type_argument, const ConcreteFun& fun, Arena& arena) {
+inline PlainType substitute_type_arguments(const Type& type_argument, const ConcreteFun& fun, Arena& arena) {
 	return substitute_type_arguments(type_argument, fun.fun_declaration->signature.type_parameters, fun.type_arguments, arena);
 }
 

@@ -5,27 +5,30 @@
 #include "./mangle.h"
 #include "./Writer.h"
 
-Writer& operator<<(Writer& out, const Type& t);
+void write_type(Writer& out, const Type& t, const Names& names);
 
-inline Writer& operator<<(Writer& out, const DynArray<Type>& type_arguments) {
-	if (type_arguments.empty()) return out;
+inline void write_type_arguments(Writer& out, const DynArray<Type>& type_arguments, const Names& names) {
+	if (type_arguments.empty()) return;
 	out << '<';
 	for (uint i = 0; i != type_arguments.size(); ++i) {
 		if (i != 0) out << ", ";
-		out << type_arguments[i];
+		write_type(out, type_arguments[i], names);
 	}
-	return out << '>';
+	out << '>';
 }
 
-inline Writer& operator<<(Writer& out, const InstStruct& i) {
-	return out << mangle{i.strukt->name} << i.type_arguments;
+inline void write_inst_struct(Writer& out, const InstStruct& i, const Names& names) {
+	out << names.get_name(i.strukt);
+	write_type_arguments(out, i.type_arguments, names);
 }
 
-inline Writer& operator<<(Writer& out, const PlainType& p) {
-	//ignore the effect
-	return out << p.inst_struct;
+inline void write_plain_type(Writer& out, const PlainType& p, const Names& names) {
+	write_inst_struct(out, p.inst_struct, names);
 }
 
-inline Writer& operator<<(Writer& out, const Type& t) {
-	return t.is_parameter() ? out << mangle{t.param()->name} : out << t.plain();
+inline void write_type(Writer& out, const Type& t, const Names& names) {
+	if (t.is_parameter())
+		out << mangle{t.param()->name};
+	else
+		write_plain_type(out, t.plain(), names);
 }

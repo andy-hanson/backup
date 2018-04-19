@@ -5,14 +5,9 @@
 #include "../../model/model.h" // Effect
 #include "../../util/Alloc.h"
 #include "../../util/StringSlice.h"
+#include "./convert_type.h" // TypeAst
 
 class ExprAst;
-
-struct TypeAst {
-	Effect effect;
-	StringSlice type_name;
-	DynArray<TypeAst> type_arguments;
-};
 
 struct CallAst {
 	StringSlice fun_name;

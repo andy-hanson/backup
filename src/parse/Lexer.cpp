@@ -47,11 +47,6 @@ namespace {
 		return is_upper_case_letter(c) || is_lower_case_letter(c);
 	}
 
-	void skip_blank_lines(const char* &ptr) {
-		while (*ptr == '\n')
-			++ptr;
-	}
-
 	ArenaString take_string_literal(const char* &ptr, const char* end, Arena& arena) {
 		Arena::StringBuilder b = arena.string_builder(to_unsigned(end - ptr));
 		++ptr;
@@ -121,7 +116,6 @@ Effect Lexer::try_take_effect() {
 }
 
 TopLevelKeyword Lexer::try_take_top_level_keyword() {
-	skip_blank_lines(ptr);
 	switch (*ptr) {
 		case 'c':
 			++ptr;
@@ -154,6 +148,11 @@ TopLevelKeyword Lexer::try_take_top_level_keyword() {
 		default:
 			return TopLevelKeyword::None;
 	}
+}
+
+void Lexer::skip_blank_lines() {
+	while (*ptr == '\n')
+		++ptr;
 }
 
 NewlineOrDedent Lexer::take_newline_or_dedent() {
@@ -202,7 +201,7 @@ void Lexer::skip_indented_lines() {
 	assert(_indent == 0);
 	do {
 		skip_to_end_of_line();
-		skip_blank_lines(ptr);
+		skip_blank_lines();
 	} while (try_take('\t'));
 }
 
@@ -217,7 +216,7 @@ void Lexer::skip_to_end_of_line_and_optional_indented_lines() {
 	assert(_indent == 0);
 	skip_to_end_of_line();
 	take('\n');
-	skip_blank_lines(ptr);
+	skip_blank_lines();
 	if (try_take('\t')) {
 		skip_indented_lines();
 	}

@@ -37,7 +37,7 @@ namespace {
 			return check_and_expect(create.arguments[i], ctx, struct_field_type(inst_struct, i));
 		});
 
-		expected.check_no_infer({Effect::Io, inst_struct});
+		expected.check_no_infer(Type { PlainType { Effect::Io, inst_struct } });
 		return { inst_struct, arguments };
 	}
 
@@ -45,7 +45,7 @@ namespace {
 		if (expected.has_expectation_or_inferred_type()) {
 			throw "todo"; // we already have a type, you shouldn't provide one
 		}
-		Type type = convert_type(ast.type, ctx);
+		Type type = type_from_ast(ast.type, ctx.arena, ctx.structs_table, ctx.current_fun->signature.type_parameters);
 		expected.set_inferred(type);
 		return check_and_expect(ast.expression, ctx, type);
 	}
@@ -71,7 +71,7 @@ namespace {
 
 	Expression check_when(const WhenAst& ast, ExprContext& ctx, Expected& expected) {
 		if (!ctx.builtin_types.bool_type) throw "todo: must declare Bool somewhere in order to use 'when'";
-		DynArray<Case> cases = ctx.arena.map_array<CaseAst, Case>(ast.cases)([&](const CaseAst& c) {
+		DynArray<Case> cases = ctx.arena.map_array<Case>()(ast.cases, [&](const CaseAst& c) {
 			Expression cond = check_and_expect(c.condition, ctx, ctx.builtin_types.bool_type.get());
 			Expression then = check(c.then, ctx, expected);
 			return Case { cond, then };
@@ -91,7 +91,7 @@ namespace {
 		if (!ctx.builtin_types.string_type) throw "todo: string type missing";
 		const Type& string_type = ctx.builtin_types.string_type.get();
 		const Option<Type>& current_expectation = expected.get_current_expectation();
-		if (current_expectation && !types_exactly_equal(current_expectation.get(), string_type)) throw "todo";
+		if (current_expectation && current_expectation.get() != string_type) throw "todo";
 		return check_no_call_literal_inner(literal, ctx, expected);
 	}
 
@@ -99,7 +99,7 @@ namespace {
 		if (!ctx.builtin_types.string_type) throw "todo: string type missing";
 		const Type& string_type = ctx.builtin_types.string_type.get();
 		const Option<Type>& current_expectation = expected.get_current_expectation();
-		if (literal.type_arguments.size() == 0 && literal.arguments.size() == 0 && (!current_expectation || types_exactly_equal(current_expectation.get(), string_type))) {
+		if (literal.type_arguments.size() == 0 && literal.arguments.size() == 0 && (!current_expectation || current_expectation.get() == string_type)) {
 			return check_no_call_literal_inner(literal.literal, ctx, expected);
 		} else {
 			//TODO:PERF

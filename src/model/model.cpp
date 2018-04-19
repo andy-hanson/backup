@@ -9,6 +9,10 @@ StringSlice effect_name(Effect e) {
 	}
 }
 
+SpecUse::SpecUse(ref<const SpecDeclaration> _spec, DynArray<Type> _type_arguments) : spec(_spec), type_arguments(_type_arguments) {
+	assert(spec->type_parameters.size() == type_arguments.size());
+}
+
 bool PlainType::is_deeply_plain() const {
 	return every(inst_struct.type_arguments, [](const Type& t) {  return t.is_plain() && t.plain().is_deeply_plain(); });
 }

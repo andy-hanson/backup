@@ -77,14 +77,15 @@ namespace {
 				out << ctx.names.get_name(called_concrete) << "(";
 				for (uint i = 0; i != c.arguments.size(); ++i) {
 					ctx << c.arguments[i];
-					ctx.out << (i == c.arguments.size() - 1 ? ")" : ", ");
+					out << (i == c.arguments.size() - 1 ? ")" : ", ");
 				}
+				out << ')';
 				break;
 			}
 			case Expression::Kind::StructCreate: {
 				// StructName<TypeArgs> { arg1, arg2 }
 				const StructCreate& sc = e.struct_create();
-				out << sc.inst_struct;
+				write_inst_struct(out, sc.inst_struct, ctx.names);
 				out << " { ";
 				for (uint i = 0; i != sc.arguments.size(); ++i) {
 					ctx << sc.arguments[i];
@@ -120,7 +121,8 @@ namespace {
 		switch (e.kind()) {
 			case Expression::Kind::Let: {
 				const Let& l = e.let();
-				ctx.out << l.type << ' ' << mangle { l.name } << " = ";
+				write_type(ctx.out, l.type, ctx.names);
+				ctx.out << ' ' << mangle{l.name} << " = ";
 				ctx << l.init;
 				ctx.out << ';' << Writer::nl;
 				ctx << return_statement { l.then };

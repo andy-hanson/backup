@@ -1,16 +1,28 @@
 #pragma once
 
 #include "../../model/model.h"
-
+#include "../Lexer.h"
 #include "./check_common.h"
 
-inline Type convert_type(const TypeAst& ast, ExprContext& ctx) {
-	Effect e __attribute__((unused)) = ast.effect;
-	Option<const ref<const StructDeclaration>&> s __attribute__((unused)) = ctx.structs_table.get(ast.type_name);
-	DynArray<TypeAst> ta __attribute__((unused)) = ast.type_arguments;
-	throw "todo";
-}
+struct TypeAst {
+	Effect effect;
+	StringSlice type_name;
+	DynArray<TypeAst> type_arguments;
+};
 
-inline DynArray<Type> convert_type_arguments(const DynArray<TypeAst>& type_arguments, ExprContext& ctx) {
-	return ctx.arena.map_array<TypeAst, Type>(type_arguments)([&ctx](const TypeAst& t) { return convert_type(t, ctx); });
-}
+struct TypeParametersScope {
+	DynArray<TypeParameter> outer; // This may come from a `spec`, or else be empty.
+	DynArray<TypeParameter> inner; // This comes from the current signature.
+
+	TypeParametersScope(DynArray<TypeParameter> _inner) : outer({}), inner(_inner) {}
+	TypeParametersScope(DynArray<TypeParameter> _outer, DynArray<TypeParameter> _inner) : outer(_outer), inner(_inner) {}
+};
+
+Type parse_type(Lexer& lexer, Arena& arena, const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope);
+DynArray<Type> parse_type_arguments(Lexer& lexer, Arena& arena, const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope);
+
+TypeAst parse_type_ast(Lexer& lexer, Arena& arena);
+DynArray<TypeAst> parse_type_argument_asts(Lexer& lexer, Arena& arena);
+
+Type type_from_ast(const TypeAst& ast, Arena& arena, const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope);
+DynArray<Type> type_arguments_from_asts(const DynArray<TypeAst>& type_arguments, Arena& arena, const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope);

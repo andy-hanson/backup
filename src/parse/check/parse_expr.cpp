@@ -45,24 +45,6 @@ namespace {
 		}
 	}
 
-	DynArray<TypeAst> parse_type_arguments(Lexer& lexer, Arenas arenas);
-
-	TypeAst parse_type_ast(Lexer& lexer, Arenas arenas) {
-		Effect effect = lexer.try_take_effect();
-		StringSlice name = lexer.take_type_name();
-		DynArray<TypeAst> its_args = parse_type_arguments(lexer, arenas);
-		return { effect, name, its_args };
-	}
-
-	DynArray<TypeAst> parse_type_arguments(Lexer& lexer, Arenas arenas) {
-		if (!lexer.try_take('<'))
-			return {};
-		auto args = arenas.expr_ast.small_array_builder<TypeAst>();
-		do { args.add(parse_type_ast(lexer, arenas)); } while (lexer.try_take_comma_space());
-		lexer.take('>');
-		return args.finish();
-	}
-
 	ExprAst parse_expr_ast(Lexer& lexer, Arenas arenas, ExprCtx where) {
 		ExpressionToken et = lexer.take_expression_token(arenas.literals);
 		if (where != ExprCtx::Case && et.kind == ExpressionToken::Kind::When) {
@@ -85,7 +67,7 @@ namespace {
 		else {
 			// `a f b, c, d`
 			StringSlice fn_name = lexer.take_value_name();
-			DynArray<TypeAst> type_arguments = parse_type_arguments(lexer, arenas);
+			DynArray<TypeAst> type_arguments = parse_type_argument_asts(lexer, arenas.expr_ast);
 			auto args = arenas.expr_ast.small_array_builder<ExprAst>();
 			args.add(arg0);
 			if (lexer.try_take(' ')) {
@@ -100,14 +82,20 @@ namespace {
 	struct AstAndShouldParseDot { ExprAst ast; bool may_parse_dot; };
 	AstAndShouldParseDot parse_expr_arg_ast_worker(Lexer& lexer, Arenas arenas, ExpressionToken et) {
 		switch (et.kind) {
-			case ExpressionToken::Kind::Name:
-				if (lexer.try_take('(')) {
+			case ExpressionToken::Kind::Name: {
+				DynArray<TypeAst> type_arguments = parse_type_argument_asts(lexer, arenas.expr_ast);
+				if (!type_arguments.empty()) {
+					lexer.take('(');
+					lexer.take(')');
+					return { CallAst { et.name, type_arguments, {}}, true };
+				} else if (lexer.try_take('(')) {
 					lexer.take(')');
 					// `f()` is a call with no arguments
-					return { CallAst { et.name, {}, {} }, true };
+					return { CallAst { et.name, {}, {}}, true };
 				} else {
-					return { { et.name }, true };
+					return {{ et.name }, true };
 				}
+			}
 
 			case ExpressionToken::Kind::TypeName: {
 				if (lexer.try_take(':')) {
@@ -115,7 +103,7 @@ namespace {
 					parse_expr_arg_ast_worker(lexer, arenas, et);
 					throw "todo";
 				}
-				DynArray<TypeAst> type_args = parse_type_arguments(lexer, arenas);
+				DynArray<TypeAst> type_args = parse_type_argument_asts(lexer, arenas.expr_ast);
 				return { StructCreateAst { et.name, type_args, parse_prefix_args(lexer, arenas) }, false };
 			}
 
@@ -126,7 +114,7 @@ namespace {
 			}
 
 			case ExpressionToken::Kind::Literal: {
-				DynArray<TypeAst> type_args = parse_type_arguments(lexer, arenas);
+				DynArray<TypeAst> type_args = parse_type_argument_asts(lexer, arenas.expr_ast);
 				// BigInt i = 123456789(arena)
 				DynArray<ExprAst> args;
 				if (lexer.try_take('(')) {
@@ -138,8 +126,9 @@ namespace {
 
 			case ExpressionToken::Kind::As: {
 				lexer.take(' ');
-				TypeAst type = parse_type_ast(lexer, arenas);
-				return { { arenas.expr_ast.emplace<TypeAnnotateAst>()(type, parse_expr_arg_ast(lexer, arenas, lexer.take_expression_token(arenas.literals))) }, false };
+				TypeAst type = parse_type_ast(lexer, arenas.expr_ast);
+				ExprAst arg = parse_expr_arg_ast(lexer, arenas, lexer.take_expression_token(arenas.literals));
+				return { { arenas.expr_ast.emplace<TypeAnnotateAst>()(type, arg) }, false };
 			}
 
 			case ExpressionToken::Kind::When:

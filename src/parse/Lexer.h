@@ -73,6 +73,8 @@ public:
 		_indent -= 2;
 	}
 
+	void skip_blank_lines();
+
 	NewlineOrDedent take_newline_or_dedent();
 	void take_dedent();
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../util/Alloc.h"
+#include "./model.h"
 
 class Expression;
 struct StructFieldAccess {
@@ -53,6 +55,15 @@ public:
 		}
 	}
 
+	const FunSignature& sig() {
+		switch (_kind) {
+			case Kind::Fun:
+				return fun()->signature;
+			case Kind::Spec:
+				return spec().signature;
+		}
+	}
+
 	Kind kind() const { return _kind; }
 
 	ref<const FunDeclaration> fun() const {
@@ -70,12 +81,14 @@ struct Called {
 	CalledDeclaration called_declaration;
 	DynArray<Type> type_arguments;
 	// These will be in order of the signatures from the specs of the function we're calling.
-	DynArray<Called> spec_impls;
+	// For each spec, there is an array of a Called matching each signature in that spec.
+	// Note: if there is a generic spec signature, it should be matched by a generic function. And a non-generic spec signature can't be matched by a generic function.
+	// So this uses CalledDeclaration and not Called.
+	DynArray<DynArray<CalledDeclaration>> spec_impls;
 };
 
 struct Call {
 	Called called;
-	DynArray<Type> type_arguments;
 	DynArray<Expression> arguments;
 };
 

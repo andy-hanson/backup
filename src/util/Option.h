@@ -82,6 +82,11 @@ public:
 	const T& or_else(const T& elze) const {
 		return ref == nullptr ? elze : get();
 	}
+
+	template <typename /*() => Option<const T&>*/ Cb>
+	Option<const T&> or_option(Cb cb) const {
+		return ref == nullptr ? cb() : *this;
+	}
 };
 
 template <typename T, typename U>
