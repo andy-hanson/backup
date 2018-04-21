@@ -1,11 +1,11 @@
 #pragma once
 
 #include <cassert>
-#include <vector>
 
 #include "../../util/Alloc.h"
 #include "../../util/hash_util.h"
 #include "../../util/Map.h"
+#include "../../util/Vec.h"
 #include "../diag/diag.h"
 #include "./Identifier.h"
 
@@ -38,10 +38,11 @@ private:
 
 public:
 	StructBody() : _kind(Kind::Nil) {}
+	StructBody(const StructBody& other) { *this = other; }
 	void operator=(const StructBody& other) {
 		_kind = other._kind;
 		switch (_kind) {
-			case Kind::Nil: assert(false);
+			case Kind::Nil: break;
 			case Kind::Fields:
 				data.fields = other.data.fields;
 				break;
@@ -81,7 +82,6 @@ struct StructDeclaration {
 
 	StructDeclaration(ref<const Module> _containing_module, DynArray<TypeParameter> _type_parameters, Identifier _name)
 		: containing_module(_containing_module), type_parameters(_type_parameters), name(_name) {}
-	StructDeclaration(const StructDeclaration& other) = delete;
 
 	size_t arity() const {
 		return type_parameters.size();
@@ -296,9 +296,9 @@ using StructsTable = Map<StringSlice, ref<const StructDeclaration>>;
 using SpecsTable = Map<StringSlice, ref<const SpecDeclaration>>;
 // Within a single module, maps a fun name to the list of functions *in that module* with that name.
 using FunsTable = MultiMap<StringSlice, ref<const FunDeclaration>>;
-using StructsDeclarationOrder = std::vector<ref<StructDeclaration>>;
-using SpecsDeclarationOrder = std::vector<ref<SpecDeclaration>>;
-using FunsDeclarationOrder = std::vector<ref<FunDeclaration>>;
+using StructsDeclarationOrder = Vec<ref<StructDeclaration>>;
+using SpecsDeclarationOrder = Vec<ref<SpecDeclaration>>;
+using FunsDeclarationOrder = Vec<ref<FunDeclaration>>;
 
 // Note: if there is a parse error, this will just be empty.
 struct Module {
@@ -313,9 +313,6 @@ struct Module {
 	List<Diagnostic> diagnostics;
 
 	Module(ArenaString _path, Identifier _name) : path(_path), name(_name) {}
-
-	// Structs and funs will point to this module.
-	Module(const Module& other) = delete;
 };
 
 struct CompiledProgram {

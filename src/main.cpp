@@ -83,7 +83,7 @@ namespace {
 	}
 
 	ref<Module> parse_and_check_file(StringSlice file_path, Identifier module_name, StringSlice file_content, Arena& arena) {
-		std::vector<DeclarationAst> declarations = parse_file(file_content, arena);
+		Vec<DeclarationAst> declarations = parse_file(file_content, arena);
 		return check(file_path, module_name, declarations, arena);
 	}
 
@@ -92,7 +92,8 @@ namespace {
 		std::string nz_file_content = read_file(file_name + ".nz");
 		Arena arena;
 		Identifier module_name = Identifier{arena.str("foo")}; //TODO
-		std::vector<ref<Module>> modules { parse_and_check_file(to_slice(nz_file_name), module_name, to_slice(nz_file_content), arena) };
+		Vec<ref<Module>> modules;
+		modules.push_back(parse_and_check_file(to_slice(nz_file_name), module_name, to_slice(nz_file_content), arena));
 		return emit(modules);
 	}
 

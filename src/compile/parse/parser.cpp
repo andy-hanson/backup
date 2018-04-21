@@ -1,9 +1,6 @@
-#include <unordered_map>
-
-#include "parser.h"
+#include "./parser.h"
 
 #include "./Lexer.h"
-#include "./ast.h"
 #include "./parse_expr.h"
 #include "./parse_type.h"
 
@@ -77,11 +74,11 @@ namespace {
 	}
 }
 
-std::vector<DeclarationAst> parse_file(const StringSlice& file_content, Arena& arena) {
+Vec<DeclarationAst> parse_file(const StringSlice& file_content, Arena& arena) {
 	Lexer::validate_file(file_content);
 	Lexer lexer { file_content };
 
-	std::vector<DeclarationAst> declarations;
+	Vec<DeclarationAst> declarations;
 	while (true) {
 		DynArray<TypeParameterAst> type_parameters = parse_type_parameter_asts(lexer, arena);
 		TopLevelKeyword kw = lexer.try_take_top_level_keyword();
@@ -94,7 +91,7 @@ std::vector<DeclarationAst> parse_file(const StringSlice& file_content, Arena& a
 				lexer.take(' ');
 				StringSlice name = lexer.take_type_name();
 				StructBodyAst body = kw == TopLevelKeyword::KwStruct ? parse_struct_field_asts(lexer, arena) : parse_cpp_struct_body(lexer);
-				declarations.emplace_back(StructDeclarationAst { type_parameters, name, body });
+				declarations.push_back(StructDeclarationAst { type_parameters, name, body });
 				break;
 			}
 
@@ -106,7 +103,7 @@ std::vector<DeclarationAst> parse_file(const StringSlice& file_content, Arena& a
 				do {
 					sigs.add(parse_signature_ast(lexer, arena, parse_type_parameter_asts(lexer, arena)));
 				} while (lexer.take_newline_or_dedent() == NewlineOrDedent::Newline);
-				declarations.emplace_back(SpecDeclarationAst { type_parameters, name, sigs.finish() });
+				declarations.push_back(SpecDeclarationAst { type_parameters, name, sigs.finish() });
 				break;
 			}
 
@@ -114,7 +111,7 @@ std::vector<DeclarationAst> parse_file(const StringSlice& file_content, Arena& a
 			case TopLevelKeyword::None: {
 				FunSignatureAst signature = parse_signature_ast(lexer, arena, type_parameters);
 				FunBodyAst body = kw == TopLevelKeyword::KwCpp ? FunBodyAst{lexer.take_indented_string(arena)} : FunBodyAst{parse_body_ast(lexer, arena)};
-				declarations.emplace_back(FunDeclarationAst { signature, body });
+				declarations.push_back(FunDeclarationAst { signature, body });
 				break;
 			}
 

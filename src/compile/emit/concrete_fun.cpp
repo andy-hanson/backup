@@ -98,10 +98,10 @@ namespace {
 	}
 }
 
-EveryConcreteFun get_every_concrete_fun(const std::vector<ref<Module>>& modules, Arena& scratch_arena) {
+EveryConcreteFun get_every_concrete_fun(const Vec<ref<Module>>& modules, Arena& scratch_arena) {
 	EveryConcreteFun res;
 	// Stack of ConcreteFun_s whose bodies we need to analyze for references.
-	std::vector<ref<const ConcreteFun>> to_analyze;
+	Vec<ref<const ConcreteFun>> to_analyze;
 
 	for (ref<const Module> m : modules) {
 		for (ref<const FunDeclaration> f : m->funs_declaration_order) {
@@ -113,9 +113,7 @@ EveryConcreteFun get_every_concrete_fun(const std::vector<ref<Module>>& modules,
 	}
 
 	while (!to_analyze.empty()) {
-		ref<const ConcreteFun> fun = to_analyze.back();
-		to_analyze.pop_back();
-
+		ref<const ConcreteFun> fun = to_analyze.pop();
 		const AnyBody& body = fun->fun_declaration->body;
 		if (body.kind() != AnyBody::Kind::Expr) continue;
 		each_dependent_fun(body.expression(), [&](ref<const Called> called) {

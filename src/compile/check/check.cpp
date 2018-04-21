@@ -60,7 +60,7 @@ namespace {
 	// Meaning, for a struct we just *count* fields, and for a sig we just *count* signatures.
 	// When this function is finished, we should have allocated all structs and sigs.
 	void check_type_headers(
-		const std::vector<DeclarationAst>& declarations, Arena& arena, ref<const Module> containing_module,
+		const Vec<DeclarationAst>& declarations, Arena& arena, ref<const Module> containing_module,
 		StructsDeclarationOrder& structs, SpecsDeclarationOrder& specs,
 		StructsTable& structs_table, SpecsTable& specs_table) {
 
@@ -71,7 +71,7 @@ namespace {
 
 				case DeclarationAst::Kind::Struct: {
 					const StructDeclarationAst& ast = decl.strukt();
-					ref<StructDeclaration> s = arena.emplace<StructDeclaration>()(containing_module, check_type_parameters(ast.type_parameters, arena), id(arena, ast.name));
+					ref<StructDeclaration> s = arena.put(StructDeclaration { containing_module, check_type_parameters(ast.type_parameters, arena), id(arena, ast.name) });
 					structs.push_back(s);
 					bool inserted = structs_table.try_insert(s->name.str, s);
 					if (!inserted) throw "todo";
@@ -80,7 +80,7 @@ namespace {
 
 				case DeclarationAst::Kind::Spec: {
 					const SpecDeclarationAst& ast = decl.spec();
-					ref<SpecDeclaration> s = arena.emplace<SpecDeclaration>()(containing_module, check_type_parameters(ast.type_parameters, arena), id(arena, ast.name));
+					ref<SpecDeclaration> s = arena.put(SpecDeclaration { containing_module, check_type_parameters(ast.type_parameters, arena), id(arena, ast.name) });
 					specs.push_back(s);
 					bool inserted = specs_table.try_insert(s->name.str, s);
 					if (!inserted) throw "todo";
@@ -96,7 +96,7 @@ namespace {
 	}
 
 	template <typename T>
-	T& get_and_increment(typename std::vector<T>::iterator& it, const typename std::vector<T>::iterator& end) {
+	T& get_and_increment(typename Vec<T>::iterator& it, const typename Vec<T>::iterator& end) {
 		assert(it != end);
 		T& res = *it;
 		++it;
@@ -106,7 +106,7 @@ namespace {
 	// Now that we've allocated every struct and spec, fill in every struct and spec, and fill in the header of every function.
 	// Can't check function bodies at this point as it may call a future function -- we need to get the headers of every function first.
 	void check_fun_headers_and_type_bodies(
-		const std::vector<DeclarationAst>& declarations, Arena& arena, ref<const Module> containing_module,
+		const Vec<DeclarationAst>& declarations, Arena& arena, ref<const Module> containing_module,
 		StructsDeclarationOrder& structs, SpecsDeclarationOrder& specs, FunsDeclarationOrder& funs,
 		const StructsTable& structs_table, const SpecsTable& specs_table, FunsTable& funs_table
 	) {
@@ -139,7 +139,7 @@ namespace {
 
 				case DeclarationAst::Kind::Fun: {
 					const FunDeclarationAst& fun_ast = decl.fun();
-					ref<FunDeclaration> fun = arena.emplace_copy(FunDeclaration { containing_module, check_signature(fun_ast.signature, arena, structs_table, specs_table, {}), {} });
+					ref<FunDeclaration> fun = arena.put(FunDeclaration { containing_module, check_signature(fun_ast.signature, arena, structs_table, specs_table, {}), {}});
 					funs.push_back(fun);
 					add_overload(funs_table, fun);
 					break;
@@ -168,7 +168,7 @@ namespace {
 	}
 
 	// Now that we have the bodies of every type and the headers of every function, we can fill in every function.
-	void check_fun_bodies(const std::vector<DeclarationAst>& declarations, Arena& arena, FunsDeclarationOrder& funs, const StructsTable& structs_table, const FunsTable& funs_table) {
+	void check_fun_bodies(const Vec<DeclarationAst>& declarations, Arena& arena, FunsDeclarationOrder& funs, const StructsTable& structs_table, const FunsTable& funs_table) {
 		FunsDeclarationOrder::iterator fun_iter = funs.begin();
 		FunsDeclarationOrder::iterator fun_end = funs.end();
 		BuiltinTypes builtin_types { get_special_named_type(structs_table, BOOL), get_special_named_type(structs_table, STRING), get_special_named_type(structs_table, VOID) };
@@ -184,7 +184,7 @@ namespace {
 					ref<FunDeclaration> fun = get_and_increment<ref<FunDeclaration>>(fun_iter, fun_end);
 					fun->body = fun_ast.body.kind() == FunBodyAst::Kind::CppSource
 						? AnyBody{arena.str(fun_ast.body.cpp_source())}
-						: AnyBody{arena.emplace_copy(check_function_body(fun_ast.body.expression(), arena, funs_table, structs_table, fun, builtin_types))};
+						: AnyBody{ arena.put(check_function_body(fun_ast.body.expression(), arena, funs_table, structs_table, fun, builtin_types))};
 				}
 
 			}
@@ -192,8 +192,8 @@ namespace {
 	}
 }
 
-ref<Module> check(const StringSlice& file_path, const Identifier& module_name, const std::vector<DeclarationAst>& declarations, Arena& arena) {
-	ref<Module> m = arena.emplace<Module>()(arena.str(file_path), module_name);
+ref<Module> check(const StringSlice& file_path, const Identifier& module_name, const Vec<DeclarationAst>& declarations, Arena& arena) {
+	ref<Module> m = arena.put(Module { arena.str(file_path), module_name });
 	check_type_headers(declarations, arena, m, m->structs_declaration_order, m->specs_declaration_order, m->structs_table, m->specs_table);
 	check_fun_headers_and_type_bodies(declarations, arena, m,
 		m->structs_declaration_order, m->specs_declaration_order, m->funs_declaration_order,

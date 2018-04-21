@@ -4,7 +4,7 @@
 #include <sys/types.h>
 
 #include "../../util/StringSlice.h"
-#include "../../util/util.h"
+#include "../../util/int.h"
 #include "../emit/Writer.h"
 
 struct SourceRange {

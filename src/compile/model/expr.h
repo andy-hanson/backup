@@ -272,13 +272,11 @@ struct Let {
 	Identifier name;
 	Expression init;
 	Expression then;
-	Let(const Let& other) = delete;
 };
 
 struct Seq {
 	Expression first;
 	Expression then;
-	Seq(const Seq& other) = delete;
 };
 
 struct Case {

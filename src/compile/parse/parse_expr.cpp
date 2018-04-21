@@ -29,7 +29,7 @@ namespace {
 		while (true) {
 			if (lexer.try_take_else()) {
 				lexer.take_indent();
-				ref<ExprAst> elze = arena.emplace_copy(parse_expr_ast(lexer, arena, ExprCtx::Statement));
+				ref<ExprAst> elze = arena.put(parse_expr_ast(lexer, arena, ExprCtx::Statement));
 				lexer.reduce_indent_by_2();
 				return WhenAst { cases.finish(), elze };
 			}
@@ -56,9 +56,9 @@ namespace {
 		if (where == ExprCtx::Statement && arg0.kind() == ExprAst::Kind::Identifier && lexer.try_take('=')) {
 			// `a = b`
 			lexer.take(' ');
-			ref<ExprAst> init = arena.emplace_copy(parse_expr_ast(lexer, arena, ExprCtx::EqualsRhs));
+			ref<ExprAst> init = arena.put(parse_expr_ast(lexer, arena, ExprCtx::EqualsRhs));
 			lexer.take_newline_same_indent();
-			ref<ExprAst> then = arena.emplace_copy(parse_expr_ast(lexer, arena, ExprCtx::Statement));
+			ref<ExprAst> then = arena.put(parse_expr_ast(lexer, arena, ExprCtx::Statement));
 			return LetAst { arg0.identifier(), init, then };
 		}
 		else {
@@ -125,7 +125,7 @@ namespace {
 				lexer.take(' ');
 				TypeAst type = parse_type_ast(lexer, arena);
 				ExprAst arg = parse_expr_arg_ast(lexer, arena, lexer.take_expression_token(arena));
-				return { { arena.emplace<TypeAnnotateAst>()(type, arg) }, false };
+				return { { arena.put(TypeAnnotateAst { type, arg }) }, false };
 			}
 
 			case ExpressionToken::Kind::When:
@@ -150,7 +150,7 @@ ExprAst parse_body_ast(Lexer& lexer, Arena& arena) {
 	ExprAst res = parse_expr_ast(lexer, arena, ExprCtx::Statement);
 	while (lexer.take_newline_or_dedent() == NewlineOrDedent::Newline) {
 		ExprAst next_line = parse_expr_ast(lexer, arena, ExprCtx::Statement);
-		res = SeqAst { arena.emplace_copy(res), arena.emplace_copy(next_line) };
+		res = SeqAst { arena.put(res), arena.put(next_line) };
 	}
 	assert(lexer.indent() == 0);
 	return res;

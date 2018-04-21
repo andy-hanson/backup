@@ -1,6 +1,3 @@
-#include <unordered_map>
-#include <unordered_set>
-
 #include "emit.h"
 
 #include "../model/expr.h"
@@ -73,14 +70,14 @@ namespace {
 	}
 
 	void emit_structs(Writer& out, const StructsDeclarationOrder& structs, const Names& names) {
-		std::unordered_map<ref<const StructDeclaration>, EmitStructState> map;
+		Map<ref<const StructDeclaration>, EmitStructState> map;
 		MaxSizeVector<16, ref<const StructDeclaration>> stack;
 
 		for (const StructDeclaration& struct_in_order : structs) {
 			stack.push(&struct_in_order);
 			do {
 				ref<const StructDeclaration> s = stack.peek();
-				EmitStructState& state = map[s];
+				EmitStructState& state = map.get_or_create(s);
 				switch (state) {
 					case EmitStructState::Emitted:
 						break;
@@ -122,7 +119,7 @@ namespace {
 	}
 }
 
-std::string emit(const std::vector<ref<Module>>& modules) {
+std::string emit(const Vec<ref<Module>>& modules) {
 	Writer out;
 	Arena scratch_arena;
 	EveryConcreteFun every_concrete_fun = get_every_concrete_fun(modules, scratch_arena);

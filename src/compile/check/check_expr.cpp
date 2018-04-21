@@ -1,7 +1,5 @@
 #include "./check_expr.h"
 
-#include "../../util/collection_util.h" // find, filter_unordered
-
 #include "./check_call.h"
 #include "./convert_type.h"
 
@@ -54,7 +52,7 @@ namespace {
 		StringSlice name = ast.name;
 		if (find_parameter(ctx, name)) throw "todo: local shadows parameter";
 		ExpressionAndType init = check_and_infer(*ast.init, ctx);
-		ref<Let> l = ctx.arena.emplace<Let>()(init.type, Identifier{ctx.arena.str(name)}, init.expression, Expression {});
+		ref<Let> l = ctx.arena.put(Let { init.type, Identifier { ctx.arena.str(name) }, init.expression, {}});
 		ctx.locals.push(l);
 		l->then = check(*ast.then, ctx, expected);
 		assert(ctx.locals.peek() == l);
@@ -66,7 +64,7 @@ namespace {
 		if (!ctx.builtin_types.void_type) throw "todo";
 		Expression first = check_and_expect(*ast.first, ctx, ctx.builtin_types.void_type.get());
 		Expression then = check(*ast.then, ctx, expected);
-		return {  ctx.arena.emplace<Seq>()(first, then) };
+		return { ctx.arena.put(Seq { first, then }) };
 	}
 
 	Expression check_when(const WhenAst& ast, ExprContext& ctx, Expected& expected) {
@@ -76,7 +74,7 @@ namespace {
 			Expression then = check(c.then, ctx, expected);
 			return Case { cond, then };
 		});
-		ref<Expression> elze = ctx.arena.emplace_copy<Expression>(check(*ast.elze, ctx, expected));
+		ref<Expression> elze = ctx.arena.put(check(*ast.elze, ctx, expected));
 		return When { cases, elze };
 	}
 

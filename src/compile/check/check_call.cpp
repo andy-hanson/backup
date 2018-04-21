@@ -53,7 +53,7 @@ namespace {
 				if (field) {
 					// TODO: also check plain.effect to narrow the field type
 					expected.check_no_infer(field.get().type);
-					return { StructFieldAccess { ctx.arena.emplace_copy(argAndType.expression), &field.get() }};
+					return { StructFieldAccess { ctx.arena.put(argAndType.expression), &field.get() }};
 				}
 			}
 		}
@@ -70,8 +70,7 @@ namespace {
 			cb(f);
 	}
 
-	Candidates get_initial_candidates(ExprContext& ctx, const StringSlice& fun_name, const DynArray<Type>& explicit_type_arguments, size_t arity) {
-		Candidates candidates;
+	void get_initial_candidates(Candidates& candidates, ExprContext& ctx, const StringSlice& fun_name, const DynArray<Type>& explicit_type_arguments, size_t arity) {
 		each_initial_candidate(ctx, fun_name, [&](CalledDeclaration called) {
 			const FunSignature& sig = called.sig();
 			if (sig.arity() == arity && (explicit_type_arguments.empty() || sig.type_parameters.size() == explicit_type_arguments.size())) {
@@ -81,7 +80,6 @@ namespace {
 				candidates.push({ called, &sig, inferring_type_arguments });
 			}
 		});
-		return candidates;
 	}
 
 	struct TypeParametersAndArguments {
@@ -214,7 +212,8 @@ Expression check_call(const StringSlice& fun_name, const DynArray<ExprAst>& argu
 		if (e) return e.get();
 	}
 
-	Candidates candidates = get_initial_candidates(ctx, fun_name, explicit_type_arguments, arity);
+	Candidates candidates;
+	get_initial_candidates(candidates, ctx, fun_name, explicit_type_arguments, arity);
 	if (candidates.empty()) throw "todo: no overload has that arity";
 
 	// Can't just check each overload in order because we want each argument to have an expected type.

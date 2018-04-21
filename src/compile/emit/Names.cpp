@@ -70,7 +70,7 @@ namespace {
 	}
 }
 
-Names get_names(const std::vector<ref<Module>>& modules, const FunInstantiations& fun_instantiations, Arena& arena) {
+Names get_names(const Vec<ref<Module>>& modules, const FunInstantiations& fun_instantiations, Arena& arena) {
 	Sett<Identifier> module_names;
 
 	// Map from a name to all structs with that name.

@@ -1,10 +1,9 @@
 #pragma once
 
 #include <cassert>
-#include <cstring>
-#include <string>
+#include <functional> // hash
 
-#include "util.h"
+#include "int.h"
 
 class StringSlice {
 private:

@@ -20,12 +20,11 @@ class Option {
 
 public:
 	Option() : is_present(false) {}
-	Option(const Option<T>& other) {
-		*this = other;
-	}
-	Option(Option<T>&& other) : is_present(other.is_present) {
+	Option(const Option<T>& other) : is_present(other.is_present) { storage.value = other.storage.value; }
+	void operator=(Option<T> other) {
+		is_present = other.is_present;
 		if (is_present) {
-			storage.value = std::move(other.storage.value);
+			storage.value = other.storage.value;
 		}
 	}
 	Option(T _value) : is_present(true) {
@@ -37,12 +36,6 @@ public:
 		}
 	}
 
-	void operator=(Option<T> other) {
-		is_present = other.is_present;
-		if (is_present) {
-			storage.value = other.storage.value;
-		}
-	}
 	void operator=(T value) {
 		is_present = true;
 		storage.value = value;

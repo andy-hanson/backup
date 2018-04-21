@@ -66,4 +66,4 @@ struct EveryConcreteFun {
 	FunInstantiations fun_instantiations;
 	ResolvedCalls resolved_calls;
 };
-EveryConcreteFun get_every_concrete_fun(const std::vector<ref<Module>>& modules, Arena& scratch_arena);
+EveryConcreteFun get_every_concrete_fun(const Vec<ref<Module>>& modules, Arena& scratch_arena);

@@ -1,13 +1,11 @@
 #pragma once
 
 #include <assert.h>
-#include <memory>
-#include <deque>
-#include <utility> // std::forward
 
-#include "MaxSizeVector.h"
-#include "StringSlice.h"
-#include "ptr.h"
+#include "./MaxSizeVector.h"
+#include "./StringSlice.h"
+#include "./ptr.h"
+#include "./Option.h"
 
 template <typename T>
 class DynArray {
@@ -23,9 +21,8 @@ public:
 
 	template <typename Cb>
 	void fill(Cb cb) {
-		for (uint i = 0; i < len; ++i) {
+		for (uint i = 0; i < len; ++i)
 			data[i] = cb(i);
-		}
 	}
 
 	T& operator[](size_t index) {
@@ -84,21 +81,6 @@ public:
 	StringSlice slice() const { return _slice; }
 };
 
-template <typename T>
-class Emplacer {
-	friend class Arena;
-
-	T* ptr;
-	Emplacer(T* _ptr) : ptr(_ptr) {}
-
-public:
-	template <typename... Arguments>
-	ref<T> operator()(Arguments&&... arguments) {
-		new(ptr) T { std::forward<Arguments>(arguments)... };
-		return ptr;
-	}
-};
-
 class Arena {
 	void* alloc_begin;
 	void* alloc_next;
@@ -133,21 +115,11 @@ public:
 		other.alloc_end = nullptr;
 	}
 
-	/** User of this method is responsible for ensuring that the arena contents aren't referenced anywhere. */
-	void clear() {
-		alloc_next = alloc_begin;
-	}
-
 	template <typename T>
-	ref<T> emplace_copy(T value) {
+	ref<T> put(T value) {
 		T* ptr =  static_cast<T*>(allocate(sizeof(T)));
 		new(ptr) T(value);
 		return ptr;
-	}
-
-	template <typename T>
-	Emplacer<T> emplace() {
-		return Emplacer<T>(static_cast<T*>(allocate(sizeof(T))));
 	}
 
 	template <typename T>
@@ -165,7 +137,7 @@ public:
 
 	template <typename T>
 	List<T> make_list(T elem) {
-		return List<T> { emplace<typename List<T>::Node>()(elem, Option<ref<typename List<T>::Node>> {}) };
+		return List<T> { put(typename List<T>::Node { elem, {}}) };
 	}
 
 	template <typename T>
@@ -239,11 +211,6 @@ public:
 	public:
 		void add(T value) {
 			v.push(value);
-		}
-
-		template <typename... Arguments>
-		ref<T> emplace(Arguments&&... arguments) {
-			return v.emplace(std::forward<Arguments>(arguments)...);
 		}
 
 		DynArray<T> finish() {
@@ -323,34 +290,5 @@ public:
 		char* begin = static_cast<char*>(allocate(slice.size()));
 		std::copy(slice.begin(), slice.end(), begin);
 		return { { begin, begin + slice.size() } };
-	}
-};
-
-// Collection that's guaranteed not to move, so elements can be pointed to.
-template <typename T>
-class NonMovingCollection {
-	std::deque<T> data;
-
-public:
-	NonMovingCollection() {}
-	// This transfers ownership of the deque, it doesn't move its contents.
-	NonMovingCollection(NonMovingCollection&& other) : data(std::move(other.data)) {}
-
-	NonMovingCollection(const NonMovingCollection& other) = delete;
-	void operator=(NonMovingCollection& other) = delete;
-
-	typename std::deque<T>::iterator begin() { return data.begin(); }
-	typename std::deque<T>::iterator end() { return data.end(); }
-	typename std::deque<T>::const_iterator begin() const { return data.begin(); }
-	typename std::deque<T>::const_iterator end() const { return data.end(); }
-
-	template <typename... Arguments>
-	T& emplace(Arguments&&... arguments) {
-		data.emplace_back(std::forward<Arguments>(arguments)...);
-		return data.back();
-	}
-
-	void clear() {
-		data.clear();
 	}
 };
