@@ -7,7 +7,7 @@ class Vec {
 	std::vector<T> inner;
 
 public:
-	void push_back(T value) { inner.push_back(value); }
+	void push(T value) { inner.push_back(value); }
 	bool empty() { return inner.empty(); }
 	T pop() {
 		T res = inner.back();

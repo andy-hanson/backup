@@ -56,20 +56,21 @@ namespace {
 					break;
 				}
 				case Expression::Kind::Nil:
+				case Expression::Kind::Bogus:
 					assert(false);
 			}
 		} while (!stack.empty());
 	}
 
 	ConcreteFun get_concrete_called(const ConcreteFun& calling_fun, const Called& called, const EveryConcreteFun& res, Arena& scratch_arena) {
-		DynArray<PlainType> called_type_arguments = scratch_arena.map_array<PlainType>()(called.type_arguments, [&](const Type& type_argument) {
+		DynArray<PlainType> called_type_arguments = scratch_arena.map<PlainType>()(called.type_arguments, [&](const Type& type_argument) {
 			return substitute_type_arguments(type_argument, calling_fun, scratch_arena);
 		});
 
 		//NOTE: currently, the function that matches a spec must be an exact match, not an instantiation of some generic function. So no recursive instantiations to worry about.
 		DynArray<DynArray<ref<const ConcreteFun>>> concrete_spec_impls =
-			scratch_arena.map_array<DynArray<ref<const ConcreteFun>>>()(called.spec_impls, [&](const DynArray<CalledDeclaration>& called_specs) {
-			return scratch_arena.map_array<ref<const ConcreteFun>>()(called_specs, [&](const CalledDeclaration& called_spec) {
+		scratch_arena.map<DynArray<ref<const ConcreteFun>>>()(called.spec_impls, [&](const DynArray<CalledDeclaration>& called_specs) {
+			return scratch_arena.map<ref<const ConcreteFun>>()(called_specs, [&](const CalledDeclaration& called_spec) {
 				switch (called_spec.kind()) {
 					case CalledDeclaration::Kind::Spec:
 						throw "todo";
@@ -107,7 +108,7 @@ EveryConcreteFun get_every_concrete_fun(const Vec<ref<Module>>& modules, Arena& 
 		for (ref<const FunDeclaration> f : m->funs_declaration_order) {
 			if (!f->signature.is_generic()) {
 				InsertResult<ConcreteFun> a = add_to_map_of_sets(res.fun_instantiations, f, ConcreteFun { f, {}, {}});
-				if (a.was_added) to_analyze.push_back(a.value);
+				if (a.was_added) to_analyze.push(a.value);
 			}
 		}
 	}
@@ -119,7 +120,7 @@ EveryConcreteFun get_every_concrete_fun(const Vec<ref<Module>>& modules, Arena& 
 		each_dependent_fun(body.expression(), [&](ref<const Called> called) {
 			ConcreteFun concrete_called = get_concrete_called(*fun, called, res, scratch_arena);
 			InsertResult<ConcreteFun> added = add_to_map_of_sets(res.fun_instantiations, concrete_called.fun_declaration, concrete_called);
-			if (added.was_added) to_analyze.push_back(added.value);
+			if (added.was_added) to_analyze.push(added.value);
 			res.resolved_calls.must_insert({ fun, called }, added.value );
 		});
 	}

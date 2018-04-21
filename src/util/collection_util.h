@@ -4,10 +4,10 @@
 #include "Option.h"
 
 template <typename T, typename Pred>
-Option<const T&> find(const DynArray<T>& collection, Pred pred) {
+Option<ref<const T>> find(const DynArray<T>& collection, Pred pred) {
 	for (const T& t : collection)
 		if (pred(t))
-			return { t };
+			return { &t };
 	return {};
 }
 
@@ -21,8 +21,8 @@ Option<const T&> find(const MaxSizeVector<size, T>& collection, Pred pred) {
 
 
 template <typename T, typename Pred>
-Option<const T&> find_in_either(const DynArray<T>& collection_a, const DynArray<T>& collection_b, Pred pred) {
-	return find(collection_a, pred).or_option([&]() { return find(collection_b, pred); });
+Option<ref<const T>> find_in_either(const DynArray<T>& collection_a, const DynArray<T>& collection_b, Pred pred) {
+	return or_option(find(collection_a, pred), [&]() { return find(collection_b, pred); });
 };
 
 

@@ -33,7 +33,15 @@ public:
 			out += c;
 		return *this;
 	}
+	Writer& operator<<(size_t u) {
+		out += std::to_string(u);
+		return *this;
+	}
 	Writer& operator<<(uint u) {
+		out += std::to_string(u);
+		return *this;
+	}
+	Writer& operator<<(ushort u) {
 		out += std::to_string(u);
 		return *this;
 	}

@@ -75,24 +75,39 @@ public:
 	const T& or_else(const T& elze) const {
 		return ref == nullptr ? elze : get();
 	}
-
-	template <typename /*() => Option<const T&>*/ Cb>
-	Option<const T&> or_option(Cb cb) const {
-		return ref == nullptr ? cb() : *this;
-	}
 };
 
-template <typename T, typename U>
+template <typename Out>
 struct OptionMap {
-	const Option<T>& op;
-
-	template <typename Cb>
-	Option<U> operator()(Cb cb) const {
-		return op ? Option<U>(cb(op.get())) : Option<U>();
+	template <typename In, typename /*In => Out*/ Cb>
+	Option<Out> operator()(const Option<In>& in, Cb cb) const {
+		return in ? Option<Out>{cb(in.get())} : Option<Out>{};
 	}
 };
 
-template <typename T, typename U>
-OptionMap<T, U> map(const Option<T>& op) {
-	return { op };
+template <typename Out>
+OptionMap<Out> map() { return {}; }
+
+template <typename T>
+Option<ref<T>> un_ref(const Option<const ref<T>&> in) {
+	return in ? Option<ref<T>>{in.get()} : Option<ref<T>>{};
+}
+template <typename T>
+Option<ref<T>> to_ref(const Option<T&> in) {
+	return in ? Option<ref<T>>{&in.get()} : Option<ref<T>>{};
+}
+
+template <typename Out>
+struct MapOp {
+	template <typename In, typename /*Option<In> => Option<Out>*/ Cb>
+	Option<Out> operator()(const Option<In>& in, Cb cb) const {
+		return in ? cb(in.get()) : Option<Out>{};
+	}
+};
+template <typename Out>
+MapOp<Out> map_op() { return {}; };
+
+template <typename T, typename /*() => Option<T>*/ Cb>
+Option<T> or_option(const Option<T>& op, Cb cb) {
+	return op ? op : cb();
 }

@@ -5,6 +5,11 @@
 
 #include "int.h"
 
+struct SourceRange {
+	ushort begin;
+	ushort end;
+};
+
 class StringSlice {
 private:
 	const char* _begin;
@@ -23,6 +28,12 @@ public:
 		assert(end > begin);
 	}
 
+	static StringSlice from_range(const StringSlice& slice, const SourceRange& range) {
+		size_t len = slice.size();
+		assert(range.end < len);
+		return { slice.begin() + range.begin, slice.begin() + range.end };
+	}
+
 	const char* begin() const { return _begin; }
 	const char* end() const { return _end; }
 
@@ -36,6 +47,11 @@ public:
 		const char* ptr = _begin + index;
 		assert(ptr < _end);
 		return *ptr;
+	}
+
+	SourceRange range_from_inner_slice(const StringSlice& inner) const {
+		assert(_begin <= inner._begin && inner._end <= _end);
+		return { to_ushort(to_unsigned(inner._begin - _begin)), to_ushort(to_unsigned(inner._end - inner._begin)) };
 	}
 
 	friend bool operator==(StringSlice a, StringSlice b);

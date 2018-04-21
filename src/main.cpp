@@ -83,8 +83,16 @@ namespace {
 	}
 
 	ref<Module> parse_and_check_file(StringSlice file_path, Identifier module_name, StringSlice file_content, Arena& arena) {
-		Vec<DeclarationAst> declarations = parse_file(file_content, arena);
-		return check(file_path, module_name, declarations, arena);
+		Vec<DeclarationAst> declarations;
+		ref<Module> m = arena.put(Module { arena.str(file_path), module_name });
+		try {
+			declarations = parse_file(file_content, arena);
+		} catch (ParseDiagnostic p) {
+			m->diagnostics.push(p);
+			return m;
+		}
+		check(m, file_content, declarations, arena);
+		return m;
 	}
 
 	std::string get_compiled_file(const std::string& file_name) {
@@ -93,7 +101,7 @@ namespace {
 		Arena arena;
 		Identifier module_name = Identifier{arena.str("foo")}; //TODO
 		Vec<ref<Module>> modules;
-		modules.push_back(parse_and_check_file(to_slice(nz_file_name), module_name, to_slice(nz_file_content), arena));
+		modules.push(parse_and_check_file(to_slice(nz_file_name), module_name, to_slice(nz_file_content), arena));
 		return emit(modules);
 	}
 

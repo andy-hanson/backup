@@ -76,22 +76,25 @@ namespace {
 
 Vec<DeclarationAst> parse_file(const StringSlice& file_content, Arena& arena) {
 	Lexer::validate_file(file_content);
-	Lexer lexer { file_content };
 
 	Vec<DeclarationAst> declarations;
+	Lexer lexer { file_content };
 	while (true) {
+		const char* start = lexer.at();
 		DynArray<TypeParameterAst> type_parameters = parse_type_parameter_asts(lexer, arena);
 		TopLevelKeyword kw = lexer.try_take_top_level_keyword();
 		switch (kw) {
 			case TopLevelKeyword::KwCppInclude:
-				throw "todo";
+				lexer.take(' ');
+				declarations.push(lexer.take_cpp_include());
+				break;
 
 			case TopLevelKeyword::KwCppStruct:
 			case TopLevelKeyword::KwStruct: {
 				lexer.take(' ');
 				StringSlice name = lexer.take_type_name();
 				StructBodyAst body = kw == TopLevelKeyword::KwStruct ? parse_struct_field_asts(lexer, arena) : parse_cpp_struct_body(lexer);
-				declarations.push_back(StructDeclarationAst { type_parameters, name, body });
+				declarations.push(StructDeclarationAst { lexer.range(start), type_parameters, name, body });
 				break;
 			}
 
@@ -103,7 +106,7 @@ Vec<DeclarationAst> parse_file(const StringSlice& file_content, Arena& arena) {
 				do {
 					sigs.add(parse_signature_ast(lexer, arena, parse_type_parameter_asts(lexer, arena)));
 				} while (lexer.take_newline_or_dedent() == NewlineOrDedent::Newline);
-				declarations.push_back(SpecDeclarationAst { type_parameters, name, sigs.finish() });
+				declarations.push(SpecDeclarationAst { type_parameters, name, sigs.finish() });
 				break;
 			}
 
@@ -111,12 +114,13 @@ Vec<DeclarationAst> parse_file(const StringSlice& file_content, Arena& arena) {
 			case TopLevelKeyword::None: {
 				FunSignatureAst signature = parse_signature_ast(lexer, arena, type_parameters);
 				FunBodyAst body = kw == TopLevelKeyword::KwCpp ? FunBodyAst{lexer.take_indented_string(arena)} : FunBodyAst{parse_body_ast(lexer, arena)};
-				declarations.push_back(FunDeclarationAst { signature, body });
+				declarations.push(FunDeclarationAst { signature, body });
 				break;
 			}
 
 			case TopLevelKeyword::KwEof:
-				if (type_parameters.size()) throw "todo";
+				if (type_parameters.size())
+					throw ParseDiagnostic { lexer.range(start), ParseDiag::Kind::TrailingTypeParametersAtEndOfFile };
 				return declarations;
 		}
 	}

@@ -162,42 +162,86 @@ public:
 	template <typename Out>
 	struct ArrayMapper {
 		Arena& arena;
-
-		template <typename In, typename Cb>
+		template <typename In, typename /*const In& => Out*/ Cb>
 		DynArray<Out> operator()(const DynArray<In>& in, Cb cb) {
 			return arena.fill_array<Out>(in.size())([&](uint i) { return cb(in[i]); });
 		}
 	};
 	template <typename Out>
-	ArrayMapper<Out> map_array() {
-		return ArrayMapper<Out>{*this};
+	ArrayMapper<Out> map() {
+		return {*this};
 	}
 
 	template <typename Out>
-	struct ArrayFlatMapper {
+	struct MapWithPrevs {
+		Arena& arena;
+		template <typename In, typename /*const In&, const DynArray<Out>&*/ Cb>
+		DynArray<Out> operator()(const DynArray<In>& inputs, Cb cb) {
+			DynArray<Out> out = arena.new_array<Out>(inputs.size());
+			out.len = 0;
+			uint i = 0;
+			for (const In& input : inputs) {
+				Out o = cb(input, out);
+				++out.len;
+				out[i] = o;
+				++i;
+			}
+			assert(out.len == i);
+			return out;
+		}
+	};
+	template <typename Out>
+	MapWithPrevs<Out> map_with_prevs() { return {*this}; }
+
+	template <typename Out>
+	struct MapOp {
 		Arena& arena;
 
-		template <typename In, typename Cb>
-		DynArray<Out> operator()(DynArray<DynArray<In>> inputs, Cb cb) {
-			size_t size = 0;
-			for (const DynArray<In>& d : inputs) size += d.size();
-			DynArray<Out> res = arena.new_array<Out>(size);
+		template <typename In, typename /*const In& => Option<Out>*/ Cb>
+		DynArray<Out> operator()(const DynArray<In>& inputs, Cb cb) {
+			DynArray<Out> out = arena.new_array<Out>(inputs.size());
 			uint i = 0;
-			for (const DynArray<In>& d : inputs) {
-				for (const In& in : d) {
-					res[i] = cb(in);
+			for (const In& input : inputs) {
+				Option<Out> o = cb(input);
+				if (o) {
+					out[i] = o.get();
 					++i;
 				}
 			}
-			assert(i == size);
-			return res;
+			out.len = i;
+			return out;
 		}
 	};
+	// Note: we assume that the output will probably be the same size as the input, or else it's a compile error.
+	template <typename Out>
+	MapOp<Out> map_op() {
+		return MapOp<Out>{*this};
+	}
 
 	template <typename Out>
-	ArrayFlatMapper<Out> flat_map_array() {
-		return ArrayFlatMapper<Out>{*this};
-	}
+	struct MapOpWithPrevs {
+		Arena& arena;
+
+		template <typename In, typename /*(const In&, const DynArray<Out>&) => Option<Out>*/ Cb>
+		DynArray<Out> operator()(const DynArray<In>& inputs, Cb cb) {
+			DynArray<Out> out = arena.new_array<Out>(inputs.size());
+			out.len = 0;
+			uint i = 0;
+			for (const In& input : inputs) {
+				Option<Out> o = cb(input, out);
+				if (o) {
+					++out.len;
+					out[i] = o.get();
+					++i;
+				}
+			}
+			out.len = i;
+			return out;
+		}
+	};
+	template <typename Out>
+	MapOpWithPrevs<Out> map_op_with_prevs() { return MapOpWithPrevs<Out>{*this}; }
+
 
 
 	template <typename T>

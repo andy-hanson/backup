@@ -67,7 +67,7 @@ PlainType substitute_type_arguments(const Type& t, const DynArray<TypeParameter>
 			const PlainType& p = t.plain();
 			if (!some(p.inst_struct.type_arguments, [](const Type& ta) { return ta.is_parameter(); }))
 				return p;
-			DynArray<Type> new_type_arguments = arena.map_array<Type>()(p.inst_struct.type_arguments, [&](const Type& ta) {
+			DynArray<Type> new_type_arguments = arena.map<Type>()(p.inst_struct.type_arguments, [&](const Type& ta) {
 				return Type { substitute_type_arguments(ta, type_parameters, type_arguments, arena) };
 			});
 			return PlainType { p.effect, { p.inst_struct.strukt, new_type_arguments } };

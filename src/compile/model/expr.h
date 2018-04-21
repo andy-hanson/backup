@@ -114,6 +114,7 @@ class Expression {
 public:
 	enum class Kind {
 		Nil,
+		Bogus, // A compile error prevented us from creating a valid Expression.
 		ParameterReference,
 		LocalReference,
 		StructFieldAccess,
@@ -121,8 +122,8 @@ public:
 		Seq,
 		Call,
 		StructCreate,
-		//This is the argument passed to a call to `literal`.
-			StringLiteral,
+		// This is the argument passed to a call to `literal`.
+		StringLiteral,
 		When,
 	};
 
@@ -150,6 +151,12 @@ public:
 	Kind kind() const { return _kind; }
 
 	Expression() : _kind(Kind::Nil) {}
+
+	static Expression bogus() {
+		Expression e;
+		e._kind = Kind::Bogus;
+		return e;
+	}
 
 	Expression(const Expression& e) {
 		_kind = Kind::Nil; // operator= asserts this
@@ -235,6 +242,7 @@ public:
 		_kind = e._kind;
 		switch (_kind) {
 			case Kind::Nil:
+			case Kind::Bogus:
 				break;
 			case Kind::ParameterReference:
 				data.parameter_reference = e.data.parameter_reference;

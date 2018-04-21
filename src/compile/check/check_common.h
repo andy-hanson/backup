@@ -5,8 +5,38 @@
 #include "./type_utils.h"
 #include "./BuiltinTypes.h"
 
-struct ExprContext {
+struct Al {
 	Arena& arena;
+	StringSlice source;
+	Vec<Diagnostic> diags;
+
+	inline SourceRange range(StringSlice slice) {
+		return source.range_from_inner_slice(slice);
+	}
+	inline void diag(SourceRange range, Diag diag) {
+		diags.push({ range, diag });
+	}
+	inline void diag(StringSlice slice, Diag d) {
+		diag(range(slice), d);
+	}
+};
+
+inline Identifier id(Al& al, StringSlice s) {
+	return Identifier { al.arena.str(s) };
+}
+
+// current_specs: the specs from the current function.
+inline void check_param_or_local_shadows_fun(Al& al, const StringSlice& name, const FunsTable& funs_table, const DynArray<SpecUse>& current_specs) {
+	if (funs_table.has(name))
+		al.diag(name, Diag::Kind::LocalShadowsFun);
+	for (const SpecUse& spec_use : current_specs)
+		for (const FunSignature& sig : spec_use.spec->signatures)
+			if (sig.name == name)
+				al.diag(name,Diag::Kind::LocalShadowsSpecSig);
+}
+
+struct ExprContext {
+	Al& al;
 	Arena& scratch_arena; // cleared after every convert call.
 	const FunsTable& funs_table;
 	const StructsTable& structs_table;

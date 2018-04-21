@@ -68,5 +68,7 @@ add_executable(oohoo
 	src/util/ptr.h
 	src/util/StringSlice.cpp
 	src/util/StringSlice.h
+	src/util/hash_util.h
+	src/util/int.cpp
 	src/util/int.h
-	src/util/hash_util.h src/util/Vec.h)
+	src/util/Vec.h )

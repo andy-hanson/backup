@@ -9,7 +9,6 @@ struct TypeParameterAst {
 	uint index;
 };
 
-
 struct StructFieldAst {
 	TypeAst type;
 	StringSlice name;
@@ -60,6 +59,7 @@ struct FunSignatureAst {
 };
 
 struct StructDeclarationAst {
+	SourceRange range;
 	DynArray<TypeParameterAst> type_parameters;
 	StringSlice name;
 	StructBodyAst body;
@@ -122,6 +122,7 @@ public:
 	enum class Kind { CppInclude, Struct, Spec, Fun };
 private:
 	union Data {
+		StringSlice cpp_include;
 		StructDeclarationAst strukt;
 		SpecDeclarationAst spec;
 		FunDeclarationAst fun;
@@ -139,7 +140,8 @@ public:
 		_kind = other._kind;
 		switch (_kind) {
 			case Kind::CppInclude:
-				throw "todo";
+				_data.cpp_include = other._data.cpp_include;
+				break;
 			case Kind::Struct:
 				_data.strukt = other._data.strukt;
 				break;
@@ -152,6 +154,7 @@ public:
 		}
 	}
 
+	DeclarationAst(StringSlice cpp_include) : _kind(Kind::CppInclude) { _data.cpp_include = cpp_include; }
 	DeclarationAst(StructDeclarationAst strukt) : _kind(Kind::Struct) { _data.strukt = strukt; }
 	DeclarationAst(SpecDeclarationAst spec) : _kind(Kind::Spec) { _data.spec = spec; }
 	DeclarationAst(FunDeclarationAst fun) : _kind(Kind::Fun) { _data.fun = fun; }

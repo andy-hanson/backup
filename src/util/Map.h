@@ -62,6 +62,10 @@ public:
 		return inner[key];
 	}
 
+	bool has(K key) const {
+		return bool(inner.count(key));
+	}
+
 	Option<const V&> get(K key) const {
 		try {
 			return inner.at(key);
@@ -129,6 +133,10 @@ public:
 
 	size_t count(const K& key) const {
 		return inner.count(key);
+	}
+
+	bool has(const K& key) const {
+		return bool(count(key));
 	}
 
 	const_iterator begin() const {

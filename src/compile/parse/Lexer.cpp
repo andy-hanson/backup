@@ -3,15 +3,11 @@
 
 void Lexer::validate_file(const StringSlice& source) {
 	if (source.empty()) return;
-
-	for (const char* ptr = source.begin(); *ptr != '\0'; ++ptr)
+	for (const char* ptr = source.begin() + 1; *ptr != '\0'; ++ptr)
 		if (*ptr == '\n' && (*(ptr - 1) == ' ' || *(ptr - 1) == '\t'))
-			throw ParseDiagnostic { SourceRange::from_pointer(source, ptr), ParseDiag::Kind::TrailingSpace };
-
+			throw ParseDiagnostic { source.range_from_inner_slice({ ptr - 1, ptr }), ParseDiag::Kind::TrailingSpace };
 	if (*(source.end() - 1) != '\n')
-		throw ParseDiagnostic { SourceRange::from_pointer(source, source.end() - 1), ParseDiag::Kind::MustEndInBlankLine };
-
-	return;
+		throw ParseDiagnostic { source.range_from_inner_slice({ source.end() - 1, source.end() }), ParseDiag::Kind::MustEndInBlankLine };
 }
 
 namespace {
@@ -89,7 +85,7 @@ uint Lexer::take_tabs() {
 
 void Lexer::take(char expected) {
 	if (!try_take(expected))
-		throw "todo";
+		throw diag_at_char({ ParseDiag::Kind::ExpectedCharacter, expected });
 }
 
 bool Lexer::try_take_else() {
@@ -162,17 +158,17 @@ NewlineOrDedent Lexer::take_newline_or_dedent() {
 		_indent = new_indent;
 		return NewlineOrDedent::Dedent;
 	}
-	if (new_indent == _indent) {
+	else if (new_indent == _indent)
 		return NewlineOrDedent::Newline;
-	}
-	throw "todo";
+	else
+		throw unexpected();
 }
 
 void Lexer::take_dedent() {
 	take('\n');
 	uint new_indent = take_tabs();
 	if (new_indent != _indent - 1)
-		throw "todo";
+		throw unexpected();
 	_indent = new_indent;
 }
 
@@ -180,7 +176,7 @@ void Lexer::take_newline_same_indent() {
 	take('\n');
 	uint new_indent = take_tabs();
 	if (new_indent != _indent)
-		throw "todo";
+		throw unexpected();
 	_indent = new_indent;
 }
 
@@ -188,25 +184,23 @@ void Lexer::take_indent() {
 	take('\n');
 	uint new_indent = take_tabs();
 	if (new_indent != _indent + 1)
-		throw "todo";
+		throw unexpected();
 	_indent = new_indent;
 }
 
-//Problem: what about a blank line inside the indented string?
-//Soln: this method needs to be the one responsible for skipping blank lines afterward.
 StringSlice Lexer::take_indented_string(Arena& arena) {
 	assert(_indent == 0);
 	take('\n');
 	take('\t');
 
-	if (*ptr == '\n') throw "todo";
+	assert(*ptr != '\n');
 
-	Arena::StringBuilder b = arena.string_builder(to_unsigned(end - ptr));
+	Arena::StringBuilder b = arena.string_builder(to_unsigned(source.end() - ptr));
 
 	// Keep eating until we see a line that begins in something other than '\n'.
 	while (true) {
 		char c = next();
-		if (c == '\0') throw "todo"; // file ought to end in a blank line, complain
+		assert(c != '\0'); // File will end in a blank line, so this should never happen.
 		if (c != '\n') {
 			b << c;
 			continue;
@@ -224,18 +218,24 @@ StringSlice Lexer::take_indented_string(Arena& arena) {
 	return b.finish();
 }
 
+StringSlice Lexer::take_cpp_include() {
+	const char* begin = ptr;
+	while (*ptr != '\n') ++ptr;
+	return StringSlice { begin, ptr };
+}
+
 StringSlice Lexer::take_type_name() {
 	const char* begin = ptr;
-	if (!is_upper_case_letter(*ptr)) throw "todo";
+	if (!is_upper_case_letter(*ptr)) throw unexpected();
 	++ptr;
 	return take_name_helper(begin, ptr, is_type_name_continue);
 }
 
 StringSlice Lexer::take_spec_name() {
 	const char* begin = ptr;
-	if (*ptr != '$') throw "todo";
+	if (*ptr != '$') throw unexpected();
 	++ptr;
-	if (!is_upper_case_letter(*ptr)) throw "todo";
+	if (!is_upper_case_letter(*ptr)) throw unexpected();
 	++ptr;
 	return take_name_helper(begin, ptr, is_type_name_continue);
 }
@@ -249,13 +249,13 @@ StringSlice Lexer::take_value_name() {
 		++ptr;
 		return take_name_helper(begin, ptr, is_value_name_continue);
 	} else {
-		throw "todo";
+		throw unexpected();
 	}
 }
 
 StringSlice Lexer::take_cpp_type_name() {
 	const char* begin = ptr;
-	if (!is_lower_case_letter(*ptr)) throw "todo";
+	if (!is_lower_case_letter(*ptr)) throw unexpected();
 	++ptr;
 	return take_name_helper(begin, ptr, [](char c) { return c != '\n' && c != '\0'; });
 }
@@ -272,7 +272,7 @@ ExpressionToken Lexer::take_expression_token(Arena& arena) {
 	if (c == '(') {
 		return { ExpressionToken::Kind::Lparen, {} };
 	} else if (c == '"') {
-		return { ExpressionToken::Kind::Literal, { take_string_literal(ptr, end, arena) } };
+		return { ExpressionToken::Kind::Literal, { take_string_literal(ptr, source.end(), arena) } };
 	} else if (is_operator_char(c)) {
 		++ptr;
 		return { ExpressionToken::Kind::Name, { take_name_helper(begin, ptr, is_operator_char) } };
@@ -286,6 +286,6 @@ ExpressionToken Lexer::take_expression_token(Arena& arena) {
 	} else if (is_digit(c) || c == '+' || c == '-') {
 		return { ExpressionToken::Kind::Literal, { take_numeric_literal(ptr, arena) } };
 	} else {
-		throw "todo";
+		throw unexpected();
 	}
 }

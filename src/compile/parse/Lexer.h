@@ -4,6 +4,7 @@
 #include "../model/effect.h"
 #include "../../util/Alloc.h"
 #include "../../util/StringSlice.h"
+#include "../../util/Vec.h"
 
 struct ExpressionToken {
 	enum class Kind {
@@ -20,8 +21,8 @@ enum class TopLevelKeyword { None, KwStruct, KwSpec, KwCpp, KwCppInclude, KwCppS
 enum class NewlineOrDedent { Newline, Dedent };
 
 class Lexer {
-	const char* ptr;
-	const char* end; // ptr is null-terminated, so used only to get a maximum size on string allocations
+	const StringSlice source;
+	const char* ptr; // current pointer into source
 	uint _indent;
 
 	inline char next() {
@@ -30,14 +31,27 @@ class Lexer {
 		return c;
 	}
 
+	ParseDiagnostic unexpected() {
+		return diag_at_char({ ParseDiag::Kind::UnexpectedCharacter, *ptr });
+	}
+
 	void expect(const char* expected);
 	uint take_tabs();
 
 public:
-	// Throws a ParseDiagnostic on failure.
+	// May throw a ParseDiagnostic.
 	static void validate_file(const StringSlice& source);
 
-	Lexer(StringSlice slice) : ptr(slice.begin()), end(slice.end()), _indent(0) {}
+	inline const char* at() { return ptr; }
+	inline SourceRange range(const char* start) {
+		return source.range_from_inner_slice({ start, ptr });
+	}
+
+	Lexer(StringSlice _source) : source(_source), ptr(_source.begin()), _indent(0) {}
+
+	ParseDiagnostic diag_at_char(ParseDiag diag) {
+		return { source.range_from_inner_slice({ ptr, ptr + 1 }), diag };
+	}
 
 	void take(char expected);
 	inline bool try_take(char expected) {
@@ -76,6 +90,7 @@ public:
 	void take_indent();
 	StringSlice take_indented_string(Arena& arena);
 
+	StringSlice take_cpp_include();
 	StringSlice take_type_name();
 	StringSlice take_spec_name();
 	StringSlice take_value_name();

@@ -4,8 +4,11 @@
 #include "./convert_type.h"
 
 namespace {
-	Option<const Parameter&> find_parameter(const ExprContext& ctx, StringSlice name) {
+	Option<ref<const Parameter>> find_parameter(const ExprContext& ctx, StringSlice name) {
 		return find(ctx.current_fun->signature.parameters, [&](const Parameter& p) { return p.name == name; });
+	}
+	Option<ref<const Let>> find_local(const ExprContext& ctx, StringSlice name) {
+		return un_ref(find(ctx.locals, [name](const ref<const Let>& l) { return l->name == name; }));
 	}
 
 	InstStruct struct_create_type(
@@ -20,39 +23,51 @@ namespace {
 		throw "todo";
 	}
 
-	StructCreate check_struct_create(const StructCreateAst& create, ExprContext& ctx, Expected& expected) {
+	Expression check_struct_create(const StructCreateAst& create, ExprContext& ctx, Expected& expected) {
 		Option<const ref<const StructDeclaration>&> struct_op = ctx.structs_table.get(create.struct_name);
 		if (!struct_op) throw "todo";
 		const StructDeclaration& strukt = *struct_op.get();
-		if (!strukt.body.is_fields()) throw "todo";
+		if (!strukt.body.is_fields()) {
+			ctx.al.diag(create.struct_name, Diag::Kind::CantCreateNonStruct);
+			return Expression::bogus();
+		}
 
 		InstStruct inst_struct = struct_create_type(strukt, ctx, create.type_arguments, expected);
 
 		size_t size = strukt.body.fields().size();
-		if (create.arguments.size() != size) throw "todo";
+		if (create.arguments.size() != size) {
+			ctx.al.diag(create.struct_name, Diag::Kind::WrongNumberNewStructArguments);
+			return Expression::bogus();
+		}
 
-		DynArray<Expression> arguments = ctx.arena.fill_array<Expression>(size)([&](uint i) {
+		DynArray<Expression> arguments = ctx.al.arena.fill_array<Expression>(size)([&](uint i) {
 			return check_and_expect(create.arguments[i], ctx, struct_field_type(inst_struct, i));
 		});
 
 		expected.check_no_infer(Type { PlainType { Effect::Io, inst_struct } });
-		return { inst_struct, arguments };
+		return StructCreate { inst_struct, arguments };
 	}
 
 	Expression check_type_annotate(const TypeAnnotateAst& ast, ExprContext& ctx, Expected& expected) {
 		if (expected.has_expectation_or_inferred_type()) {
-			throw "todo"; // we already have a type, you shouldn't provide one
+			ctx.al.diag(ast.type.type_name, Diag::Kind::UnnecessaryTypeAnnotate);
+			return Expression::bogus(); // Note: could continue anyway, but must check that the actual type here matches the actual type.
 		}
-		Type type = type_from_ast(ast.type, ctx.arena, ctx.structs_table, ctx.current_fun->signature.type_parameters);
+		Type type = type_from_ast(ast.type, ctx.al, ctx.structs_table, ctx.current_fun->signature.type_parameters);
 		expected.set_inferred(type);
 		return check_and_expect(ast.expression, ctx, type);
 	}
 
 	Expression check_let(const LetAst& ast, ExprContext& ctx, Expected& expected) {
 		StringSlice name = ast.name;
-		if (find_parameter(ctx, name)) throw "todo: local shadows parameter";
+		check_param_or_local_shadows_fun(ctx.al, name, ctx.funs_table, ctx.current_fun->signature.specs);
+		if (find_parameter(ctx, name))
+			ctx.al.diag(name, Diag::Kind::LocalShadowsParameter);
+		if (find_local(ctx, name))
+			ctx.al.diag(name, Diag::Kind::LocalShadowsLocal);
+
 		ExpressionAndType init = check_and_infer(*ast.init, ctx);
-		ref<Let> l = ctx.arena.put(Let { init.type, Identifier { ctx.arena.str(name) }, init.expression, {}});
+		ref<Let> l = ctx.al.arena.put(Let { init.type, Identifier { ctx.al.arena.str(name) }, init.expression, {}});
 		ctx.locals.push(l);
 		l->then = check(*ast.then, ctx, expected);
 		assert(ctx.locals.peek() == l);
@@ -64,17 +79,17 @@ namespace {
 		if (!ctx.builtin_types.void_type) throw "todo";
 		Expression first = check_and_expect(*ast.first, ctx, ctx.builtin_types.void_type.get());
 		Expression then = check(*ast.then, ctx, expected);
-		return { ctx.arena.put(Seq { first, then }) };
+		return { ctx.al.arena.put(Seq { first, then }) };
 	}
 
 	Expression check_when(const WhenAst& ast, ExprContext& ctx, Expected& expected) {
 		if (!ctx.builtin_types.bool_type) throw "todo: must declare Bool somewhere in order to use 'when'";
-		DynArray<Case> cases = ctx.arena.map_array<Case>()(ast.cases, [&](const CaseAst& c) {
+		DynArray<Case> cases = ctx.al.arena.map<Case>()(ast.cases, [&](const CaseAst& c) {
 			Expression cond = check_and_expect(c.condition, ctx, ctx.builtin_types.bool_type.get());
 			Expression then = check(c.then, ctx, expected);
 			return Case { cond, then };
 		});
-		ref<Expression> elze = ctx.arena.put(check(*ast.elze, ctx, expected));
+		ref<Expression> elze = ctx.al.arena.put(check(*ast.elze, ctx, expected));
 		return When { cases, elze };
 	}
 
@@ -82,7 +97,7 @@ namespace {
 
 	Expression check_no_call_literal_inner(const StringSlice& literal, ExprContext& ctx, Expected& expected) {
 		if (expected.has_expectation_or_inferred_type()) expected.as_if_checked(); else expected.set_inferred(ctx.builtin_types.string_type.get());
-		return Expression(ctx.arena.str(literal));
+		return Expression(ctx.al.arena.str(literal));
 	}
 
 	Expression check_no_call_literal(const StringSlice& literal, ExprContext& ctx, Expected& expected) {
@@ -100,9 +115,8 @@ namespace {
 		if (literal.type_arguments.size() == 0 && literal.arguments.size() == 0 && (!current_expectation || current_expectation.get() == string_type)) {
 			return check_no_call_literal_inner(literal.literal, ctx, expected);
 		} else {
-			//TODO:PERF
 			Arena::SmallArrayBuilder<ExprAst> b = ctx.scratch_arena.small_array_builder<ExprAst>();
-			b.add(ctx.arena.str(literal.literal)); // This is a NoCallLiteral
+			b.add(ctx.al.arena.str(literal.literal)); // This is a NoCallLiteral
 			for (const ExprAst &arg : literal.arguments)
 				b.add(arg);
 			return check_call(LITERAL, b.finish(), literal.type_arguments, ctx, expected);
@@ -110,20 +124,22 @@ namespace {
 	}
 
 	Expression check_identifier(const StringSlice& name, ExprContext& ctx, Expected& expected) {
-		Option<const Parameter&> p_op = find_parameter(ctx, name);
-		if (p_op) {
-			const Parameter& p = p_op.get();
-			expected.check_no_infer(p.type);
-			return Expression(&p);
+		Option<ref<const Parameter>> param_op = find_parameter(ctx, name);
+		if (param_op) {
+			const Parameter& param = param_op.get();
+			expected.check_no_infer(param.type);
+			return Expression(&param);
 		}
-		Option<const ref<const Let>&> l_op = find(ctx.locals, [name](const ref<const Let>& l) { return l->name == name; });
-		if (l_op) {
-			ref<const Let> l = l_op.get();
-			expected.check_no_infer(l->type);
-			return Expression(l, Expression::Kind::LocalReference);
-		}
-		throw "todo: unrecognized identifier";
 
+		Option<ref<const Let>> let_op = find_local(ctx, name);
+		if (let_op) {
+			ref<const Let> let = let_op.get();
+			expected.check_no_infer(let->type);
+			return Expression(let, Expression::Kind::LocalReference);
+		}
+
+		ctx.al.diag(name, Diag::UnrecognizedParameterOrLocal);
+		return Expression::bogus();
 	}
 }
 

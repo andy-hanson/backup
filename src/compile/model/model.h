@@ -16,6 +16,7 @@ class Expression;
 struct Module;
 
 struct TypeParameter {
+	SourceRange range;
 	Identifier name;
 	uint index;
 };
@@ -76,16 +77,15 @@ public:
 
 struct StructDeclaration {
 	ref<const Module> containing_module;
+	SourceRange range;
 	DynArray<TypeParameter> type_parameters;
 	Identifier name;
 	StructBody body;
 
-	StructDeclaration(ref<const Module> _containing_module, DynArray<TypeParameter> _type_parameters, Identifier _name)
-		: containing_module(_containing_module), type_parameters(_type_parameters), name(_name) {}
+	StructDeclaration(ref<const Module> _containing_module, SourceRange _range, DynArray<TypeParameter> _type_parameters, Identifier _name)
+		: containing_module(_containing_module), range(_range), type_parameters(_type_parameters), name(_name) {}
 
-	size_t arity() const {
-		return type_parameters.size();
-	}
+	size_t arity() const { return type_parameters.size(); }
 };
 
 class Type;
@@ -138,12 +138,8 @@ public:
 	Kind kind() const { return _kind; }
 
 	Type() : _kind(Kind::Nil) {}
-	//TODO:Kill?
 	Type(const Type& other) {
 		*this = other;
-	}
-	explicit Type(PlainType p) : _kind(Kind::Plain) {
-		data.plain = p;
 	}
 	void operator=(const Type& other) {
 		_kind = other._kind;
@@ -152,6 +148,9 @@ public:
 			case Kind::Plain: data.plain = other.data.plain; break;
 			case Kind::Param: data.param = other.data.param; break;
 		}
+	}
+	explicit Type(PlainType p) : _kind(Kind::Plain) {
+		data.plain = p;
 	}
 
 	explicit Type(ref<const TypeParameter> param) : _kind(Kind::Param) {
@@ -310,7 +309,7 @@ struct Module {
 	StructsTable structs_table;
 	SpecsTable specs_table;
 	FunsTable funs_table;
-	List<Diagnostic> diagnostics;
+	Vec<Diagnostic> diagnostics;
 
 	Module(ArenaString _path, Identifier _name) : path(_path), name(_name) {}
 };

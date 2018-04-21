@@ -49,11 +49,11 @@ namespace {
 			if (strukt.body.is_fields()) {
 				if (!plain.inst_struct.type_arguments.empty()) throw "todo";
 				//TODO: substitute type arguments here!
-				Option<const StructField&> field = find(strukt.body.fields(), [fun_name](const StructField& f) { return f.name == fun_name; });
+				Option<ref<const StructField>> field = find(strukt.body.fields(), [fun_name](const StructField& f) { return f.name == fun_name; });
 				if (field) {
 					// TODO: also check plain.effect to narrow the field type
-					expected.check_no_infer(field.get().type);
-					return { StructFieldAccess { ctx.arena.put(argAndType.expression), &field.get() }};
+					expected.check_no_infer(field.get()->type);
+					return { StructFieldAccess { ctx.al.arena.put(argAndType.expression), field.get() }};
 				}
 			}
 		}
@@ -193,9 +193,9 @@ namespace {
 			return { called, type_arguments, {} };
 		}
 
-		DynArray<DynArray<CalledDeclaration>> spec_impls = ctx.arena.map_array<DynArray<CalledDeclaration>>()(called.sig().specs, [&](const SpecUse& spec_use) {
+		DynArray<DynArray<CalledDeclaration>> spec_impls = ctx.al.arena.map<DynArray<CalledDeclaration>>()(called.sig().specs, [&](const SpecUse& spec_use) {
 			TypeArgumentsScope type_arguments_scope { { spec_use.spec->type_parameters, spec_use.type_arguments }, { called.sig().type_parameters, type_arguments } };
-			return ctx.arena.map_array<CalledDeclaration>()(spec_use.spec->signatures, [&](const FunSignature& sig) {
+			return ctx.al.arena.map<CalledDeclaration>()(spec_use.spec->signatures, [&](const FunSignature& sig) {
 				return find_spec_signature_implementation(ctx, sig, type_arguments_scope);
 			});
 		});
@@ -205,7 +205,7 @@ namespace {
 }
 
 Expression check_call(const StringSlice& fun_name, const DynArray<ExprAst>& argument_asts, const DynArray<TypeAst>& type_argument_asts, ExprContext& ctx, Expected& expected) {
-	DynArray<Type> explicit_type_arguments = type_arguments_from_asts(type_argument_asts, ctx.arena, ctx.structs_table, ctx.current_fun->signature.type_parameters);
+	DynArray<Type> explicit_type_arguments = type_arguments_from_asts(type_argument_asts, ctx.al, ctx.structs_table, ctx.current_fun->signature.type_parameters);
 	size_t arity = argument_asts.size();
 	if (arity == 1 && explicit_type_arguments.empty()) {
 		Option<Expression> e = try_convert_struct_field_access(fun_name, argument_asts[0], ctx, expected);
@@ -227,7 +227,7 @@ Expression check_call(const StringSlice& fun_name, const DynArray<ExprAst>& argu
 		if (candidates.empty()) throw "todo: no overload returns what you wanted";
 	}
 
-	DynArray<Expression> arguments = ctx.arena.fill_array<Expression>(arity)([&](uint arg_idx) {
+	DynArray<Expression> arguments = ctx.al.arena.fill_array<Expression>(arity)([&](uint arg_idx) {
 		Expected expected_this_arg = get_common_overload_parameter_type(candidates, arg_idx);
 		Expression res = check(argument_asts[arg_idx], ctx, expected_this_arg);
 		remove_overloads_given_argument_type(candidates, expected_this_arg, arg_idx);
@@ -237,7 +237,7 @@ Expression check_call(const StringSlice& fun_name, const DynArray<ExprAst>& argu
 	if (candidates.size() > 1) throw "todo: two identical candidates?";
 	const Candidate& candidate = candidates[0];
 
-	DynArray<Type> candidate_type_arguments = ctx.arena.map_array<Type>()(candidate.inferring_type_arguments, [](const Option<Type>& t){
+	DynArray<Type> candidate_type_arguments = ctx.al.arena.map<Type>()(candidate.inferring_type_arguments, [](const Option<Type>& t){
 		if (!t) throw "todo: didn't infer all type arguments";
 		return t.get();
 	});

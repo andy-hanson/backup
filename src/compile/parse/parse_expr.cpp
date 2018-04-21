@@ -95,11 +95,6 @@ namespace {
 			}
 
 			case ExpressionToken::Kind::TypeName: {
-				if (lexer.try_take(':')) {
-					lexer.take(' ');
-					parse_expr_arg_ast_worker(lexer, arena, et);
-					throw "todo";
-				}
 				DynArray<TypeAst> type_args = parse_type_argument_asts(lexer, arena);
 				return { StructCreateAst { et.name, type_args, parse_prefix_args(lexer, arena) }, false };
 			}
@@ -129,7 +124,7 @@ namespace {
 			}
 
 			case ExpressionToken::Kind::When:
-				throw "todo"; // not allowed in arg context
+				throw ParseDiagnostic { lexer.diag_at_char(ParseDiag::Kind::WhenMayNotAppearInsideArg ) };
 		}
 	}
 

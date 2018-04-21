@@ -26,6 +26,7 @@ namespace {
 			case Expression::Kind::When:
 				return true;
 			case Expression::Kind::Nil:
+			case Expression::Kind::Bogus:
 				assert(false);
 		}
 	}
@@ -99,6 +100,7 @@ namespace {
 			case Expression::Kind::When:
 				throw "todo";
 			case Expression::Kind::Nil:
+			case Expression::Kind::Bogus:
 				assert(false);
 		}
 		return ctx;
@@ -157,10 +159,13 @@ namespace {
 			case Expression::Kind::Call:
 			case Expression::Kind::StructCreate:
 			case Expression::Kind::StringLiteral:
-			case Expression::Kind::Nil:
 				if (should_return) ctx.out << "return ";
 				ctx << e;
 				ctx.out << ';';
+				break;
+			case Expression::Kind::Nil:
+			case Expression::Kind::Bogus:
+				assert(false);
 		}
 		return ctx;
 	}

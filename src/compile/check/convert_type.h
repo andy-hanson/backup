@@ -12,5 +12,5 @@ struct TypeParametersScope {
 	TypeParametersScope(DynArray<TypeParameter> _outer, DynArray<TypeParameter> _inner) : outer(_outer), inner(_inner) {}
 };
 
-Type type_from_ast(const TypeAst& ast, Arena& arena, const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope);
-DynArray<Type> type_arguments_from_asts(const DynArray<TypeAst>& type_arguments, Arena& arena, const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope);
+Type type_from_ast(const TypeAst& ast, Al& al, const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope);
+DynArray<Type> type_arguments_from_asts(const DynArray<TypeAst>& type_arguments, Al& al, const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope);
