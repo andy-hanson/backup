@@ -12,48 +12,53 @@ set(CMAKE_CXX_FLAGS "-pedantic -Weverything -Wno-c++98-compat -Wno-c++98-compat-
 add_executable(oohoo
 	src/main.cpp
 
-	src/diag/diag.h
-	src/diag/parse_diag.h
+	src/compile/check/BuiltinTypes.h
+	src/compile/check/check.cpp
+	src/compile/check/check.h
+	src/compile/check/check_call.cpp
+	src/compile/check/check_call.h
+	src/compile/check/check_common.h
+	src/compile/check/check_expr.cpp
+	src/compile/check/check_expr.h
+	src/compile/check/convert_type.cpp
+	src/compile/check/convert_type.h
+	src/compile/check/type_utils.cpp
+	src/compile/check/type_utils.h
 
-	src/emit/concrete_fun.cpp
-	src/emit/concrete_fun.h
-	src/emit/emit.cpp
-	src/emit/emit.h
-	src/emit/emit_body.cpp
-	src/emit/emit_body.h
-	src/emit/emit_type.h
-	src/emit/function_names.h
-	src/emit/mangle.cpp
-	src/emit/mangle.h
-	src/emit/Names.cpp
-	src/emit/Names.h
-	src/emit/Writer.cpp
-	src/emit/Writer.h
+	src/compile/diag/diag.h
+	src/compile/diag/parse_diag.h
 
-	src/model/model.cpp
-	src/model/model.h
-	src/model/expr.h
-	src/model/Identifier.h
+	src/compile/emit/concrete_fun.cpp
+	src/compile/emit/concrete_fun.h
+	src/compile/emit/emit.cpp
+	src/compile/emit/emit.h
+	src/compile/emit/emit_body.cpp
+	src/compile/emit/emit_body.h
+	src/compile/emit/emit_type.h
+	src/compile/emit/function_names.h
+	src/compile/emit/mangle.cpp
+	src/compile/emit/mangle.h
+	src/compile/emit/Names.cpp
+	src/compile/emit/Names.h
+	src/compile/emit/Writer.cpp
+	src/compile/emit/Writer.h
 
-	src/parse/check/BuiltinTypes.h
-	src/parse/check/convert_type.cpp
-	src/parse/check/convert_type.h
-	src/parse/check/check_call.cpp
-	src/parse/check/check_call.h
-	src/parse/check/check_common.h
-	src/parse/check/check_expr.cpp
-	src/parse/check/check_expr.h
-	src/parse/check/check_function_body.cpp
-	src/parse/check/check_function_body.h
-	src/parse/check/expr_ast.h
-	src/parse/check/parse_expr.cpp
-	src/parse/check/parse_expr.h
-	src/parse/Lexer.cpp
-	src/parse/Lexer.h
-	src/parse/parser.cpp
-	src/parse/parser.h
-	src/parse/type_utils.cpp
-	src/parse/type_utils.h
+	src/compile/model/model.cpp
+	src/compile/model/model.h
+	src/compile/model/expr.h
+	src/compile/model/Identifier.h
+
+	src/compile/parse/ast.h
+	src/compile/parse/expr_ast.h
+	src/compile/parse/Lexer.cpp
+	src/compile/parse/Lexer.h
+	src/compile/parse/parse_expr.cpp
+	src/compile/parse/parse_expr.h
+	src/compile/parse/parse_type.cpp
+	src/compile/parse/parse_type.h
+	src/compile/parse/parser.cpp
+	src/compile/parse/parser.h
+	src/compile/parse/type_ast.h
 
 	src/util/Alloc.h
 	src/util/collection_util.h

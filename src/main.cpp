@@ -6,14 +6,16 @@
 #include <limits>
 #include <fstream>
 
-#include "emit/emit.h"
-#include "parse/parser.h"
+#include "compile/emit/emit.h"
+#include "compile/parse/parser.h"
+#include "compile/check/check.h"
 
 /*
 set(CMAKE_CXX_COMPILER "/home/andy/bin/clang+llvm-6.0.0-x86_64-linux-gnu-ubuntu-14.04/bin/clang++")
 # Must have -Wno-used-but-marked-unused because of https://youtrack.jetbrains.com/issue/CPP-2151
 set(CMAKE_CXX_FLAGS "-pedantic -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-used-but-marked-unused -Werror")
 */
+
 
 
 namespace {
@@ -80,12 +82,17 @@ namespace {
 		return StringSlice { s.begin().base(), s.end().base() };
 	}
 
+	ref<Module> parse_and_check_file(StringSlice file_path, Identifier module_name, StringSlice file_content, Arena& arena) {
+		std::vector<DeclarationAst> declarations = parse_file(file_content, arena);
+		return check(file_path, module_name, declarations, arena);
+	}
+
 	std::string get_compiled_file(const std::string& file_name) {
 		std::string nz_file_name = file_name + ".nz";
 		std::string nz_file_content = read_file(file_name + ".nz");
 		Arena arena;
 		Identifier module_name = Identifier{arena.str("foo")}; //TODO
-		std::vector<ref<Module>> modules { parse_file(to_slice(nz_file_name), module_name, to_slice(nz_file_content), arena) };
+		std::vector<ref<Module>> modules { parse_and_check_file(to_slice(nz_file_name), module_name, to_slice(nz_file_content), arena) };
 		return emit(modules);
 	}
 
