@@ -167,10 +167,14 @@ public:
 		data.parameter_reference = p;
 	}
 
+	Expression(ref<const Let> l, Kind kind) : _kind(kind) {
+		assert(kind == Kind::LocalReference);
+		data.local_reference = l;
+	}
+
 	Expression(ref<Let> l, Kind kind) : _kind(kind) {
-		if (kind == Kind::LocalReference) data.local_reference = l;
-		else if (kind == Kind::Let) data.let = l;
-		else assert(false);
+		assert(kind == Kind::Let);
+		data.let = l;
 	}
 
 	Expression(ref<Seq> seq) : _kind(Kind::Seq) {

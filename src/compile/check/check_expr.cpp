@@ -71,7 +71,7 @@ namespace {
 			ctx.al.diag(name, Diag::Kind::LocalShadowsLocal);
 
 		ExpressionAndType init = check_and_infer(*ast.init, ctx);
-		ref<Let> l = ctx.al.arena.put(Let { init.type, Identifier { ctx.al.arena.str(name) }, init.expression, {}});
+		ref<Let> l = ctx.al.arena.put(Let { init.type, Identifier { ctx.al.arena.str(name) }, init.expression, {}, {} });
 		ctx.locals.push(l);
 		l->then = check(*ast.then, ctx, expected);
 		assert(ctx.locals.peek() == l);
