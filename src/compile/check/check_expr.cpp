@@ -14,7 +14,7 @@ namespace {
 	InstStruct struct_create_type(
 		const StructDeclaration& containing __attribute__((unused)),
 		ExprContext& ctx __attribute__((unused)),
-		const DynArray<TypeAst> type_arguments __attribute__((unused)),
+		const Arr<TypeAst> type_arguments __attribute__((unused)),
 		Expected& expected __attribute__((unused))) {
 		throw "todo";
 	}
@@ -25,7 +25,11 @@ namespace {
 
 	Expression check_struct_create(const StructCreateAst& create, ExprContext& ctx, Expected& expected) {
 		Option<const ref<const StructDeclaration>&> struct_op = ctx.structs_table.get(create.struct_name);
-		if (!struct_op) throw "todo";
+		if (!struct_op) {
+			ctx.al.diag(create.struct_name, Diag::Kind::StructNameNotFound);
+			return Expression::bogus();
+		}
+
 		const StructDeclaration& strukt = *struct_op.get();
 		if (!strukt.body.is_fields()) {
 			ctx.al.diag(create.struct_name, Diag::Kind::CantCreateNonStruct);
@@ -40,11 +44,11 @@ namespace {
 			return Expression::bogus();
 		}
 
-		DynArray<Expression> arguments = ctx.al.arena.fill_array<Expression>(size)([&](uint i) {
+		Arr<Expression> arguments = ctx.al.arena.fill_array<Expression>()(size, [&](uint i) {
 			return check_and_expect(create.arguments[i], ctx, struct_field_type(inst_struct, i));
 		});
 
-		expected.check_no_infer(Type { PlainType { Effect::Io, inst_struct } });
+		expected.check_no_infer(Type { inst_struct });
 		return StructCreate { inst_struct, arguments };
 	}
 
@@ -76,15 +80,22 @@ namespace {
 	}
 
 	Expression check_seq(const SeqAst& ast, ExprContext& ctx, Expected& expected) {
-		if (!ctx.builtin_types.void_type) throw "todo";
+		if (!ctx.builtin_types.void_type) {
+			ctx.al.diag(ast.range, Diag::Kind::MissingVoidType);
+			return Expression::bogus();
+		}
 		Expression first = check_and_expect(*ast.first, ctx, ctx.builtin_types.void_type.get());
 		Expression then = check(*ast.then, ctx, expected);
 		return { ctx.al.arena.put(Seq { first, then }) };
 	}
 
 	Expression check_when(const WhenAst& ast, ExprContext& ctx, Expected& expected) {
-		if (!ctx.builtin_types.bool_type) throw "todo: must declare Bool somewhere in order to use 'when'";
-		DynArray<Case> cases = ctx.al.arena.map<Case>()(ast.cases, [&](const CaseAst& c) {
+		if (!ctx.builtin_types.bool_type) {
+			ctx.al.diag(ast.range, Diag::Kind::MissingBoolType);
+			return Expression::bogus();
+		}
+
+		Arr<Case> cases = ctx.al.arena.map<Case>()(ast.cases, [&](const CaseAst& c) {
 			Expression cond = check_and_expect(c.condition, ctx, ctx.builtin_types.bool_type.get());
 			Expression then = check(c.then, ctx, expected);
 			return Case { cond, then };
@@ -97,19 +108,24 @@ namespace {
 
 	Expression check_no_call_literal_inner(const StringSlice& literal, ExprContext& ctx, Expected& expected) {
 		if (expected.has_expectation_or_inferred_type()) expected.as_if_checked(); else expected.set_inferred(ctx.builtin_types.string_type.get());
-		return Expression(ctx.al.arena.str(literal));
+		return Expression{ctx.al.arena.str(literal)};
 	}
 
 	Expression check_no_call_literal(const StringSlice& literal, ExprContext& ctx, Expected& expected) {
-		if (!ctx.builtin_types.string_type) throw "todo: string type missing";
+		if (!ctx.builtin_types.string_type) {
+			ctx.al.diag(literal, Diag::Kind::MissingStringType);
+			return Expression::bogus();
+		}
 		const Type& string_type = ctx.builtin_types.string_type.get();
-		const Option<Type>& current_expectation = expected.get_current_expectation();
-		if (current_expectation && current_expectation.get() != string_type) throw "todo";
+		expected.check_no_infer(string_type);
 		return check_no_call_literal_inner(literal, ctx, expected);
 	}
 
 	Expression check_literal(const LiteralAst& literal, ExprContext& ctx, Expected& expected) {
-		if (!ctx.builtin_types.string_type) throw "todo: string type missing";
+		if (!ctx.builtin_types.string_type) {
+			ctx.al.diag(literal.literal, Diag::Kind::MissingStringType);
+			return Expression::bogus();
+		}
 		const Type& string_type = ctx.builtin_types.string_type.get();
 		const Option<Type>& current_expectation = expected.get_current_expectation();
 		if (literal.type_arguments.size() == 0 && literal.arguments.size() == 0 && (!current_expectation || current_expectation.get() == string_type)) {

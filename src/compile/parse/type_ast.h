@@ -1,11 +1,10 @@
 #pragma once
 
-#include "../model/effect.h"
 #include "../../util/Alloc.h"
 #include "../../util/StringSlice.h"
 
 struct TypeAst {
-	Effect effect;
+	bool is_type_parameter; // If true, type_arguments should be unused
 	StringSlice type_name;
-	DynArray<TypeAst> type_arguments;
+	Arr<TypeAst> type_arguments;
 };

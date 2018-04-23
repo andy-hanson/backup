@@ -17,7 +17,6 @@ struct ExpressionToken {
 	};
 };
 
-enum class TopLevelKeyword { None, KwStruct, KwSpec, KwCpp, KwCppInclude, KwCppStruct, KwEof };
 enum class NewlineOrDedent { Newline, Dedent };
 
 class Lexer {
@@ -64,10 +63,12 @@ public:
 
 	inline uint indent() { return _indent; } // used for debugging
 
-	Effect try_take_effect();
-	TopLevelKeyword try_take_top_level_keyword();
+	Option<Effect> try_take_effect();
 
-	bool try_take_else();
+	bool try_take_copy_keyword();
+	bool try_take_from_keyword();
+	bool try_take_else_keyword();
+
 	inline bool try_take_comma_space() {
 		if (try_take(',')) {
 			take(' ');
@@ -94,6 +95,8 @@ public:
 	StringSlice take_type_name();
 	StringSlice take_spec_name();
 	StringSlice take_value_name();
+	struct ValueOrTypeName { bool is_value; StringSlice name; };
+	ValueOrTypeName take_value_or_type_name();
 	StringSlice take_cpp_type_name();
 
 	// arena used to place literals.

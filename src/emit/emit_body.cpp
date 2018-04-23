@@ -67,10 +67,11 @@ namespace {
 				out << '.' << ctx.names.get_name(sa.field);
 				break;
 			}
-			case Expression::Kind::Let:
-				throw "todo";
+			case Expression::Kind::Let: {
+				throw "todo"; // iife?
+			}
 			case Expression::Kind::Seq:
-				throw "todo";
+				throw "todo"; // iife?
 			case Expression::Kind::Call: {
 				const Call& c = e.call();
 				// The function we're calling depends on the current ConcreteFun being emitted.
@@ -123,7 +124,7 @@ namespace {
 		switch (e.kind()) {
 			case Expression::Kind::Let: {
 				const Let& l = e.let();
-				write_type(ctx.out, l.type, ctx.names);
+				substitute_and_write_inst_struct(ctx.out, ctx.current_concrete_fun, l.type, ctx.names, ctx.scratch_arena, l.is_own.explicit_borrow());
 				ctx.out << ' ' << mangle{l.name} << " = ";
 				ctx << l.init;
 				ctx.out << ';' << Writer::nl;

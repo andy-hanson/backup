@@ -12,6 +12,9 @@ set(CMAKE_CXX_FLAGS "-pedantic -Weverything -Wno-c++98-compat -Wno-c++98-compat-
 add_executable(oohoo
 	src/main.cpp
 
+	src/cmd.cpp
+	src/cmd.h
+
 	src/compile/check/BuiltinTypes.h
 	src/compile/check/check.cpp
 	src/compile/check/check.h
@@ -24,29 +27,29 @@ add_executable(oohoo
 	src/compile/check/convert_type.h
 	src/compile/check/type_utils.cpp
 	src/compile/check/type_utils.h
-
 	src/compile/diag/diag.h
 	src/compile/diag/parse_diag.h
+	src/compile/compile.h
+	src/compile/compile.cpp
 
-	src/compile/emit/concrete_fun.cpp
-	src/compile/emit/concrete_fun.h
-	src/compile/emit/emit.cpp
-	src/compile/emit/emit.h
-	src/compile/emit/emit_body.cpp
-	src/compile/emit/emit_body.h
-	src/compile/emit/emit_type.h
-	src/compile/emit/function_names.h
-	src/compile/emit/mangle.cpp
-	src/compile/emit/mangle.h
-	src/compile/emit/Names.cpp
-	src/compile/emit/Names.h
-	src/compile/emit/Writer.cpp
-	src/compile/emit/Writer.h
+	src/emit/concrete_fun.cpp
+	src/emit/concrete_fun.h
+	src/emit/emit.cpp
+	src/emit/emit.h
+	src/emit/emit_body.cpp
+	src/emit/emit_body.h
+	src/emit/emit_type.h
+	src/emit/function_names.h
+	src/emit/mangle.cpp
+	src/emit/mangle.h
+	src/emit/Names.cpp
+	src/emit/Names.h
 
 	src/compile/model/model.cpp
 	src/compile/model/model.h
+	src/compile/model/effect.cpp
+	src/compile/model/effect.h
 	src/compile/model/expr.h
-	src/compile/model/Identifier.h
 
 	src/compile/parse/ast.h
 	src/compile/parse/expr_ast.h
@@ -69,6 +72,13 @@ add_executable(oohoo
 	src/util/StringSlice.cpp
 	src/util/StringSlice.h
 	src/util/hash_util.h
+	src/util/io.cpp
+	src/util/io.h
 	src/util/int.cpp
 	src/util/int.h
-	src/util/Vec.h )
+	src/util/Vec.h
+	src/util/Writer.cpp
+	src/util/Writer.h
+
+	src/cmd.h
+	src/cmd.cpp src/compile/check/check_effects.h src/compile/check/check_effects.cpp)

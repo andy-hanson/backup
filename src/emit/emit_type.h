@@ -1,13 +1,12 @@
 #pragma once
 
-#include "../model/model.h"
-
+#include "../compile/model/model.h"
+#include "../util/Writer.h"
 #include "./mangle.h"
-#include "./Writer.h"
 
 void write_type(Writer& out, const Type& t, const Names& names);
 
-inline void write_type_arguments(Writer& out, const DynArray<Type>& type_arguments, const Names& names) {
+inline void write_type_arguments(Writer& out, const Arr<Type>& type_arguments, const Names& names) {
 	if (type_arguments.empty()) return;
 	out << '<';
 	for (uint i = 0; i != type_arguments.size(); ++i) {
@@ -22,13 +21,14 @@ inline void write_inst_struct(Writer& out, const InstStruct& i, const Names& nam
 	write_type_arguments(out, i.type_arguments, names);
 }
 
-inline void write_plain_type(Writer& out, const PlainType& p, const Names& names) {
-	write_inst_struct(out, p.inst_struct, names);
+inline void substitute_and_write_inst_struct(Writer& out, const ConcreteFun& current_fun, const Type& type, const Names& names, Arena& scratch_arena, bool is_own) {
+	write_inst_struct(out, substitute_type_arguments(type, current_fun, scratch_arena), names);
+	if (!is_own) out << '&';
 }
 
 inline void write_type(Writer& out, const Type& t, const Names& names) {
 	if (t.is_parameter())
 		out << mangle{t.param()->name};
 	else
-		write_plain_type(out, t.plain(), names);
+		write_inst_struct(out, t.inst_struct(), names);
 }

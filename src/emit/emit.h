@@ -2,6 +2,6 @@
 
 #include <string>
 
-#include "../model/model.h"
+#include "../compile/model/model.h"
 
 std::string emit(const Vec<ref<Module>>& modules);

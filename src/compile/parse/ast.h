@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../util/StringSlice.h"
-
+#include "../model/effect.h"
 #include "./expr_ast.h"
 
 struct TypeParameterAst {
@@ -20,7 +20,7 @@ public:
 private:
 	union Data {
 		StringSlice cpp_name;
-		DynArray<StructFieldAst> fields;
+		Arr<StructFieldAst> fields;
 		Data() {}
 	};
 	Kind _kind;
@@ -30,45 +30,49 @@ public:
 	StructBodyAst(StringSlice cpp_name) : _kind(Kind::CppName) {
 		_data.cpp_name = cpp_name;
 	}
-	StructBodyAst(DynArray<StructFieldAst> fields) : _kind(Kind::Fields) {
+	StructBodyAst(Arr<StructFieldAst> fields) : _kind(Kind::Fields) {
 		_data.fields = fields;
 	}
 
 	Kind kind() const { return _kind; }
 	const StringSlice& cpp_name() const { assert(_kind == Kind::CppName); return _data.cpp_name; }
-	const DynArray<StructFieldAst>& fields() const { assert(_kind == Kind::Fields); return _data.fields; }
+	const Arr<StructFieldAst>& fields() const { assert(_kind == Kind::Fields); return _data.fields; }
 };
 
 
 struct ParameterAst {
+	bool from;
+	Option<Effect> effect;
 	TypeAst type;
 	StringSlice name;
 };
 
 struct SpecUseAst {
 	StringSlice spec;
-	DynArray<TypeAst> type_arguments;
+	Arr<TypeAst> type_arguments;
 };
 
 struct FunSignatureAst {
-	DynArray<TypeParameterAst> type_parameters;
-	TypeAst return_type;
 	StringSlice name;
-	DynArray<ParameterAst> parameters;
-	DynArray<SpecUseAst> specs;
+	Option<Effect> effect;
+	TypeAst return_type;
+	Arr<ParameterAst> parameters;
+	Arr<TypeParameterAst> type_parameters;
+	Arr<SpecUseAst> spec_uses;
 };
 
 struct StructDeclarationAst {
 	SourceRange range;
-	DynArray<TypeParameterAst> type_parameters;
 	StringSlice name;
+	Arr<TypeParameterAst> type_parameters;
+	bool copy;
 	StructBodyAst body;
 };
 
 struct SpecDeclarationAst {
-	DynArray<TypeParameterAst> type_parameters;
 	StringSlice name;
-	DynArray<FunSignatureAst> signatures;
+	Arr<TypeParameterAst> type_parameters;
+	Arr<FunSignatureAst> signatures;
 };
 
 class FunBodyAst {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Writer.h"
-#include "../model/model.h"
+#include "../compile/model/model.h"
+#include "../util/Writer.h"
 
 struct mangle { const Identifier& name; };
 Writer& operator<<(Writer& out, mangle man);

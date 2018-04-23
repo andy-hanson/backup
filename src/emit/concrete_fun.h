@@ -1,34 +1,32 @@
 #pragma once
 
-#include "../model/model.h"
-#include "../model/expr.h" // Called
+#include "../compile/model/model.h"
+#include "../compile/model/expr.h" // Called
 
-#include "../../util/hash_util.h"
-#include "../../util/ptr.h"
-#include "../../util/collection_util.h"
-
-#include "../check/type_utils.h"
+#include "../util/hash_util.h"
+#include "../util/ptr.h"
+#include "../util/collection_util.h"
 
 struct ConcreteFun {
 	const ref<const FunDeclaration> fun_declaration;
-	const DynArray<PlainType> type_arguments;
+	const Arr<InstStruct> type_arguments;
 	// Maps spec index -> signature index -> implementation
-	const DynArray<DynArray<ref<const ConcreteFun>>> spec_impls;
+	const Arr<Arr<ref<const ConcreteFun>>> spec_impls;
 
-	ConcreteFun(ref<const FunDeclaration> _fun_declaration, DynArray<PlainType> _type_arguments, DynArray<DynArray<ref<const ConcreteFun>>> _spec_impls)
+	ConcreteFun(ref<const FunDeclaration> _fun_declaration, Arr<InstStruct> _type_arguments, Arr<Arr<ref<const ConcreteFun>>> _spec_impls)
 		: fun_declaration(_fun_declaration), type_arguments(_type_arguments), spec_impls(_spec_impls) {
 		assert(fun_declaration->signature.type_parameters.size() == type_arguments.size());
 		assert(fun_declaration->signature.specs.size() == spec_impls.size());
-		assert(each_corresponds(fun_declaration->signature.specs, spec_impls, [](const SpecUse& spec_use, const DynArray<ref<const ConcreteFun>>& sig_impls) {
+		assert(each_corresponds(fun_declaration->signature.specs, spec_impls, [](const SpecUse& spec_use, const Arr<ref<const ConcreteFun>>& sig_impls) {
 			return spec_use.spec->signatures.size() == sig_impls.size();
 		}));
-		assert(every(type_arguments, [](const PlainType& p) { return p.is_deeply_plain(); }));
+		assert(every(type_arguments, [](const InstStruct& p) { return p.is_deeply_concrete(); }));
 	}
 };
 
-inline bool operator==(const ConcreteFun& a, const ConcreteFun& b) {
-	return a.fun_declaration == b.fun_declaration && a.type_arguments == b.type_arguments && a.spec_impls == b.spec_impls;
-}
+bool operator==(const ConcreteFun& a, const ConcreteFun& b);
+
+InstStruct substitute_type_arguments(const Type& type_argument, const ConcreteFun& fun, Arena& arena);
 
 namespace std {
 	template<>
@@ -54,10 +52,6 @@ namespace std {
 }
 inline bool operator==(const ConcreteFunAndCalled& a, const ConcreteFunAndCalled& b) {
 	return a.fun == b.fun && a.called == b.called;
-}
-
-inline PlainType substitute_type_arguments(const Type& type_argument, const ConcreteFun& fun, Arena& arena) {
-	return substitute_type_arguments(type_argument, fun.fun_declaration->signature.type_parameters, fun.type_arguments, arena);
 }
 
 using FunInstantiations = Map<ref<const FunDeclaration>, Sett<ConcreteFun>>;

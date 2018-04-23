@@ -10,20 +10,20 @@ class ExprAst;
 
 struct CallAst {
 	StringSlice fun_name;
-	DynArray<TypeAst> type_arguments;
-	DynArray<ExprAst> arguments;
+	Arr<TypeAst> type_arguments;
+	Arr<ExprAst> arguments;
 };
 
 struct LiteralAst {
 	StringSlice literal;
-	DynArray<TypeAst> type_arguments;
-	DynArray<ExprAst> arguments;
+	Arr<TypeAst> type_arguments;
+	Arr<ExprAst> arguments;
 };
 
 struct StructCreateAst {
 	StringSlice struct_name;
-	DynArray<TypeAst> type_arguments;
-	DynArray<ExprAst> arguments;
+	Arr<TypeAst> type_arguments;
+	Arr<ExprAst> arguments;
 };
 
 struct TypeAnnotateAst;
@@ -34,12 +34,14 @@ struct LetAst {
 	ref<ExprAst> then;
 };
 struct SeqAst {
+	SourceRange range;
 	ref<ExprAst> first;
 	ref<ExprAst> then;
 };
 struct CaseAst;
 struct WhenAst {
-	DynArray<CaseAst> cases;
+	SourceRange range;
+	Arr<CaseAst> cases;
 	ref<ExprAst> elze;
 };
 

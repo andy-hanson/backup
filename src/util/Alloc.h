@@ -8,22 +8,16 @@
 #include "./Option.h"
 
 template <typename T>
-class DynArray {
+class Arr {
 	T* data;
 	size_t len;
 
 	friend class Arena;
 
-	DynArray(T* _data, size_t _len) : data(_data), len(_len) {}
+	Arr(T* _data, size_t _len) : data(_data), len(_len) {}
 
 public:
-	DynArray() : data(nullptr), len(0) {}
-
-	template <typename Cb>
-	void fill(Cb cb) {
-		for (uint i = 0; i < len; ++i)
-			data[i] = cb(i);
-	}
+	Arr() : data(nullptr), len(0) {}
 
 	T& operator[](size_t index) {
 		assert(index < len);
@@ -39,32 +33,15 @@ public:
 		return begin() <= r.ptr() && r.ptr() < end();
 	}
 
+	using iterator = T*;
 	using const_iterator = const T*;
 
 	size_t size() const { return len; }
 	bool empty() const { return len == 0; }
-	const_iterator begin() { return data; }
-	const_iterator end() { return data + len; }
-	const T* begin() const { return data; }
-	const T* end() const { return data + len; }
-};
-
-template <typename T>
-class List {
-	friend class Arena;
-	struct Node {
-		T value;
-		Option<ref<Node>> next;
-	};
-
-	Option<ref<Node>> head;
-
-	List(ref<Node> _head) : head(_head) {}
-
-public:
-	List() : head({}) {}
-	List(const List& other) = default;
-	List& operator=(const List& other) = default;
+	iterator begin() { return data; }
+	iterator end() { return data + len; }
+	const_iterator begin() const { return data; }
+	const_iterator end() const { return data + len; }
 };
 
 // Wrapper around StringSlice that ensures it's in an arena.
@@ -75,11 +52,17 @@ class ArenaString {
 	ArenaString(StringSlice slice) : _slice(slice) {}
 public:
 	ArenaString() : _slice() {}
-	operator StringSlice() const {
-		return _slice;
-	}
-	StringSlice slice() const { return _slice; }
+	inline operator StringSlice() const { return _slice; }
+	inline StringSlice slice() const { return _slice; }
 };
+inline bool operator==(const ArenaString& a, const ArenaString& b) { return a.slice() == b.slice();}
+inline bool operator==(const ArenaString& a, const StringSlice& b) { return a.slice() == b; }
+namespace std {
+	template <>
+	struct hash<ArenaString> {
+		size_t operator()(const ArenaString& a) const { return hash<StringSlice>{}(a); }
+	};
+}
 
 class Arena {
 	void* alloc_begin;
@@ -105,66 +88,55 @@ public:
 	~Arena() {
 		::operator delete(alloc_begin);
 	}
-	Arena(Arena&& other) {
-		alloc_begin = other.alloc_begin;
-		alloc_next = other.alloc_next;
-		alloc_end = other.alloc_end;
 
-		other.alloc_begin = nullptr;
-		other.alloc_next = nullptr;
-		other.alloc_end = nullptr;
+	template <typename T>
+	ref<T> put(T&& value) {
+		T* ptr =  static_cast<T*>(allocate(sizeof(T)));
+		new(ptr) T(std::forward<T>(value));
+		return ptr;
 	}
 
 	template <typename T>
-	ref<T> put(T value) {
+	ref<T> put_copy(T value) {
 		T* ptr =  static_cast<T*>(allocate(sizeof(T)));
 		new(ptr) T(value);
 		return ptr;
 	}
 
 	template <typename T>
-	DynArray<T> new_array(size_t len) {
-		return DynArray<T>(static_cast<T*>(allocate(sizeof(T) * len)), len);
+	Arr<T> new_array(size_t len) {
+		return Arr<T>(static_cast<T*>(allocate(sizeof(T) * len)), len);
 	}
 
 	template <typename T>
-	DynArray<T> make_array(T elem) {
-		return fill_array<T>(1)([&](uint i) {
-			assert(i == 0);
-			return elem;
-		});
-	}
-
-	template <typename T>
-	List<T> make_list(T elem) {
-		return List<T> { put(typename List<T>::Node { elem, {}}) };
+	Arr<T> make_array(T elem) {
+		return fill_array<T>()(1, [&](uint i) { assert(i == 0); return elem; });
 	}
 
 	template <typename T>
 	struct ArrayFiller {
 		friend class Arena;
-		DynArray<T> inner;
-		ArrayFiller(DynArray<T> _inner) : inner(_inner) {}
+		Arena& arena;
 
 	public:
 		template <typename Cb>
-		DynArray<T> operator()(Cb cb) {
-			inner.fill(cb);
-			return inner;
+		Arr<T> operator()(size_t len, Cb cb) {
+			Arr<T> arr = arena.new_array<T>(len);
+			for (uint i = 0; i < len; ++i)
+				arr[i] = cb(i);
+			return arr;
 		}
 	};
 
 	template <typename T>
-	ArrayFiller<T> fill_array(size_t len) {
-		return ArrayFiller<T>(new_array<T>(len));
-	}
+	ArrayFiller<T> fill_array() { return {*this}; }
 
 	template <typename Out>
 	struct ArrayMapper {
 		Arena& arena;
 		template <typename In, typename /*const In& => Out*/ Cb>
-		DynArray<Out> operator()(const DynArray<In>& in, Cb cb) {
-			return arena.fill_array<Out>(in.size())([&](uint i) { return cb(in[i]); });
+		Arr<Out> operator()(const Arr<In>& in, Cb cb) {
+			return arena.fill_array<Out>()(in.size(), [&](uint i) { return cb(in[i]); });
 		}
 	};
 	template <typename Out>
@@ -175,13 +147,13 @@ public:
 	template <typename Out>
 	struct MapWithPrevs {
 		Arena& arena;
-		template <typename In, typename /*const In&, const DynArray<Out>&*/ Cb>
-		DynArray<Out> operator()(const DynArray<In>& inputs, Cb cb) {
-			DynArray<Out> out = arena.new_array<Out>(inputs.size());
+		template <typename In, typename /*const In&, const Arr<Out>&, uint => Out*/ Cb>
+		Arr<Out> operator()(const Arr<In>& inputs, Cb cb) {
+			Arr<Out> out = arena.new_array<Out>(inputs.size());
 			out.len = 0;
 			uint i = 0;
 			for (const In& input : inputs) {
-				Out o = cb(input, out);
+				Out o = cb(input, out, i);
 				++out.len;
 				out[i] = o;
 				++i;
@@ -198,8 +170,8 @@ public:
 		Arena& arena;
 
 		template <typename In, typename /*const In& => Option<Out>*/ Cb>
-		DynArray<Out> operator()(const DynArray<In>& inputs, Cb cb) {
-			DynArray<Out> out = arena.new_array<Out>(inputs.size());
+		Arr<Out> operator()(const Arr<In>& inputs, Cb cb) {
+			Arr<Out> out = arena.new_array<Out>(inputs.size());
 			uint i = 0;
 			for (const In& input : inputs) {
 				Option<Out> o = cb(input);
@@ -222,9 +194,9 @@ public:
 	struct MapOpWithPrevs {
 		Arena& arena;
 
-		template <typename In, typename /*(const In&, const DynArray<Out>&) => Option<Out>*/ Cb>
-		DynArray<Out> operator()(const DynArray<In>& inputs, Cb cb) {
-			DynArray<Out> out = arena.new_array<Out>(inputs.size());
+		template <typename In, typename /*(const In&, const Arr<Out>&) => Option<Out>*/ Cb>
+		Arr<Out> operator()(const Arr<In>& inputs, Cb cb) {
+			Arr<Out> out = arena.new_array<Out>(inputs.size());
 			out.len = 0;
 			uint i = 0;
 			for (const In& input : inputs) {
@@ -242,8 +214,6 @@ public:
 	template <typename Out>
 	MapOpWithPrevs<Out> map_op_with_prevs() { return MapOpWithPrevs<Out>{*this}; }
 
-
-
 	template <typename T>
 	class SmallArrayBuilder {
 		friend class Arena;
@@ -253,14 +223,10 @@ public:
 		SmallArrayBuilder(ref<Arena> _arena) : arena(_arena) {}
 
 	public:
-		void add(T value) {
-			v.push(value);
-		}
+		void add(T value) { v.push(value); }
 
-		DynArray<T> finish() {
-			return arena->fill_array<T>(v.size())([&](uint i) {
-				return v[i];
-			});
+		Arr<T> finish() {
+			return arena->fill_array<T>()(v.size(), [&](uint i) { return v[i]; });
 		}
 	};
 
@@ -332,7 +298,9 @@ public:
 
 	ArenaString str(StringSlice slice) {
 		char* begin = static_cast<char*>(allocate(slice.size()));
-		std::copy(slice.begin(), slice.end(), begin);
-		return { { begin, begin + slice.size() } };
+		char* end = std::copy(slice.begin(), slice.end(), begin);
+		assert(size_t(end - begin) == slice.size());
+		assert(alloc_next == end);
+		return { { begin, end } };
 	}
 };

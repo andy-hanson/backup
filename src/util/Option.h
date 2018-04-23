@@ -27,7 +27,7 @@ public:
 			storage.value = other.storage.value;
 		}
 	}
-	Option(T _value) : is_present(true) {
+	explicit Option(T _value) : is_present(true) {
 		storage.value = _value;
 	}
 	~Option() {
@@ -45,6 +45,10 @@ public:
 		return is_present;
 	}
 
+	T& get() {
+		assert(is_present);
+		return storage.value;
+	}
 	const T& get() const {
 		assert(is_present);
 		return storage.value;
@@ -61,7 +65,7 @@ class Option<T&> {
 
 public:
 	Option() : ref(nullptr) {}
-	Option(T& value) : ref(&value) {}
+	explicit Option(T& value) : ref(&value) {}
 
 	operator bool() const {
 		return ref != nullptr;
@@ -101,7 +105,7 @@ template <typename Out>
 struct MapOp {
 	template <typename In, typename /*Option<In> => Option<Out>*/ Cb>
 	Option<Out> operator()(const Option<In>& in, Cb cb) const {
-		return in ? cb(in.get()) : Option<Out>{};
+		return in ? Option<Out>{cb(in.get())} : Option<Out>{};
 	}
 };
 template <typename Out>
@@ -111,3 +115,17 @@ template <typename T, typename /*() => Option<T>*/ Cb>
 Option<T> or_option(const Option<T>& op, Cb cb) {
 	return op ? op : cb();
 }
+
+template <typename T>
+class Late {
+	Option<T> inner;
+
+public:
+	void init(T value) {
+		assert(!inner); // Only set once
+		inner = value;
+	}
+
+	operator const T&() { return inner.get(); }
+	const T& explicit_borrow() const { return inner.get(); } // TODO: shouldn't be necessary?
+};

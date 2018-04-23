@@ -1,6 +1,6 @@
 #include "./parse_type.h"
 
-DynArray<TypeAst> parse_type_argument_asts(Lexer& lexer, Arena& arena) {
+Arr<TypeAst> parse_type_argument_asts(Lexer& lexer, Arena& arena) {
 	if (!lexer.try_take('<'))
 		return {};
 	auto args = arena.small_array_builder<TypeAst>();
@@ -10,8 +10,7 @@ DynArray<TypeAst> parse_type_argument_asts(Lexer& lexer, Arena& arena) {
 }
 
 TypeAst parse_type_ast(Lexer& lexer, Arena& arena) {
-	Effect effect = lexer.try_take_effect();
+	bool is_type_parameter = lexer.try_take('?');
 	StringSlice name = lexer.take_type_name();
-	DynArray<TypeAst> its_args = parse_type_argument_asts(lexer, arena);
-	return { effect, name, its_args };
+	return { is_type_parameter, name, is_type_parameter ? Arr<TypeAst>{} : parse_type_argument_asts(lexer, arena) };
 }

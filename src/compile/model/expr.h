@@ -55,7 +55,7 @@ public:
 		}
 	}
 
-	const FunSignature& sig() {
+	const FunSignature& sig() const {
 		switch (_kind) {
 			case Kind::Fun:
 				return fun()->signature;
@@ -79,22 +79,22 @@ public:
 
 struct Called {
 	CalledDeclaration called_declaration;
-	DynArray<Type> type_arguments;
+	Arr<Type> type_arguments;
 	// These will be in order of the signatures from the specs of the function we're calling.
 	// For each spec, there is an array of a Called matching each signature in that spec.
 	// Note: if there is a generic spec signature, it should be matched by a generic function. And a non-generic spec signature can't be matched by a generic function.
 	// So this uses CalledDeclaration and not Called.
-	DynArray<DynArray<CalledDeclaration>> spec_impls;
+	Arr<Arr<CalledDeclaration>> spec_impls;
 };
 
 struct Call {
 	Called called;
-	DynArray<Expression> arguments;
+	Arr<Expression> arguments;
 };
 
 struct StructCreate {
 	InstStruct inst_struct; // Effect is Io
-	DynArray<Expression> arguments;
+	Arr<Expression> arguments;
 };
 
 struct Let;
@@ -102,10 +102,10 @@ struct Seq;
 
 struct Case;
 struct When {
-	DynArray<Case> cases;
+	Arr<Case> cases;
 	ref<Expression> elze;
 
-	When(DynArray<Case> _cases, ref<Expression> _elze) : cases(_cases), elze(_elze) {
+	When(Arr<Case> _cases, ref<Expression> _elze) : cases(_cases), elze(_elze) {
 		assert(cases.size() != 0);
 	}
 };
@@ -133,8 +133,8 @@ private:
 		ref<const Parameter> parameter_reference;
 		ref<const Let> local_reference;
 		StructFieldAccess struct_field_access;
-		ref<const Let> let;
-		ref<const Seq> seq;
+		ref<Let> let;
+		ref<Seq> seq;
 		Call call;
 		StructCreate struct_create;
 		ArenaString string_literal;
@@ -167,13 +167,13 @@ public:
 		data.parameter_reference = p;
 	}
 
-	Expression(ref<const Let> l, Kind kind) : _kind(kind) {
+	Expression(ref<Let> l, Kind kind) : _kind(kind) {
 		if (kind == Kind::LocalReference) data.local_reference = l;
 		else if (kind == Kind::Let) data.let = l;
 		else assert(false);
 	}
 
-	Expression(ref<const Seq> seq) : _kind(Kind::Seq) {
+	Expression(ref<Seq> seq) : _kind(Kind::Seq) {
 		data.seq = seq;
 	}
 
@@ -209,17 +209,33 @@ public:
 		assert(_kind == Kind::LocalReference);
 		return data.local_reference;
 	}
+	StructFieldAccess& struct_field_access() {
+		assert(_kind == Kind::StructFieldAccess);
+		return data.struct_field_access;
+	}
 	const StructFieldAccess& struct_field_access() const {
 		assert(_kind == Kind::StructFieldAccess);
 		return data.struct_field_access;
+	}
+	Let& let() {
+		assert(_kind == Kind::Let);
+		return *data.let;
 	}
 	const Let& let() const {
 		assert(_kind == Kind::Let);
 		return *data.let;
 	}
+	Seq& seq() {
+		assert(_kind == Kind::Seq);
+		return *data.seq;
+	}
 	const Seq& seq() const {
 		assert(_kind == Kind::Seq);
 		return *data.seq;
+	}
+	Call& call() {
+		assert(_kind == Kind::Call);
+		return data.call;
 	}
 	const Call& call() const {
 		assert(_kind == Kind::Call);
@@ -280,6 +296,7 @@ struct Let {
 	Identifier name;
 	Expression init;
 	Expression then;
+	Late<bool> is_own;
 };
 
 struct Seq {

@@ -1,17 +1,17 @@
 #include "emit.h"
 
-#include "../model/expr.h"
-#include "../../util/Alloc.h"
+#include "../compile/model/expr.h"
+#include "../util/Alloc.h"
+#include "../util/Writer.h"
 #include "./mangle.h"
 
 #include "./concrete_fun.h"
 #include "./emit_body.h"
 #include "./emit_type.h"
 #include "./Names.h"
-#include "./Writer.h"
 
 namespace {
-	void write_type_parameters(Writer& out, const DynArray<TypeParameter>& type_parameters) {
+	void write_type_parameters(Writer& out, const Arr<TypeParameter>& type_parameters) {
 		if (type_parameters.empty()) return;
 		out << "template <";
 		for (uint i = 0; i != type_parameters.size(); ++i) {
@@ -43,18 +43,16 @@ namespace {
 	}
 
 	void write_fun_header(Writer& out, const ConcreteFun &f, const Names& names, Arena& scratch_arena) {
-		write_plain_type(out, substitute_type_arguments(f.fun_declaration->signature.return_type, f, scratch_arena), names);
+		substitute_and_write_inst_struct(out, f, f.fun_declaration->signature.return_type, names, scratch_arena, f.fun_declaration->signature.effect == Effect::Own);
 		out << ' ' << names.get_name(&f) << '(';
 		bool first_param = true;
-		for (const auto& param : f.fun_declaration->signature.parameters) {
+		for (const Parameter& param : f.fun_declaration->signature.parameters) {
 			if (first_param)
 				first_param = false;
 			else
 				out << ", ";
-			out << "const ";
-			write_plain_type(out, substitute_type_arguments(param.type, f, scratch_arena), names);
-			out << "& ";
-			out << mangle{param.name};
+			substitute_and_write_inst_struct(out, f, param.type, names, scratch_arena, param.effect == Effect::Own);
+			out << ' ' << mangle{param.name};
 		}
 		out << ')';
 	}
@@ -65,8 +63,8 @@ namespace {
 	void each_struct_field(const StructDeclaration& s, Cb cb) {
 		if (!s.body.is_fields()) return;
 		for (const StructField& f : s.body.fields())
-			if (f.type.is_plain())
-				cb(f.type.plain().inst_struct.strukt);
+			if (f.type.is_inst_struct())
+				cb(f.type.inst_struct().strukt);
 	}
 
 	void emit_structs(Writer& out, const StructsDeclarationOrder& structs, const Names& names) {
@@ -76,15 +74,17 @@ namespace {
 		for (const StructDeclaration& struct_in_order : structs) {
 			stack.push(&struct_in_order);
 			do {
+				// At each step, we either pop, or mark a struct as emitting (which will be popped next time). So should terminate eventually.
 				ref<const StructDeclaration> s = stack.peek();
 				EmitStructState& state = map.get_or_create(s);
 				switch (state) {
 					case EmitStructState::Emitted:
+						stack.pop();
 						break;
 					case EmitStructState::Emitting:
+						stack.pop();
 						emit_struct(out, s, names);
 						state = EmitStructState::Emitted;
-						stack.pop();
 						break;
 					case EmitStructState::Nil:
 						state = EmitStructState::Emitting;

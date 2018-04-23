@@ -11,7 +11,7 @@ inline size_t hash_combine(size_t seed, const T& v, Rest... rest) {
 }
 
 template <typename T>
-size_t hash_dyn_array(const DynArray<T>& d) {
+size_t hash_dyn_array(const Arr<T>& d) {
 	size_t h = 0;
 	for (const T& t : d) {
 		hash_combine(h, t);

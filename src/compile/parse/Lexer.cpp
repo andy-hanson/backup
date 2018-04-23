@@ -88,7 +88,21 @@ void Lexer::take(char expected) {
 		throw diag_at_char({ ParseDiag::Kind::ExpectedCharacter, expected });
 }
 
-bool Lexer::try_take_else() {
+bool Lexer::try_take_copy_keyword() {
+	if (ptr[0] == 'c' && ptr[1] == 'o' && ptr[2] == 'p' && ptr[3] == 'y') {
+		ptr += 4;
+		return true;
+	}
+	return false;
+}
+bool Lexer::try_take_from_keyword() {
+	if (ptr[0] == 'f' && ptr[1] == 'r' && ptr[2] == 'o' && ptr[3] == 'm') {
+		ptr += 4;
+		return true;
+	}
+	return false;
+}
+bool Lexer::try_take_else_keyword() {
 	if (ptr[0] == 'e' && ptr[1] == 'l' && ptr[2] == 's' && ptr[3] == 'e') {
 		ptr += 4;
 		return true;
@@ -96,53 +110,19 @@ bool Lexer::try_take_else() {
 	return false;
 }
 
-Effect Lexer::try_take_effect() {
+Option<Effect> Lexer::try_take_effect() {
 	const char c = *ptr;
 	switch (c) {
 		case 'g':
 		case 's':
 		case 'i':
+		case 'o':
 			++ptr;
-			if (c == 'i') take('o'); else expect("et");
+			if (c == 'g' || c == 's') expect("et"); else if (c == 'i') take('o'); else expect("wn");
 			take(' ');
-			return c == 'g' ? Effect::Get : c == 's' ? Effect::Set : Effect::Io;
+			return Option<Effect> { c == 'g' ? Effect::Get : c == 's' ? Effect::Set : c == 'i' ? Effect::Io : Effect::Own };
 		default:
-			return Effect::Pure;
-	}
-}
-
-TopLevelKeyword Lexer::try_take_top_level_keyword() {
-	switch (*ptr) {
-		case 'c':
-			++ptr;
-			expect("pp");
-			take(' ');
-			switch (*ptr) {
-				case 'i':
-					++ptr;
-					expect("nclude");
-					return TopLevelKeyword::KwCppInclude;
-				case 's':
-					++ptr;
-					expect("truct");
-					return TopLevelKeyword::KwCppStruct;
-				default:
-					return TopLevelKeyword::KwCpp;
-			}
-		case 's':
-			++ptr;
-			if (*ptr == 'p') {
-				++ptr;
-				expect("ec");
-				return TopLevelKeyword::KwSpec;
-			} else {
-				expect("truct");
-				return TopLevelKeyword::KwStruct;
-			}
-		case '\0':
-			return TopLevelKeyword::KwEof;
-		default:
-			return TopLevelKeyword::None;
+			return {};
 	}
 }
 
@@ -232,12 +212,9 @@ StringSlice Lexer::take_type_name() {
 }
 
 StringSlice Lexer::take_spec_name() {
-	const char* begin = ptr;
 	if (*ptr != '$') throw unexpected();
 	++ptr;
-	if (!is_upper_case_letter(*ptr)) throw unexpected();
-	++ptr;
-	return take_name_helper(begin, ptr, is_type_name_continue);
+	return take_type_name();
 }
 
 StringSlice Lexer::take_value_name() {
@@ -251,6 +228,10 @@ StringSlice Lexer::take_value_name() {
 	} else {
 		throw unexpected();
 	}
+}
+
+Lexer::ValueOrTypeName Lexer::take_value_or_type_name() {
+	return is_upper_case_letter(*ptr) ? ValueOrTypeName { false, take_type_name() } : ValueOrTypeName { true, take_value_name() };
 }
 
 StringSlice Lexer::take_cpp_type_name() {

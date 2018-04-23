@@ -27,37 +27,11 @@ namespace {
 	}
 
 	/** Remove functions that did not have that argument type. We will also have to fill in type parameters for some candidates here. */
-	void remove_overloads_given_argument_type(Candidates& candidates, const Expected& expected, uint arg_index) {
-		if (expected.had_expectation()) return; // Arg checked itself.
-
-		const Type& arg_type = expected.inferred_type();
+	void remove_overloads_given_argument_type(Candidates& candidates, const Type& arg_type, uint arg_index) {
 		filter_unordered(candidates, [arg_index, arg_type](Candidate& candidate) {
 			return try_match_types(candidate.signature->parameters[arg_index].type, arg_type, candidate);
 		});
 		if (candidates.empty()) throw "todo";
-	}
-
-	// Special handling for unary calls because:
-	// a) May be a struct access
-	// b) We can be more efficient for overload resolution.
-	Option <Expression> try_convert_struct_field_access(StringSlice fun_name, const ExprAst& argument, ExprContext& ctx, Expected& expected) {
-		auto argAndType = check_and_infer(argument, ctx);
-		Type arg_type = argAndType.type;
-		if (arg_type.is_plain()) {
-			const PlainType& plain = arg_type.plain();
-			const StructDeclaration& strukt = plain.inst_struct.strukt;
-			if (strukt.body.is_fields()) {
-				if (!plain.inst_struct.type_arguments.empty()) throw "todo";
-				//TODO: substitute type arguments here!
-				Option<ref<const StructField>> field = find(strukt.body.fields(), [fun_name](const StructField& f) { return f.name == fun_name; });
-				if (field) {
-					// TODO: also check plain.effect to narrow the field type
-					expected.check_no_infer(field.get()->type);
-					return { StructFieldAccess { ctx.al.arena.put(argAndType.expression), field.get() }};
-				}
-			}
-		}
-		return {};
 	}
 
 	template <typename Cb /*CalledDeclaration => void*/>
@@ -70,11 +44,11 @@ namespace {
 			cb(f);
 	}
 
-	void get_initial_candidates(Candidates& candidates, ExprContext& ctx, const StringSlice& fun_name, const DynArray<Type>& explicit_type_arguments, size_t arity) {
+	void get_initial_candidates(Candidates& candidates, ExprContext& ctx, const StringSlice& fun_name, const Arr<Type>& explicit_type_arguments, size_t arity) {
 		each_initial_candidate(ctx, fun_name, [&](CalledDeclaration called) {
 			const FunSignature& sig = called.sig();
 			if (sig.arity() == arity && (explicit_type_arguments.empty() || sig.type_parameters.size() == explicit_type_arguments.size())) {
-				DynArray<Option<Type>> inferring_type_arguments = ctx.scratch_arena.fill_array<Option<Type>>(sig.type_parameters.size())([&](uint i) {
+				Arr<Option<Type>> inferring_type_arguments = ctx.scratch_arena.fill_array<Option<Type>>()(sig.type_parameters.size(), [&](uint i) {
 					return explicit_type_arguments.empty() ? Option<Type> {} : Option<Type> { explicit_type_arguments[i] };
 				});
 				candidates.push({ called, &sig, inferring_type_arguments });
@@ -83,9 +57,9 @@ namespace {
 	}
 
 	struct TypeParametersAndArguments {
-		DynArray<TypeParameter> type_parameters;
-		DynArray<Type> type_arguments;
-		TypeParametersAndArguments(DynArray<TypeParameter> _type_parameters, DynArray<Type> _type_arguments) : type_parameters(_type_parameters), type_arguments(_type_arguments) {
+		Arr<TypeParameter> type_parameters;
+		Arr<Type> type_arguments;
+		TypeParametersAndArguments(Arr<TypeParameter> _type_parameters, Arr<Type> _type_arguments) : type_parameters(_type_parameters), type_arguments(_type_arguments) {
 			assert(type_parameters.size() == type_arguments.size());
 		}
 
@@ -103,20 +77,21 @@ namespace {
 	};
 
 	template <typename /*(const Type&, const Type&) => bool*/ TypesEqual>
-	bool plain_types_equal(const PlainType& a, const Type& bt, TypesEqual types_equal) {
-		if (!bt.is_plain()) return false;
-		const PlainType& b = bt.plain();
-		return a.effect == b.effect && a.inst_struct.strukt == b.inst_struct.strukt
-			&& each_corresponds(a.inst_struct.type_arguments, b.inst_struct.type_arguments, types_equal);
+	bool inst_structs_equal(const InstStruct& a, const Type& bt, TypesEqual types_equal) {
+		if (!bt.is_inst_struct()) return false;
+		const InstStruct& b = bt.inst_struct();
+		return a.strukt == b.strukt && each_corresponds(a.type_arguments, b.type_arguments, types_equal);
 	}
 
 	bool signature_types_equal_no_sub(const Type& a, const Type& actual) {
 		switch (a.kind()) {
-			case Type::Kind::Nil: assert(false);
+			case Type::Kind::Nil:
 			case Type::Kind::Param:
-				throw "todo";
-			case Type::Kind::Plain:
-				return plain_types_equal(a.plain(), actual, signature_types_equal_no_sub);
+				assert(false);
+			case Type::Kind::Bogus:
+				return false;
+			case Type::Kind::InstStruct:
+				return inst_structs_equal(a.inst_struct(), actual, signature_types_equal_no_sub);
 		}
 	}
 
@@ -124,11 +99,14 @@ namespace {
 	// This may further need to be substituted by a type argument from the candidate.
 	bool signature_types_equal_one_sub(const Type& substituted_from_spec, const Type& actual, const TypeParametersAndArguments& candidate_type_args) {
 		switch (substituted_from_spec.kind()) {
-			case Type::Kind::Nil: assert(false);
+			case Type::Kind::Nil:
+				assert(false);
+			case Type::Kind::Bogus:
+				return false;
 			case Type::Kind::Param:
 				return signature_types_equal_no_sub(candidate_type_args.substitute(substituted_from_spec.param()), actual);
-			case Type::Kind::Plain:
-				return plain_types_equal(substituted_from_spec.plain(), actual, [&](const Type& spec_type, const Type& actual_type) {
+			case Type::Kind::InstStruct:
+				return inst_structs_equal(substituted_from_spec.inst_struct(), actual, [&](const Type& spec_type, const Type& actual_type) {
 					return signature_types_equal_one_sub(spec_type, actual_type, candidate_type_args);
 				});
 		}
@@ -141,7 +119,10 @@ namespace {
 		const TypeArgumentsScope& type_arguments_scope
 	) {
 		switch (type_from_spec.kind()) {
-			case Type::Kind::Nil: assert(false);
+			case Type::Kind::Nil:
+				assert(false);
+			case Type::Kind::Bogus:
+				return false; // Don't use a signature if we didn't resolve its types.
 			case Type::Kind::Param: {
 				const TypeParameter& p = type_from_spec.param();
 				// It must be a type param of the spec signature, or of the spec itself.
@@ -154,8 +135,8 @@ namespace {
 					return signature_types_equal_one_sub(type_arguments_scope.spec_use_type_args.substitute(p), actual, type_arguments_scope.candidate_type_args);
 				}
 			}
-			case Type::Kind::Plain:
-				return plain_types_equal(type_from_spec.plain(), actual, [&](const Type& spec_type, const Type& actual_type) {
+			case Type::Kind::InstStruct:
+				return inst_structs_equal(type_from_spec.inst_struct(), actual, [&](const Type& spec_type, const Type& actual_type) {
 					return signature_types_equal(spec_signature, spec_type, actual_signature, actual_type, type_arguments_scope);
 				});
 		}
@@ -176,7 +157,7 @@ namespace {
 	//Also, we won't look in the current specs, because that's what we're trying to resolve. Specs can't be resolved by other specs.
 	CalledDeclaration find_spec_signature_implementation(const ExprContext& ctx, const FunSignature& spec_signature, const TypeArgumentsScope& type_arguments_scope) {
 		Option<CalledDeclaration> match;
-		each_initial_candidate(ctx, spec_signature.name.str, [&](CalledDeclaration called) {
+		each_initial_candidate(ctx, spec_signature.name, [&](CalledDeclaration called) {
 			if (signature_matches(spec_signature, called.sig(), type_arguments_scope)) {
 				if (match) throw "todo";
 				match = called;
@@ -187,13 +168,13 @@ namespace {
 	}
 
 	// If the candidate we resolved has specs, fill them in.
-	Called check_specs(ExprContext& ctx, CalledDeclaration called, DynArray<Type> type_arguments) {
+	Called check_specs(ExprContext& ctx, CalledDeclaration called, Arr<Type> type_arguments) {
 		if (called.kind() == CalledDeclaration::Kind::Spec) {
 			if (called.sig().specs.size() != 0) throw "Todo: specs that have specs";
 			return { called, type_arguments, {} };
 		}
 
-		DynArray<DynArray<CalledDeclaration>> spec_impls = ctx.al.arena.map<DynArray<CalledDeclaration>>()(called.sig().specs, [&](const SpecUse& spec_use) {
+		Arr<Arr<CalledDeclaration>> spec_impls = ctx.al.arena.map<Arr<CalledDeclaration>>()(called.sig().specs, [&](const SpecUse& spec_use) {
 			TypeArgumentsScope type_arguments_scope { { spec_use.spec->type_parameters, spec_use.type_arguments }, { called.sig().type_parameters, type_arguments } };
 			return ctx.al.arena.map<CalledDeclaration>()(spec_use.spec->signatures, [&](const FunSignature& sig) {
 				return find_spec_signature_implementation(ctx, sig, type_arguments_scope);
@@ -202,13 +183,40 @@ namespace {
 
 		return { called, type_arguments, spec_impls };
 	}
+
+
+	// Special handling for unary calls because:
+	// a) May be a struct access
+	// b) We can be more efficient for overload resolution.
+	Option<Expression> try_convert_struct_field_access(StringSlice fun_name, const ExpressionAndType& argument_and_type, ExprContext& ctx, Expected& expected) {
+		const Type& arg_type = argument_and_type.type;
+		if (arg_type.is_inst_struct()) {
+			const InstStruct& inst = arg_type.inst_struct();
+			const StructDeclaration& strukt = inst.strukt;
+			if (strukt.body.is_fields()) {
+				if (!inst.type_arguments.empty()) throw "todo";
+				//TODO: substitute type arguments here!
+				Option<ref<const StructField>> field = find(strukt.body.fields(), [fun_name](const StructField& f) { return f.name == fun_name; });
+				if (field) {
+					// TODO: also check plain.effect to narrow the field type
+					expected.check_no_infer(field.get()->type);
+					return Option<Expression> { StructFieldAccess { ctx.al.arena.put_copy(argument_and_type.expression), field.get() }};
+				}
+			}
+		}
+		return {};
+	}
 }
 
-Expression check_call(const StringSlice& fun_name, const DynArray<ExprAst>& argument_asts, const DynArray<TypeAst>& type_argument_asts, ExprContext& ctx, Expected& expected) {
-	DynArray<Type> explicit_type_arguments = type_arguments_from_asts(type_argument_asts, ctx.al, ctx.structs_table, ctx.current_fun->signature.type_parameters);
+Expression check_call(const StringSlice& fun_name, const Arr<ExprAst>& argument_asts, const Arr<TypeAst>& type_argument_asts, ExprContext& ctx, Expected& expected) {
+	Arr<Type> explicit_type_arguments = type_arguments_from_asts(type_argument_asts, ctx.al, ctx.structs_table, ctx.current_fun->signature.type_parameters);
 	size_t arity = argument_asts.size();
+
+	// Can never use an expected type in a unary call, because it might be a struct field access.
+	ExpressionAndType first_arg_and_type = check_and_infer(argument_asts[0], ctx);
+
 	if (arity == 1 && explicit_type_arguments.empty()) {
-		Option<Expression> e = try_convert_struct_field_access(fun_name, argument_asts[0], ctx, expected);
+		Option<Expression> e = try_convert_struct_field_access(fun_name, first_arg_and_type, ctx, expected);
 		if (e) return e.get();
 	}
 
@@ -227,17 +235,23 @@ Expression check_call(const StringSlice& fun_name, const DynArray<ExprAst>& argu
 		if (candidates.empty()) throw "todo: no overload returns what you wanted";
 	}
 
-	DynArray<Expression> arguments = ctx.al.arena.fill_array<Expression>(arity)([&](uint arg_idx) {
-		Expected expected_this_arg = get_common_overload_parameter_type(candidates, arg_idx);
-		Expression res = check(argument_asts[arg_idx], ctx, expected_this_arg);
-		remove_overloads_given_argument_type(candidates, expected_this_arg, arg_idx);
-		return res;
+	Arr<Expression> arguments = ctx.al.arena.fill_array<Expression>()(arity, [&](uint arg_idx) {
+		if (arg_idx == 0) {
+			remove_overloads_given_argument_type(candidates, first_arg_and_type.type, arg_idx);
+			return first_arg_and_type.expression;
+		} else {
+			Expected expected_this_arg = get_common_overload_parameter_type(candidates, arg_idx);
+			Expression res = check(argument_asts[arg_idx], ctx, expected_this_arg);
+			if (!expected.had_expectation())
+				remove_overloads_given_argument_type(candidates, expected.inferred_type(), arg_idx);
+			return res;
+		}
 	});
 
 	if (candidates.size() > 1) throw "todo: two identical candidates?";
 	const Candidate& candidate = candidates[0];
 
-	DynArray<Type> candidate_type_arguments = ctx.al.arena.map<Type>()(candidate.inferring_type_arguments, [](const Option<Type>& t){
+	Arr<Type> candidate_type_arguments = ctx.al.arena.map<Type>()(candidate.inferring_type_arguments, [](const Option<Type>& t){
 		if (!t) throw "todo: didn't infer all type arguments";
 		return t.get();
 	});

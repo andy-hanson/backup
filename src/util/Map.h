@@ -67,11 +67,7 @@ public:
 	}
 
 	Option<const V&> get(K key) const {
-		try {
-			return inner.at(key);
-		} catch (std::out_of_range) {
-			return {};
-		}
+		return has(key) ? Option<const V&>{inner.at(key)} : Option<const V&> {};
 	}
 
 	void clear() {

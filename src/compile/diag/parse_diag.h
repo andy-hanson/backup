@@ -5,14 +5,13 @@
 
 #include "../../util/StringSlice.h"
 #include "../../util/int.h"
-#include "../emit/Writer.h"
+#include "../../util/Writer.h"
 
 class ParseDiag {
 public:
 	enum class Kind {
 		TrailingSpace,
 		MustEndInBlankLine,
-		TrailingTypeParametersAtEndOfFile,
 		ExpectedCharacter,
 		UnexpectedCharacter,
 
@@ -25,10 +24,27 @@ private:
 	Kind _kind;
 	Data _data;
 public:
+	ParseDiag(const ParseDiag& other) {
+		*this = other;
+	}
+	void operator=(const ParseDiag& other) {
+		_kind = other._kind;
+		switch (_kind) {
+			case Kind::TrailingSpace:
+			case Kind::MustEndInBlankLine:
+			case Kind::WhenMayNotAppearInsideArg:
+				break;
+			case Kind::ExpectedCharacter:
+			case Kind::UnexpectedCharacter:
+				_data.expected_character = other._data.expected_character;
+				break;
+		}
+	}
+
 	ParseDiag(Kind kind) : _kind(kind) {
 		assert(kind == Kind::TrailingSpace || kind == Kind::MustEndInBlankLine);
 	}
-	ParseDiag(Kind kind, char c) {
+	ParseDiag(Kind kind, char c) : _kind(kind) {
 		assert(kind == Kind::ExpectedCharacter || kind == Kind::UnexpectedCharacter);
 		_data.expected_character = c;
 	}
@@ -39,8 +55,6 @@ public:
 				return out << "trailing space";
 			case Kind::MustEndInBlankLine:
 				return out << "file must end in a blank line.";
-			case Kind::TrailingTypeParametersAtEndOfFile:
-				return out << "trailing type parameters";
 			case Kind::ExpectedCharacter:
 				return out << "expected '" << p._data.expected_character << "'";
 			case Kind::UnexpectedCharacter:

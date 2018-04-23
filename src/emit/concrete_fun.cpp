@@ -1,9 +1,32 @@
 #include "concrete_fun.h"
 
-#include "../../util/collection_util.h"
-#include "../../util/Map.h"
+#include "../util/collection_util.h"
+#include "../util/Map.h"
 
 namespace {
+	// Recursively replaces every type parameter with a corresponding type argument.
+	InstStruct substitute_type_arguments(const TypeParameter& t, const Arr<TypeParameter>& type_parameters, const Arr<InstStruct>& type_arguments) {
+		assert(&type_parameters[t.index] == &t);
+		return type_arguments[t.index];
+	}
+
+	InstStruct substitute_type_arguments(const Type& t, const Arr<TypeParameter>& params, const Arr<InstStruct>& args, Arena& arena) {
+		switch (t.kind()) {
+			case Type::Kind::Nil:
+			case Type::Kind::Bogus:
+				// This should only be called from emit, and we don't emit if there were compile errors.
+				assert(false);
+			case Type::Kind::Param:
+				return substitute_type_arguments(t.param(), params, args);
+			case Type::Kind::InstStruct: {
+				const InstStruct& i = t.inst_struct();
+				return some(i.type_arguments, [](const Type& ta) { return ta.is_parameter(); })
+					? InstStruct { i.strukt, arena.map<Type>()(i.type_arguments, [&](const Type& ta) { return Type{substitute_type_arguments(ta, params, args, arena)}; }) }
+					: i;
+			}
+		}
+	}
+
 	template<typename K, typename V>
 	InsertResult<V> add_to_map_of_sets(Map<K, Sett<V>>& map, K key, V value) {
 		Sett<V>& set = map.get_or_create(key);
@@ -63,13 +86,13 @@ namespace {
 	}
 
 	ConcreteFun get_concrete_called(const ConcreteFun& calling_fun, const Called& called, const EveryConcreteFun& res, Arena& scratch_arena) {
-		DynArray<PlainType> called_type_arguments = scratch_arena.map<PlainType>()(called.type_arguments, [&](const Type& type_argument) {
+		Arr<InstStruct> called_type_arguments = scratch_arena.map<InstStruct>()(called.type_arguments, [&](const Type& type_argument) {
 			return substitute_type_arguments(type_argument, calling_fun, scratch_arena);
 		});
 
 		//NOTE: currently, the function that matches a spec must be an exact match, not an instantiation of some generic function. So no recursive instantiations to worry about.
-		DynArray<DynArray<ref<const ConcreteFun>>> concrete_spec_impls =
-		scratch_arena.map<DynArray<ref<const ConcreteFun>>>()(called.spec_impls, [&](const DynArray<CalledDeclaration>& called_specs) {
+		Arr<Arr<ref<const ConcreteFun>>> concrete_spec_impls =
+		scratch_arena.map<Arr<ref<const ConcreteFun>>>()(called.spec_impls, [&](const Arr<CalledDeclaration>& called_specs) {
 			return scratch_arena.map<ref<const ConcreteFun>>()(called_specs, [&](const CalledDeclaration& called_spec) {
 				switch (called_spec.kind()) {
 					case CalledDeclaration::Kind::Spec:
@@ -97,6 +120,14 @@ namespace {
 				return ConcreteFun { called.called_declaration.fun(), called_type_arguments, concrete_spec_impls };
 		}
 	}
+}
+
+bool operator==(const ConcreteFun& a, const ConcreteFun& b) {
+	return a.fun_declaration == b.fun_declaration && a.type_arguments == b.type_arguments && a.spec_impls == b.spec_impls;
+}
+
+InstStruct substitute_type_arguments(const Type& type_argument, const ConcreteFun& fun, Arena& arena) {
+	return substitute_type_arguments(type_argument, fun.fun_declaration->signature.type_parameters, fun.type_arguments, arena);
 }
 
 EveryConcreteFun get_every_concrete_fun(const Vec<ref<Module>>& modules, Arena& scratch_arena) {

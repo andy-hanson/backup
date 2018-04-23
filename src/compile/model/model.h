@@ -7,9 +7,10 @@
 #include "../../util/Map.h"
 #include "../../util/Vec.h"
 #include "../diag/diag.h"
-#include "./Identifier.h"
 
 #include "./effect.h"
+
+using Identifier = ArenaString;
 
 class Expression;
 
@@ -28,7 +29,7 @@ public:
 	enum class Kind { Nil, Fields, CppName };
 private:
 	union Data {
-		DynArray<StructField> fields;
+		Arr<StructField> fields;
 		ArenaString cpp_name;
 
 		Data() {} //uninitialized
@@ -52,7 +53,7 @@ public:
 				break;
 		}
 	}
-	StructBody(DynArray<StructField> fields) : _kind(Kind::Fields) {
+	StructBody(Arr<StructField> fields) : _kind(Kind::Fields) {
 		data.fields = fields;
 	}
 	StructBody(ArenaString cpp_name) : _kind(Kind::CppName) {
@@ -61,11 +62,11 @@ public:
 
 	Kind kind() const { return _kind; }
 	bool is_fields() const { return _kind == StructBody::Kind::Fields; }
-	DynArray<StructField>& fields() {
+	Arr<StructField>& fields() {
 		assert(_kind == Kind::Fields);
 		return data.fields;
 	}
-	const DynArray<StructField>& fields() const {
+	const Arr<StructField>& fields() const {
 		assert(_kind == Kind::Fields);
 		return data.fields;
 	}
@@ -78,12 +79,13 @@ public:
 struct StructDeclaration {
 	ref<const Module> containing_module;
 	SourceRange range;
-	DynArray<TypeParameter> type_parameters;
+	Arr<TypeParameter> type_parameters;
 	Identifier name;
+	bool copy;
 	StructBody body;
 
-	StructDeclaration(ref<const Module> _containing_module, SourceRange _range, DynArray<TypeParameter> _type_parameters, Identifier _name)
-		: containing_module(_containing_module), range(_range), type_parameters(_type_parameters), name(_name) {}
+	StructDeclaration(ref<const Module> _containing_module, SourceRange _range, Arr<TypeParameter> _type_parameters, Identifier _name, bool _copy)
+		: containing_module(_containing_module), range(_range), type_parameters(_type_parameters), name(_name), copy(_copy) {}
 
 	size_t arity() const { return type_parameters.size(); }
 };
@@ -92,7 +94,12 @@ class Type;
 
 struct InstStruct {
 	ref<const StructDeclaration> strukt;
-	DynArray<Type> type_arguments;
+	Arr<Type> type_arguments;
+
+	InstStruct(ref<const StructDeclaration> _strukt, Arr<Type> _type_arguments) : strukt(_strukt), type_arguments(_type_arguments) {
+		assert(type_arguments.size() == strukt->type_parameters.size());
+	}
+	bool is_deeply_concrete() const;
 };
 namespace std {
 	template <>
@@ -104,33 +111,16 @@ namespace std {
 }
 bool operator==(const InstStruct& a, const InstStruct& b);
 
-struct PlainType {
-	Effect effect;
-	InstStruct inst_struct;
-
-	bool is_deeply_plain() const;
-};
-namespace std {
-	template <>
-	struct hash<PlainType> {
-		size_t operator()(const PlainType& p) const {
-			return hash_combine(size_t(p.effect), p.inst_struct);
-		}
-	};
-}
-bool operator==(const PlainType& a, const PlainType& b);
-
 class Type {
 public:
-	enum Kind { Nil, Plain, Param };
+	enum class Kind { Nil, Bogus, InstStruct, Param };
 private:
 	union Data {
-		PlainType plain;
+		InstStruct inst_struct;
 		ref<const TypeParameter> param;
 		Data() {} // uninitialized
 		~Data() {}
 	};
-
 	Kind _kind;
 	Data data;
 
@@ -138,35 +128,41 @@ public:
 	Kind kind() const { return _kind; }
 
 	Type() : _kind(Kind::Nil) {}
+	static Type bogus() {
+		Type t;
+		t._kind = Kind::Bogus;
+		return t;
+	}
 	Type(const Type& other) {
 		*this = other;
 	}
 	void operator=(const Type& other) {
 		_kind = other._kind;
 		switch (other._kind) {
-			case Kind::Nil: break;
-			case Kind::Plain: data.plain = other.data.plain; break;
+			case Kind::Nil:
+			case Kind::Bogus:
+				break;
+			case Kind::InstStruct: data.inst_struct = other.data.inst_struct; break;
 			case Kind::Param: data.param = other.data.param; break;
 		}
 	}
-	explicit Type(PlainType p) : _kind(Kind::Plain) {
-		data.plain = p;
+	explicit Type(InstStruct i) : _kind(Kind::InstStruct) {
+		data.inst_struct = i;
 	}
-
 	explicit Type(ref<const TypeParameter> param) : _kind(Kind::Param) {
 		data.param = param;
 	}
 
-	bool is_plain() const {
-		return _kind == Kind::Plain;
+	bool is_inst_struct() const {
+		return _kind == Kind::InstStruct;
 	}
 	bool is_parameter() const {
 		return _kind == Kind::Param;
 	}
 
-	const PlainType& plain() const {
-		assert(_kind == Kind::Plain);
-		return data.plain;
+	const InstStruct& inst_struct() const {
+		assert(_kind == Kind::InstStruct);
+		return data.inst_struct;
 	}
 
 	ref<const TypeParameter> param() const {
@@ -179,11 +175,12 @@ namespace std {
 	struct hash<Type> {
 		size_t operator()(const Type& t) const {
 			switch (t.kind()) {
-				case Type::Kind::Nil:
+				case Type::Kind::Nil: assert(false);
+				case Type::Kind::Bogus:
 				case Type::Kind::Param:
 					throw "todo";
-				case Type::Kind::Plain:
-					return hash<PlainType>{}(t.plain());
+				case Type::Kind::InstStruct:
+					return hash<InstStruct>{}(t.inst_struct());
 			}
 		}
 	};
@@ -197,8 +194,11 @@ struct StructField {
 };
 
 struct Parameter {
+	bool from;
+	Effect effect;
 	Type type;
 	Identifier name;
+	uint index;
 };
 
 struct FunSignature;
@@ -206,16 +206,17 @@ struct SpecDeclaration;
 
 struct SpecUse {
 	ref<const SpecDeclaration> spec;
-	DynArray<Type> type_arguments;
-	SpecUse(ref<const SpecDeclaration> _spec, DynArray<Type> _type_arguments);
+	Arr<Type> type_arguments;
+	SpecUse(ref<const SpecDeclaration> _spec, Arr<Type> _type_arguments);
 };
 
 struct FunSignature {
-	DynArray<TypeParameter> type_parameters;
+	Arr<TypeParameter> type_parameters;
+	Effect effect; // Return effect will be the worst of this, and the effects of all 'from' parameters
 	Type return_type;
 	Identifier name;
-	DynArray<Parameter> parameters;
-	DynArray<SpecUse> specs;
+	Arr<Parameter> parameters;
+	Arr<SpecUse> specs;
 
 	uint arity() const { return to_uint(parameters.size()); }
 	bool is_generic() const {
@@ -261,6 +262,10 @@ public:
 	AnyBody(ArenaString cpp_source) : _kind(Kind::CppSource) { data.cpp_source = cpp_source; }
 
 	Kind kind() const { return _kind; }
+	Expression& expression() {
+		assert(_kind == Kind::Expr);
+		return data.expression;
+	}
 	const Expression& expression() const {
 		assert(_kind == Kind::Expr);
 		return data.expression;
@@ -281,11 +286,11 @@ struct FunDeclaration {
 
 struct SpecDeclaration {
 	ref<const Module> containing_module;
-	DynArray<TypeParameter> type_parameters;
+	Arr<TypeParameter> type_parameters;
 	Identifier name;
-	DynArray<FunSignature> signatures;
+	Arr<FunSignature> signatures;
 
-	SpecDeclaration(ref<const Module> _containing_module, DynArray<TypeParameter> _type_parameters, Identifier _name)
+	SpecDeclaration(ref<const Module> _containing_module, Arr<TypeParameter> _type_parameters, Identifier _name)
 		: containing_module(_containing_module), type_parameters(_type_parameters), name(_name) {}
 };
 
@@ -316,6 +321,6 @@ struct Module {
 
 struct CompiledProgram {
 	Arena arena;
-	Module module;
+	Vec<ref<Module>> modules;
 };
 

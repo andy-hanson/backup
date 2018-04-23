@@ -8,3 +8,10 @@ Writer& operator<<(Writer& out, indented i)  {
 	}
 	return out;
 }
+
+Writer& Writer::operator<<(nl_t) {
+	out += '\n';
+	for (uint i = 0; i != _indent; ++i)
+		out += '\t';
+	return *this;
+}

@@ -2,12 +2,16 @@
 
 #include <cassert>
 #include <functional> // hash
+#include <string>
 
 #include "int.h"
 
 struct SourceRange {
 	ushort begin;
 	ushort end;
+	SourceRange(ushort _begin, ushort _end) : begin(_begin), end(_end) {
+		assert(end >= begin);
+	}
 };
 
 class StringSlice {
@@ -16,7 +20,7 @@ private:
 	const char* _end; // Note: `*end` is NOT guaranteed to be '\0'
 
 public:
-	StringSlice() {}
+	StringSlice() : _begin(nullptr), _end(nullptr) {}
 
 	template <size_t N>
 	// Note: the char array will include a '\0', but we don't want that included in the slice.
@@ -26,7 +30,11 @@ public:
 
 	constexpr StringSlice(const char* begin, const char* end) : _begin(begin), _end(end) {
 		assert(end > begin);
+		assert(begin != nullptr && end != nullptr);
+		assert(size() < 1000); // Or else we probably screwed up
 	}
+
+	StringSlice(const std::string& s) : _begin(s.begin().base()), _end(s.end().base()) {}
 
 	static StringSlice from_range(const StringSlice& slice, const SourceRange& range) {
 		size_t len = slice.size();
@@ -34,24 +42,25 @@ public:
 		return { slice.begin() + range.begin, slice.begin() + range.end };
 	}
 
-	const char* begin() const { return _begin; }
-	const char* end() const { return _end; }
+	inline const char* begin() const { return _begin; }
+	inline const char* end() const { return _end; }
 
-	bool empty() const { return _end == _begin; }
+	inline bool empty() const { return _end == _begin; }
 
-	inline size_t size() const {
-		return to_unsigned(_end - _begin);
+	inline constexpr size_t size() const {
+		assert(_end > _begin);
+		return size_t(_end - _begin);
 	}
 
-	char operator[](size_t index) const {
+	inline char operator[](size_t index) const {
 		const char* ptr = _begin + index;
 		assert(ptr < _end);
 		return *ptr;
 	}
 
-	SourceRange range_from_inner_slice(const StringSlice& inner) const {
+	inline SourceRange range_from_inner_slice(const StringSlice& inner) const {
 		assert(_begin <= inner._begin && inner._end <= _end);
-		return { to_ushort(to_unsigned(inner._begin - _begin)), to_ushort(to_unsigned(inner._end - inner._begin)) };
+		return { to_ushort(to_unsigned(inner._begin - _begin)), to_ushort(to_unsigned(inner._end - _begin)) };
 	}
 
 	friend bool operator==(StringSlice a, StringSlice b);

@@ -3,20 +3,21 @@
 #include "./mangle.h"
 
 namespace {
-	void write_type_for_fun_name(Arena::StringBuilder& sb, const PlainType& type) {
-		sb << mangle { type.inst_struct.strukt->name };
-		if (!type.inst_struct.type_arguments.empty()) throw "todo";
+	void write_type_for_fun_name(Arena::StringBuilder& sb, const InstStruct& i) {
+		sb << mangle { i.strukt->name };
+		if (!i.type_arguments.empty()) throw "todo";
 	}
 
 	void write_type_for_fun_name(Arena::StringBuilder& sb, const Type& type) {
 		switch (type.kind()) {
 			case Type::Kind::Nil:
+			case Type::Kind::Bogus:
 				assert(false);
 			case Type::Kind::Param:
 				sb << mangle { type.param()->name };
 				break;
-			case Type::Kind::Plain:
-				write_type_for_fun_name(sb, type.plain());
+			case Type::Kind::InstStruct:
+				write_type_for_fun_name(sb, type.inst_struct());
 		}
 	}
 
@@ -25,6 +26,12 @@ namespace {
 		sb << mangle{struct_name};
 		if (is_multiple_with_same_name)
 			sb << '_' << mangle{module_name};
+		return sb.finish();
+	}
+
+	ArenaString escape_field_name(const Identifier& field_name, Arena& arena) {
+		Arena::StringBuilder sb = arena.string_builder(100);
+		sb << mangle{field_name};
 		return sb.finish();
 	}
 
@@ -58,11 +65,11 @@ namespace {
 		}
 		if (is_instantiated) {
 			sb << "_inst";
-			for (const PlainType& t : f.type_arguments) {
+			for (const InstStruct& i : f.type_arguments) {
 				sb << '_';
-				write_type_for_fun_name(sb, t);
+				write_type_for_fun_name(sb, i);
 			}
-			for (const DynArray<ref<const ConcreteFun>>& spec_impl : f.spec_impls)
+			for (const Arr<ref<const ConcreteFun>>& spec_impl : f.spec_impls)
 				for (ref<const ConcreteFun> c : spec_impl)
 					sb << '_' << ids.get_id(c);
 		}
@@ -87,6 +94,12 @@ Names get_names(const Vec<ref<Module>>& modules, const FunInstantiations& fun_in
 		const Identifier& name = a.first;
 		ref<const StructDeclaration> strukt = a.second;
 		names.struct_names.must_insert(strukt, escape_struct_name(strukt->containing_module->name, name, arena, global_structs_table.count(a.first) != 1));
+
+		if (strukt->body.is_fields()) {
+			for (const StructField& field : strukt->body.fields()) {
+				names.field_names.must_insert(&field, escape_field_name(field.name, arena));
+			}
+		}
 	}
 
 	// Map from a name to all funs with that name.

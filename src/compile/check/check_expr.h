@@ -5,7 +5,7 @@
 #include "./check_common.h"
 
 Expression check(const ExprAst& ast, ExprContext& ctx, Expected& expected);
-inline Expression check_and_expect(const ExprAst& ast, ExprContext& ctx, Type expected_type) {
+inline Expression check_and_expect(const ExprAst& ast, ExprContext& ctx, const Type& expected_type) {
 	Expected expected { expected_type };
 	return check(ast, ctx, expected);
 }
