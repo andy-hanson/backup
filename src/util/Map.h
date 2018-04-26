@@ -10,7 +10,7 @@ template <typename V>
 struct InsertResult { ref<const V> value; bool was_added; };
 
 template <typename T>
-class Sett { // TODO: clion has trouble if this is named Set
+class Set { // TODO: clion has trouble if this is named Set
 	std::unordered_set<T> inner;
 
 public:

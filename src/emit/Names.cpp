@@ -78,7 +78,7 @@ namespace {
 }
 
 Names get_names(const Vec<ref<Module>>& modules, const FunInstantiations& fun_instantiations, Arena& arena) {
-	Sett<Identifier> module_names;
+	Set<Identifier> module_names;
 
 	// Map from a name to all structs with that name.
 	MultiMap<Identifier, ref<const StructDeclaration>> global_structs_table;
@@ -103,14 +103,14 @@ Names get_names(const Vec<ref<Module>>& modules, const FunInstantiations& fun_in
 	}
 
 	// Map from a name to all funs with that name.
-	MultiMap<Identifier, ref<const Sett<ConcreteFun>>> global_funs_table;
+	MultiMap<Identifier, ref<const Set<ConcreteFun>>> global_funs_table;
 	for (const auto& a : fun_instantiations) global_funs_table.add(a.first->name(), &a.second);
 
 	FunIds ids;
 
 	for (const auto& a : global_funs_table) {
 		const Identifier& name = a.first;
-		const Sett<ConcreteFun>& fn_instances = a.second;
+		const Set<ConcreteFun>& fn_instances = a.second;
 		for (const ConcreteFun& f : fn_instances) {
 			// If there are two separate fns with the same name, name them based on their *declaration*.
 			// Then if there are two separate instantiations of the same fn, name them based on the types used to instantiate them.

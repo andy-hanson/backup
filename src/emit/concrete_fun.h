@@ -54,7 +54,7 @@ inline bool operator==(const ConcreteFunAndCalled& a, const ConcreteFunAndCalled
 	return a.fun == b.fun && a.called == b.called;
 }
 
-using FunInstantiations = Map<ref<const FunDeclaration>, Sett<ConcreteFun>>;
+using FunInstantiations = Map<ref<const FunDeclaration>, Set<ConcreteFun>>;
 using ResolvedCalls = Map<ConcreteFunAndCalled, ref<const ConcreteFun>>;
 struct EveryConcreteFun {
 	FunInstantiations fun_instantiations;

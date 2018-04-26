@@ -21,6 +21,8 @@ add_executable(oohoo
 	src/compile/check/check_call.cpp
 	src/compile/check/check_call.h
 	src/compile/check/check_common.h
+	src/compile/check/check_effects.cpp
+	src/compile/check/check_effects.h
 	src/compile/check/check_expr.cpp
 	src/compile/check/check_expr.h
 	src/compile/check/convert_type.cpp
@@ -63,6 +65,9 @@ add_executable(oohoo
 	src/compile/parse/parser.h
 	src/compile/parse/type_ast.h
 
+	src/test/test.cpp
+	src/test/test.h
+
 	src/util/Alloc.h
 	src/util/collection_util.h
 	src/util/Map.h
@@ -81,4 +86,4 @@ add_executable(oohoo
 	src/util/Writer.h
 
 	src/cmd.h
-	src/cmd.cpp src/compile/check/check_effects.h src/compile/check/check_effects.cpp)
+	src/cmd.cpp)

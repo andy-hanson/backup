@@ -111,7 +111,7 @@ namespace {
 	template <typename /*ref<constConcreteFun>> => void>*/ Cb>
 	void each_concrete_fun(const Module& module, const FunInstantiations& fun_instantiations, Cb cb) {
 		for (ref<const FunDeclaration> f : module.funs_declaration_order) {
-			Option<const Sett<ConcreteFun>&> instantiations = fun_instantiations.get(f);
+			Option<const Set<ConcreteFun>&> instantiations = fun_instantiations.get(f);
 			if (instantiations)
 				for (const ConcreteFun& cf : instantiations.get())
 					cb(&cf);

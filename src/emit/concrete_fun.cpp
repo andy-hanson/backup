@@ -28,8 +28,8 @@ namespace {
 	}
 
 	template<typename K, typename V>
-	InsertResult<V> add_to_map_of_sets(Map<K, Sett<V>>& map, K key, V value) {
-		Sett<V>& set = map.get_or_create(key);
+	InsertResult<V> add_to_map_of_sets(Map<K, Set<V>>& map, K key, V value) {
+		Set<V>& set = map.get_or_create(key);
 		return set.insert(value);
 	}
 
