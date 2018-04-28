@@ -12,5 +12,5 @@ struct TypeParametersScope {
 	TypeParametersScope(Arr<TypeParameter> _outer, Arr<TypeParameter> _inner) : outer(_outer), inner(_inner) {}
 };
 
-Type type_from_ast(const TypeAst& ast, Al& al, const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope);
-Arr<Type> type_arguments_from_asts(const Arr<TypeAst>& type_arguments, Al& al, const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope);
+Type type_from_ast(const TypeAst& ast, CheckCtx& al, const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope);
+Arr<Type> type_arguments_from_asts(const Arr<TypeAst>& type_arguments, CheckCtx& al, const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope);

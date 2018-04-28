@@ -24,22 +24,32 @@ namespace {
 		}
 	}
 
+	const StringSlice TRUE = "true";
+	const StringSlice FALSE = "false";
+
 	template <typename WriterLike>
-	WriterLike& write_mangled(WriterLike& out, mangle man) {
-		for (char c : man.name.slice()) {
-			auto m = mangle_char(c);
-			if (m)
-				out << m.get();
-			else
-				out << c;
+	void write_mangled(WriterLike& out, const StringSlice& name) {
+		if (name == TRUE) {
+			out << "_true";
+		} else if (name == FALSE) {
+			out << "_false";
+		} else {
+			for (char c : name) {
+				auto m = mangle_char(c);
+				if (m.has())
+					out << m.get();
+				else
+					out << c;
+			}
 		}
-		return out;
 	}
 }
 
 Writer& operator<<(Writer& out, mangle man) {
-	return write_mangled(out, man);
+	write_mangled(out, man.name);
+	return out;
 }
 Arena::StringBuilder& operator<<(Arena::StringBuilder& out, mangle man) {
-	return write_mangled(out, man);
+	write_mangled(out, man.name);
+	return out;
 }

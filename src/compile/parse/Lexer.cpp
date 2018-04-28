@@ -2,11 +2,11 @@
 #include "../diag/parse_diag.h"
 
 void Lexer::validate_file(const StringSlice& source) {
-	if (source.empty()) return;
+	assert(source.size() >= 2 && *(source.end() - 1) == '\0');
 	for (const char* ptr = source.begin() + 1; *ptr != '\0'; ++ptr)
 		if (*ptr == '\n' && (*(ptr - 1) == ' ' || *(ptr - 1) == '\t'))
 			throw ParseDiagnostic { source.range_from_inner_slice({ ptr - 1, ptr }), ParseDiag::Kind::TrailingSpace };
-	if (*(source.end() - 1) != '\n')
+	if (*(source.end() - 2) != '\n')
 		throw ParseDiagnostic { source.range_from_inner_slice({ source.end() - 1, source.end() }), ParseDiag::Kind::MustEndInBlankLine };
 }
 
@@ -43,8 +43,7 @@ namespace {
 		return is_upper_case_letter(c) || is_lower_case_letter(c);
 	}
 
-	ArenaString take_string_literal(const char* &ptr, const char* end, Arena& arena) {
-		Arena::StringBuilder b = arena.string_builder(to_unsigned(end - ptr));
+	ArenaString take_string_literal(const char* &ptr, Arena::StringBuilder b) {
 		++ptr;
 		while (*ptr != '"' && *ptr != '\0') {
 			//TODO:ESCAPING
@@ -68,6 +67,10 @@ namespace {
 		while (next_char_pred(*ptr)) ++ptr;
 		return { begin, ptr };
 	}
+}
+
+Arena::StringBuilder Lexer::string_builder(Arena& arena) {
+	return arena.string_builder(to_unsigned(source.end() - ptr));
 }
 
 void Lexer::expect(const char* expected) {
@@ -109,6 +112,20 @@ bool Lexer::try_take_else_keyword() {
 	}
 	return false;
 }
+bool Lexer::try_take_import_space() {
+	if (ptr[0] == 'i' && ptr[1] == 'm' && ptr[2] == 'p' && ptr[3] == 'o' && ptr[4] == 'r' && ptr[5] == 't' && ptr[6] == ' ') {
+		ptr += 7;
+		return true;
+	}
+	return false;
+}
+bool Lexer::try_take_private_nl() {
+	if (ptr[0] == 'p' && ptr[1] == 'r' && ptr[2] == 'i' && ptr[3] == 'v' && ptr[4] == 'a' && ptr[5] == 't' && ptr[6] == 'e' && ptr[7] == '\n') {
+		ptr += 8;
+		return true;
+	}
+	return false;
+}
 
 Option<Effect> Lexer::try_take_effect() {
 	const char c = *ptr;
@@ -120,7 +137,7 @@ Option<Effect> Lexer::try_take_effect() {
 			++ptr;
 			if (c == 'g' || c == 's') expect("et"); else if (c == 'i') take('o'); else expect("wn");
 			take(' ');
-			return Option<Effect> { c == 'g' ? Effect::Get : c == 's' ? Effect::Set : c == 'i' ? Effect::Io : Effect::Own };
+			return Option { c == 'g' ? Effect::EGet : c == 's' ? Effect::ESet : c == 'i' ? Effect::EIo : Effect::EOwn };
 		default:
 			return {};
 	}
@@ -168,15 +185,14 @@ void Lexer::take_indent() {
 	_indent = new_indent;
 }
 
-StringSlice Lexer::take_indented_string(Arena& arena) {
+ArenaString Lexer::take_indented_string(Arena& arena) {
 	assert(_indent == 0);
 	take('\n');
 	take('\t');
 
 	assert(*ptr != '\n');
 
-	Arena::StringBuilder b = arena.string_builder(to_unsigned(source.end() - ptr));
-
+	Arena::StringBuilder b = string_builder(arena);
 	// Keep eating until we see a line that begins in something other than '\n'.
 	while (true) {
 		char c = next();
@@ -195,6 +211,27 @@ StringSlice Lexer::take_indented_string(Arena& arena) {
 	// Remove trailing newlines
 	while (b.back() == '\n')
 		b.pop();
+	return b.finish();
+}
+
+namespace {
+	StringSlice take_rest_of_line(const char* &ptr) {
+		const char* start = ptr;
+		while (*ptr != '\n') ++ptr;
+		StringSlice res { start, ptr };
+		++ptr;
+		return res;
+	}
+}
+
+ArenaString Lexer::try_take_comment(Arena& arena) {
+	Arena::StringBuilder b = string_builder(arena);
+	while (*ptr == '|') {
+		++ptr;
+		take(' ');
+		if (!b.empty()) b << '\n';
+		b << take_rest_of_line(ptr);
+	}
 	return b.finish();
 }
 
@@ -244,6 +281,8 @@ StringSlice Lexer::take_cpp_type_name() {
 namespace {
 	const StringSlice AS { "as" };
 	const StringSlice WHEN { "when" };
+	const StringSlice ASSERT { "assert" };
+	const StringSlice PASS { "pass" };
 }
 
 // Take a token in an expression.
@@ -253,14 +292,19 @@ ExpressionToken Lexer::take_expression_token(Arena& arena) {
 	if (c == '(') {
 		return { ExpressionToken::Kind::Lparen, {} };
 	} else if (c == '"') {
-		return { ExpressionToken::Kind::Literal, { take_string_literal(ptr, source.end(), arena) } };
+		return { ExpressionToken::Kind::Literal, { take_string_literal(ptr, string_builder(arena)) } };
 	} else if (is_operator_char(c)) {
 		++ptr;
 		return { ExpressionToken::Kind::Name, { take_name_helper(begin, ptr, is_operator_char) } };
 	} else if (is_lower_case_letter(c)) {
 		++ptr;
 		StringSlice name = take_name_helper(begin, ptr, is_value_name_continue);
-		return { name == AS ? ExpressionToken::Kind::As : name == WHEN ? ExpressionToken::Kind::When : ExpressionToken::Kind::Name, { name } };
+		ExpressionToken::Kind kind = name == AS ? ExpressionToken::Kind::As
+			: name == WHEN ? ExpressionToken::Kind::When
+			: name == PASS ? ExpressionToken::Kind::Pass
+			: name == ASSERT ? ExpressionToken::Kind::Assert
+			: ExpressionToken::Kind::Name;
+		return { kind, { name } };
 	} else if (is_upper_case_letter(c)) {
 		++ptr;
 		return { ExpressionToken::Kind::TypeName, { take_name_helper(begin, ptr, is_type_name_continue) } };

@@ -10,7 +10,7 @@ template <typename V>
 struct InsertResult { ref<const V> value; bool was_added; };
 
 template <typename T>
-class Set { // TODO: clion has trouble if this is named Set
+class Set {
 	std::unordered_set<T> inner;
 
 public:
@@ -19,25 +19,37 @@ public:
 		return { &*inserted.first, inserted.second };
 	}
 
+	bool has(const T& value) const {
+		return bool(inner.count(value));
+	}
+
 	const T& only() const {
 		assert(size() == 1);
 		return *begin();
 	}
 
-	// Get the objecct in the set equivalent to the argument.
-	const T& get(T value) const {
-		typename std::unordered_set<T>::iterator found = inner.find(value);
-		assert(found != inner.end());
-		return *found;
+	// Get the object in the set equivalent to the argument.
+	Option<ref<const T>> get_in_set(const T& value) const {
+		typename std::unordered_set<T>::const_iterator found = inner.find(value);
+		return found == inner.end() ? Option<ref<const T>>{} : Option<ref<const T>>{&*found};
+	}
+
+	ref<const T> get_in_set_or_insert(T&& value) {
+		Option<ref<const T>> already = get_in_set(value);
+		if (already.has())
+			return already.get();
+		else
+			return must_insert(std::forward<T>(value));
 	}
 
 	size_t size() const {
 		return inner.size();
 	}
 
-	void must_insert(T value) {
-		assert(!inner.count(value));
-		inner.insert(value);
+	ref<const T> must_insert(T value) {
+		std::pair<typename std::unordered_set<T>::iterator, bool> inserted = inner.insert(std::forward<T>(value));
+		assert(inserted.second);
+		return &*inserted.first;
 	}
 
 	typename std::unordered_set<T>::const_iterator begin() const { return inner.begin(); }

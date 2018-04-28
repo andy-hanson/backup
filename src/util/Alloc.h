@@ -47,13 +47,19 @@ public:
 // Wrapper around StringSlice that ensures it's in an arena.
 class ArenaString {
 	friend class Arena;
-	StringSlice _slice;
+	char* _begin;
+	char* _end;
 	// Keep this private to avoid using a non-arena slice.
-	ArenaString(StringSlice slice) : _slice(slice) {}
+	ArenaString(char* begin, char* end) : _begin(begin), _end(end) {}
 public:
-	ArenaString() : _slice() {}
-	inline operator StringSlice() const { return _slice; }
-	inline StringSlice slice() const { return _slice; }
+	ArenaString() : _begin(nullptr), _end(nullptr) {}
+	char* begin() { return _begin; }
+	inline operator StringSlice() const { return slice(); }
+	inline StringSlice slice() const { return { _begin, _end }; }
+	char& operator[](size_t index) {
+		assert(index < slice().size());
+		return *(_begin + index);
+	}
 };
 inline bool operator==(const ArenaString& a, const ArenaString& b) { return a.slice() == b.slice();}
 inline bool operator==(const ArenaString& a, const StringSlice& b) { return a.slice() == b; }
@@ -175,7 +181,7 @@ public:
 			uint i = 0;
 			for (const In& input : inputs) {
 				Option<Out> o = cb(input);
-				if (o) {
+				if (o.has()) {
 					out[i] = o.get();
 					++i;
 				}
@@ -237,29 +243,28 @@ public:
 
 	class StringBuilder {
 		Arena& arena;
-		char* begin;
+		ArenaString slice;
 		char* ptr;
-		char* end;
 
 		friend class Arena;
-		StringBuilder(Arena& _arena, char* _begin, char* _end) : arena(_arena), begin(_begin), ptr(_begin), end(_end) {}
+		StringBuilder(Arena& _arena, ArenaString _slice) : arena(_arena), slice(_slice), ptr(_slice._begin) {}
 
 	public:
 		StringBuilder& operator<<(char c) {
-			assert(ptr != end);
+			assert(ptr != slice._end);
 			*ptr = c;
 			++ptr;
 			return *this;
 		}
 
 		StringBuilder& operator<<(uint u) {
-			assert(ptr != end);
+			assert(ptr != slice._end);
 			//TODO: better
 			if (u < 10) {
 				*ptr = '0' + char(u);
 				++ptr;
 			} else if (u < 100) {
-				assert(ptr + 1 != end);
+				assert(ptr + 1 != slice._end);
 				*ptr = '0' + char(u % 10);
 				*(ptr + 1) = '0' + char(u / 10);
 				++ptr;
@@ -274,26 +279,34 @@ public:
 			return *this;
 		}
 
-		char back() {
-			assert(ptr != begin);
+		bool empty() const {
+			return ptr == slice._begin;
+		}
+
+		char back() const {
+			assert(ptr != slice._begin);
 			return *(ptr - 1);
 		}
 
 		void pop() {
-			assert(ptr != begin);
+			assert(ptr != slice._begin);
 			--ptr;
 		}
 
 		ArenaString finish() {
-			assert(arena.alloc_next == end); // no intervening allocations
+			assert(arena.alloc_next == slice._end); // no intervening allocations
 			arena.alloc_next = ptr; // Only used up this much space, don't waste the rest
-			return { { begin, ptr } };
+			return { slice._begin, ptr };
 		}
 	};
 
 	StringBuilder string_builder(size_t max_size) {
-		char* begin = static_cast<char*>(allocate(max_size));
-		return StringBuilder(*this, begin, begin + max_size);
+		return StringBuilder(*this, allocate_slice(max_size));
+	}
+
+	ArenaString allocate_slice(size_t size) {
+		char* begin = static_cast<char*>(allocate(size));
+		return { begin, begin + size };
 	}
 
 	ArenaString str(StringSlice slice) {
@@ -301,6 +314,6 @@ public:
 		char* end = std::copy(slice.begin(), slice.end(), begin);
 		assert(size_t(end - begin) == slice.size());
 		assert(alloc_next == end);
-		return { { begin, end } };
+		return { begin, end };
 	}
 };

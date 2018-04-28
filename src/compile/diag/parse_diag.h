@@ -15,6 +15,8 @@ public:
 		ExpectedCharacter,
 		UnexpectedCharacter,
 
+		AssertMayNotAppearInsideArg,
+		PassMayNotAppearInsideArg,
 		WhenMayNotAppearInsideArg,
 	};
 private:
@@ -24,22 +26,8 @@ private:
 	Kind _kind;
 	Data _data;
 public:
-	ParseDiag(const ParseDiag& other) {
-		*this = other;
-	}
-	void operator=(const ParseDiag& other) {
-		_kind = other._kind;
-		switch (_kind) {
-			case Kind::TrailingSpace:
-			case Kind::MustEndInBlankLine:
-			case Kind::WhenMayNotAppearInsideArg:
-				break;
-			case Kind::ExpectedCharacter:
-			case Kind::UnexpectedCharacter:
-				_data.expected_character = other._data.expected_character;
-				break;
-		}
-	}
+	ParseDiag(const ParseDiag& other) { *this = other; }
+	void operator=(const ParseDiag& other);
 
 	ParseDiag(Kind kind) : _kind(kind) {
 		assert(kind == Kind::TrailingSpace || kind == Kind::MustEndInBlankLine);
@@ -49,21 +37,7 @@ public:
 		_data.expected_character = c;
 	}
 
-	friend Writer& operator<<(Writer& out, const ParseDiag& p) {
-		switch (p._kind) {
-			case Kind::TrailingSpace:
-				return out << "trailing space";
-			case Kind::MustEndInBlankLine:
-				return out << "file must end in a blank line.";
-			case Kind::ExpectedCharacter:
-				return out << "expected '" << p._data.expected_character << "'";
-			case Kind::UnexpectedCharacter:
-				return out << "Did not expect '" << p._data.expected_character << "'";
-
-			case Kind::WhenMayNotAppearInsideArg:
-				return out << "'when' may not appear inside an argument";
-		}
-	}
+	void write(Writer& out) const;
 };
 
 struct ParseDiagnostic {

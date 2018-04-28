@@ -37,13 +37,13 @@ namespace {
 				out << "};\n\n";
 				break;
 			case StructBody::Kind::CppName:
-				out << "using " << name << " = " << s.body.cpp_name() << ";\n\n";
+				out << "typedef " << s.body.cpp_name() << ' ' << name << ";\n\n";
 				break;
 		}
 	}
 
 	void write_fun_header(Writer& out, const ConcreteFun &f, const Names& names, Arena& scratch_arena) {
-		substitute_and_write_inst_struct(out, f, f.fun_declaration->signature.return_type, names, scratch_arena, f.fun_declaration->signature.effect == Effect::Own);
+		substitute_and_write_inst_struct(out, f, f.fun_declaration->signature.return_type, names, scratch_arena, f.fun_declaration->signature.effect == Effect::EOwn);
 		out << ' ' << names.get_name(&f) << '(';
 		bool first_param = true;
 		for (const Parameter& param : f.fun_declaration->signature.parameters) {
@@ -51,7 +51,7 @@ namespace {
 				first_param = false;
 			else
 				out << ", ";
-			substitute_and_write_inst_struct(out, f, param.type, names, scratch_arena, param.effect == Effect::Own);
+			substitute_and_write_inst_struct(out, f, param.type, names, scratch_arena, param.effect == Effect::EOwn);
 			out << ' ' << mangle{param.name};
 		}
 		out << ')';
@@ -112,7 +112,7 @@ namespace {
 	void each_concrete_fun(const Module& module, const FunInstantiations& fun_instantiations, Cb cb) {
 		for (ref<const FunDeclaration> f : module.funs_declaration_order) {
 			Option<const Set<ConcreteFun>&> instantiations = fun_instantiations.get(f);
-			if (instantiations)
+			if (instantiations.has())
 				for (const ConcreteFun& cf : instantiations.get())
 					cb(&cf);
 		}
@@ -120,7 +120,10 @@ namespace {
 }
 
 std::string emit(const Vec<ref<Module>>& modules) {
+	assert(!modules.empty());
 	Writer out;
+	out << "#include <assert.h>\n\n";
+
 	Arena scratch_arena;
 	EveryConcreteFun every_concrete_fun = get_every_concrete_fun(modules, scratch_arena);
 	Names names = get_names(modules, every_concrete_fun.fun_instantiations, scratch_arena);
@@ -133,6 +136,8 @@ std::string emit(const Vec<ref<Module>>& modules) {
 
 	for (const Module& module : modules)
 		each_concrete_fun(module, every_concrete_fun.fun_instantiations, [&](ref<const ConcreteFun> cf) { emit_fun_with_body(out, cf, names, every_concrete_fun.resolved_calls, scratch_arena); });
+
+	out << "\nint main() { run(); }\n";
 
 	return out.finish();
 }

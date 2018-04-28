@@ -3,41 +3,50 @@
 #include <cassert>
 #include <iostream>
 #include <fstream>
-#include <signal.h>
-#include <sys/resource.h>
 #include <vector>
+#include <unistd.h>
 
 #include "./cmd.h"
 #include "./test/test.h"
 
+#include "./host/DocumentProvider.h"
+#include "./util/io.h"
+#include "./util/rlimit.h"
+#include "compile/model/model.h"
+#include "compile/parse/ast.h"
+#include "util/collection_util.h"
+
 namespace {
-	void on_signal(int sig) {
-		if (sig == SIGXCPU) std::cerr << "Hit CPU time limit -- probably an infinite loop somewhere" << std::endl;
-		exit(sig);
+	void strip_last_part(std::string& path) {
+		//size_t slash_index = path.rfind('/');
+		//if (slash_index == std::string::npos)
+		//	return;
+		assert(!path.empty());
+		while (path.back() != '/') {
+			path.pop_back();
+			assert(!path.empty());
+		}
+		path.pop_back();
 	}
 
-	void set_limits() {
-		ulong time_limit = 1;
-		// Should take less than 1 second
-		rlimit time_limits { /*soft*/ time_limit, /*hard*/ time_limit + 1 };
-		setrlimit(RLIMIT_CPU, &time_limits);
-		ulong mem_limit = 1 << 25;
-		// Should not consume more than 2^27 bytes (~125 megabytes)
-		rlimit mem_limits { /*soft*/ mem_limit, /*hard*/ mem_limit + 1 };
-		setrlimit(RLIMIT_AS, &mem_limits);
+	__attribute__((unused))
+	std::string test_directory() {
+		char cwdbuf[FILENAME_MAX];
+		if (!getcwd(cwdbuf, sizeof(cwdbuf))) throw "todo";
 
-		signal(SIGXCPU, on_signal);
+		std::string cwd(cwdbuf);
+		strip_last_part(cwd);
+		cwd += "/test";
+		return cwd;
 	}
 
+	__attribute__((unused))
 	void go() {
-		int end = 0;
-		int begin = 0;
-		std::cout << begin << std::endl;
-
 		//std::cout << compile_to_string("../stdlib/auto") << std::endl;
 		//std::cout << "done" << std::endl;
+		test(test_directory(), TestMode::Accept);
 
-		//test();
+		//try_exec();
 
 
 		//run("../stdlib/auto");
@@ -58,14 +67,18 @@ namespace {
 }
 
 int main() {
-	set_limits();
+	//"/home/andy/bin/clang+llvm-6.0.0-x86_64-linux-gnu-ubuntu-14.04/bin/clang++ /home/andy/CLionProjects/oohoo/test/a/main.cpp -o /home/andy/CLionProjects/oohoo/test/a/main.exe"
+	//std::string command = "../cc.py";
+	//command += " /home/andy/CLionProjects/oohoo/test/a/main.cpp -o /home/andy/CLionProjects/oohoo/test/a/main.exe";
+
+	set_limits(); //This makes subprocesses crash!!!!!!!!!!!!!!!
+	unset_limits();
 	try {
 		go();
 	} catch (std::bad_alloc a) {
 		std::cerr << "Bad allocation -- probably due to memory limit" << std::endl;
 		throw a;
 	}
-
 }
 
 

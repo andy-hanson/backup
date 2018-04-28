@@ -6,9 +6,9 @@
 #include "../../util/hash_util.h"
 #include "../../util/Map.h"
 #include "../../util/Vec.h"
-#include "../diag/diag.h"
 
 #include "./effect.h"
+#include "../../host/Path.h"
 
 using Identifier = ArenaString;
 
@@ -79,13 +79,14 @@ public:
 struct StructDeclaration {
 	ref<const Module> containing_module;
 	SourceRange range;
+	bool is_public;
 	Arr<TypeParameter> type_parameters;
 	Identifier name;
 	bool copy;
 	StructBody body;
 
-	StructDeclaration(ref<const Module> _containing_module, SourceRange _range, Arr<TypeParameter> _type_parameters, Identifier _name, bool _copy)
-		: containing_module(_containing_module), range(_range), type_parameters(_type_parameters), name(_name), copy(_copy) {}
+	StructDeclaration(ref<const Module> _containing_module, SourceRange _range, bool _is_public, Arr<TypeParameter> _type_parameters, Identifier _name, bool _copy)
+		: containing_module(_containing_module), range(_range), is_public(_is_public), type_parameters(_type_parameters), name(_name), copy(_copy) {}
 
 	size_t arity() const { return type_parameters.size(); }
 };
@@ -278,6 +279,7 @@ public:
 
 struct FunDeclaration {
 	ref<const Module> containing_module;
+	bool is_public;
 	FunSignature signature;
 	AnyBody body;
 
@@ -286,12 +288,13 @@ struct FunDeclaration {
 
 struct SpecDeclaration {
 	ref<const Module> containing_module;
+	bool is_public;
 	Arr<TypeParameter> type_parameters;
 	Identifier name;
 	Arr<FunSignature> signatures;
 
-	SpecDeclaration(ref<const Module> _containing_module, Arr<TypeParameter> _type_parameters, Identifier _name)
-		: containing_module(_containing_module), type_parameters(_type_parameters), name(_name) {}
+	SpecDeclaration(ref<const Module> _containing_module, bool _is_public, Arr<TypeParameter> _type_parameters, Identifier _name)
+		: containing_module(_containing_module), is_public(_is_public), type_parameters(_type_parameters), name(_name) {}
 };
 
 // Within a single module, maps a struct name to declaration.
@@ -306,21 +309,18 @@ using FunsDeclarationOrder = Vec<ref<FunDeclaration>>;
 
 // Note: if there is a parse error, this will just be empty.
 struct Module {
-	ArenaString path;
-	Identifier name; // `For foo/bar/a.nz`, this is `a`.
+	ref<const Path> path;
+	Arr<ref<const Module>> imports;
 	StructsDeclarationOrder structs_declaration_order;
 	SpecsDeclarationOrder specs_declaration_order;
 	FunsDeclarationOrder funs_declaration_order;
 	StructsTable structs_table;
 	SpecsTable specs_table;
 	FunsTable funs_table;
-	Vec<Diagnostic> diagnostics;
 
-	Module(ArenaString _path, Identifier _name) : path(_path), name(_name) {}
+	Module(ref<const Path> _path, Arr<ref<const Module>> _imports) : path(_path), imports(_imports) {}
+
+	inline Identifier name() const {
+		return path->base_name();
+	}
 };
-
-struct CompiledProgram {
-	Arena arena;
-	Vec<ref<Module>> modules;
-};
-

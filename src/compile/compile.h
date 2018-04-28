@@ -1,5 +1,16 @@
 #pragma once
 
-#include "model/model.h"
+#include "./diag/diag.h"
+#include "./model/model.h"
+#include "../host/DocumentProvider.h"
 
-void compile(CompiledProgram& out, const std::string& file_name);
+struct CompiledProgram {
+	Arena arena;
+	PathCache paths;
+	Vec<ref<Module>> modules;
+	Vec<Diagnostic> diagnostics;
+};
+
+extern const StringSlice NZ_EXTENSION;
+
+void compile(CompiledProgram& out, DocumentProvider& document_provider, ref<const Path> first_path);

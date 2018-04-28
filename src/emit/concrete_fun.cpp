@@ -78,6 +78,11 @@ namespace {
 					stack.push(when.elze);
 					break;
 				}
+				case Expression::Kind::Assert:
+					stack.push(&e.asserted());
+					break;
+				case Expression::Kind::Pass:
+					break;
 				case Expression::Kind::Nil:
 				case Expression::Kind::Bogus:
 					assert(false);
@@ -145,7 +150,7 @@ EveryConcreteFun get_every_concrete_fun(const Vec<ref<Module>>& modules, Arena& 
 	}
 
 	while (!to_analyze.empty()) {
-		ref<const ConcreteFun> fun = to_analyze.pop();
+		ref<const ConcreteFun> fun = to_analyze.pop_and_return();
 		const AnyBody& body = fun->fun_declaration->body;
 		if (body.kind() != AnyBody::Kind::Expr) continue;
 		each_dependent_fun(body.expression(), [&](ref<const Called> called) {

@@ -1,11 +1,12 @@
-#include "./io.h"
-
 #include <fstream>
+#include <cassert>
+#include "./io.h"
+#include "./int.h"
+#include "../host/Path.h"
 
-std::string read_file(const std::string& file_name) {
+Option<std::string> try_read_file(const std::string& file_name) {
 	std::ifstream i(file_name);
-	if (!i) throw "todo";
-	return std::string(std::istreambuf_iterator<char>(i), std::istreambuf_iterator<char>());
+	return i ? Option{std::string(std::istreambuf_iterator<char>(i), std::istreambuf_iterator<char>())} : Option<std::string>{};
 }
 
 void write_file(const std::string& file_name, const std::string& contents) {

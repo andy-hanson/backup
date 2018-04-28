@@ -7,4 +7,4 @@
 #include "./ast.h"
 
 // May throw a ParseDiagnostic.
-Vec<DeclarationAst> parse_file(const StringSlice& file_content, Arena& arena);
+void parse_file(FileAst& ast, PathCache& path_cache, Arena& arena);

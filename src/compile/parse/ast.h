@@ -3,6 +3,7 @@
 #include "../../util/StringSlice.h"
 #include "../model/effect.h"
 #include "./expr_ast.h"
+#include "../../host/Path.h"
 
 struct TypeParameterAst {
 	StringSlice name;
@@ -63,6 +64,7 @@ struct FunSignatureAst {
 
 struct StructDeclarationAst {
 	SourceRange range;
+	bool is_public;
 	StringSlice name;
 	Arr<TypeParameterAst> type_parameters;
 	bool copy;
@@ -70,6 +72,7 @@ struct StructDeclarationAst {
 };
 
 struct SpecDeclarationAst {
+	bool is_public;
 	StringSlice name;
 	Arr<TypeParameterAst> type_parameters;
 	Arr<FunSignatureAst> signatures;
@@ -82,7 +85,7 @@ public:
 private:
 	union Data {
 		ExprAst expression; // Ref so we don't have to depend on the definition of Expression here.
-		StringSlice cpp_source;
+		ArenaString cpp_source;
 		Data() {} // uninitialized
 		~Data() {} // string freed by ~AnyBody
 	};
@@ -104,7 +107,7 @@ public:
 				break;
 		}
 	}
-	FunBodyAst(StringSlice cpp_source) : _kind(Kind::CppSource) {
+	FunBodyAst(ArenaString cpp_source) : _kind(Kind::CppSource) {
 		_data.cpp_source = cpp_source;
 	}
 	FunBodyAst(ExprAst expression) : _kind(Kind::Expression) {
@@ -112,11 +115,12 @@ public:
 	}
 
 	Kind kind() const { return _kind; }
-	const StringSlice& cpp_source() const { assert(_kind == Kind::CppSource); return _data.cpp_source; }
+	const ArenaString& cpp_source() const { assert(_kind == Kind::CppSource); return _data.cpp_source; }
 	const ExprAst& expression() const { assert(_kind == Kind::Expression); return _data.expression; }
 };
 
 struct FunDeclarationAst {
+	bool is_public;
 	FunSignatureAst signature;
 	FunBodyAst body;
 };
@@ -169,9 +173,14 @@ public:
 	const FunDeclarationAst& fun() const { assert(_kind == Kind::Fun); return _data.fun; }
 };
 
-
-struct File {
-
+struct ImportAst {
+	Option<uint> n_parents; // None for global import
+	ref<const Path> path;
 };
 
-
+struct FileAst {
+	ref<const Path> path;
+	StringSlice source;
+	Arr<ImportAst> imports;
+	Vec<DeclarationAst> declarations;//TODO: Arena structure for potentially-large arrays -- blocked list?
+};

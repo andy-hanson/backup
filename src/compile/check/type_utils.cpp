@@ -10,10 +10,10 @@ namespace {
 	bool try_match_type_param(ref<const TypeParameter> candidate_type_parameter, const Type& type_from_external, Candidate& candidate) {
 		// If a fn returns a type parameter, it must have been a type declared in that function.
 		Option<uint> candidate_index = try_get_index(candidate.signature->type_parameters, candidate_type_parameter);
-		if (candidate_index) {
+		if (candidate_index.has()) {
 			// E.g., we have a candidate `<T> f(T t)` and call `f(true)`
 			Option<Type>& inferring = candidate.inferring_type_arguments[candidate_index.get()];
-			if (inferring) {
+			if (inferring.has()) {
 				// Already inferred a type for this type parameter, so use that.
 				const Type& inferred = inferring.get();
 				switch (inferred.kind()) {

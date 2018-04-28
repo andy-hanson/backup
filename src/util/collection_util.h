@@ -115,7 +115,7 @@ uint get_index_where(const Arr<T> collection, Pred pred) {
 
 template <typename T>
 bool contains_ref(const Arr<T>& collection, ref<const T> value) {
-	return try_get_index(collection, value);
+	return try_get_index(collection, value).has();
 }
 
 template <typename T>

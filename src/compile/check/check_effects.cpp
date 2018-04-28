@@ -56,9 +56,9 @@ namespace {
 		// Unordered.
 		Vec<ref<const Let>> _locals; // only used if kind is Local
 
-		ExprEffect(Effect e) : _declared(e) { assert(e == Effect::Own); }
+		ExprEffect(Effect e) : _declared(e) { assert(e == Effect::EOwn); }
 	public:
-		static ExprEffect own() { return ExprEffect{Effect::Own}; }
+		static ExprEffect own() { return ExprEffect{Effect::EOwn}; }
 		ExprEffect(ref<const Parameter> p) : _params(p) {}
 		// Construct from an *own* local.
 		ExprEffect(ref<const Let> local) : _locals(local) {}
@@ -69,21 +69,21 @@ namespace {
 		}
 		ExprEffect(const ExprEffect& other) : _declared(other._declared), _params(other._params.clone()), _locals(other._locals.clone()) {} //todo:perf
 
-		bool is_own() const { return _declared && _declared.get() == Effect::Own; }
+		bool is_own() const { return _declared.has() && _declared.get() == Effect::EOwn; }
 		const Vec<ref<const Parameter>>& params() const { return _params; }
 		const Vec<ref<const Let>>& locals() const { return _locals; }
 
 		bool is_sufficient(Effect expected) const {
 			switch (expected) {
-				case Effect::Get:
+				case Effect::EGet:
 					return true; // Everything is gettable.
-				case Effect::Set:
-				case Effect::Io:
-					if (_declared && _declared.get() < expected)
+				case Effect::ESet:
+				case Effect::EIo:
+					if (_declared.has() && _declared.get() < expected)
 						return false;
 					return every(_params, [&](ref<const Parameter> p) { return p->effect < expected; });
 					// Don't bother with _locals -- that is only for own locals, so we can do anything with those.
-				case Effect::Own:
+				case Effect::EOwn:
 					return is_own();
 			}
 		}
@@ -92,7 +92,7 @@ namespace {
 			//We combine 'from' arguments -- those should never be 'own'
 			assert(!is_own());
 			assert(!other.is_own());
-			if (other._declared)
+			if (other._declared.has())
 				lessen(other._declared.get());
 			combine_parameters(_params, other._params);
 			combine_locals(_locals, other._locals);
@@ -100,9 +100,9 @@ namespace {
 
 		// A signature can declare a return effect that's less than the actual effect.
 		void lessen(Effect e) {
-			assert(e != Effect::Own);
-			if (_declared) {
-				assert(_declared.get() != Effect::Own);
+			assert(e != Effect::EOwn);
+			if (_declared.has()) {
+				assert(_declared.get() != Effect::EOwn);
 				_declared = effect::min(_declared.get(), e);
 			} else {
 				_declared = e;
@@ -131,11 +131,11 @@ namespace {
 				throw "todo";
 
 			if (parameter.from) {
-				assert(parameter.effect != Effect::Own);
+				assert(parameter.effect != Effect::EOwn);
 				if (arg_effect.is_own())
 					throw "Todo"; // Can't borrow from 'own' arg.
 
-				if (return_effect) {
+				if (return_effect.has()) {
 					return_effect.get().combine(arg_effect);
 				} else {
 					return_effect = arg_effect;
@@ -143,12 +143,12 @@ namespace {
 			}
 		});
 
-		if (return_effect) {
-			assert(sig.effect != Effect::Own);
+		if (return_effect.has()) {
+			assert(sig.effect != Effect::EOwn);
 			return_effect.get().lessen(sig.effect);
 			return return_effect.get();
 		} else {
-			assert(sig.effect == Effect::Own);
+			assert(sig.effect == Effect::EOwn);
 			return ExprEffect::own();
 		}
 	}
@@ -157,6 +157,8 @@ namespace {
 		switch (e.kind()) {
 			case Expression::Kind::Nil: assert(false);
 			case Expression::Kind::Bogus:
+			case Expression::Kind::StringLiteral: // 'String' type is a slice, and the memory is in the executable so no need to worry about lifetime.
+			case Expression::Kind::Pass:
 				return ExprEffect::own();
 			case Expression::Kind::ParameterReference:
 				return ExprEffect { e.parameter() };
@@ -184,12 +186,14 @@ namespace {
 			case Expression::Kind::Call:
 				return infer_call_effect(e.call(), ctx);
 			case Expression::Kind::StructCreate:
-				return ExprEffect::own();
-			case Expression::Kind::StringLiteral:
-				// 'String' type is a slice, and the memory is in the executable so no need to worry about lifetime.
-				return ExprEffect::own();
+				throw "todo"; // Need to check that struct members can be made own
+				//return ExprEffect::own();
 			case Expression::Kind::When:
 				throw "todo";
+			case Expression::Kind::Assert:
+				ExprEffect eff = infer_effect(e.asserted(), ctx);
+				assert(eff.is_own());
+				return ExprEffect::own(); // Void is own
 		}
 	}
 
@@ -207,7 +211,7 @@ namespace {
 
 	void check_return_effect(const FunSignature& sig, const ExprEffect& actual_effect) {
 		Effect declared_return_effect = sig.effect;
-		if (declared_return_effect == Effect::Own) {
+		if (declared_return_effect == Effect::EOwn) {
 			for (const Parameter& p : sig.parameters) {
 				if (p.from)
 					throw "Todo: param marked 'from' but we're not using it";

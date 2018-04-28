@@ -41,7 +41,7 @@
         <key>name</key>
         <string>keyword</string>
         <key>match</key>
-        <string>\b(_|as|c|case|catch|copy|do|else|from|get|if|include|io|import|pass|set|try|when|\&lt;|\&gt;|\&lt;\=|\&gt;\=|\+|\-|\*|\/)\b</string>
+        <string>\b(_|as|assert|c|case|catch|copy|do|else|from|get|if|include|io|import|pass|private|set|spec|try|when|\&lt;|\&gt;|\&lt;\=|\&gt;\=|\+|\-|\*|\/)\b</string>
       </dict>
       <dict>
         <key>name</key>

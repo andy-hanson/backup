@@ -42,39 +42,60 @@ namespace {
 		}
 	}
 
+	ExprAst parse_let(Lexer& lexer, Arena& arena, const StringSlice& name) {
+		// `a = b`
+		lexer.take(' ');
+		ref<ExprAst> init = arena.put(parse_expr_ast(lexer, arena, ExprCtx::EqualsRhs));
+		lexer.take_newline_same_indent();
+		ref<ExprAst> then = arena.put(parse_expr_ast(lexer, arena, ExprCtx::Statement));
+		return LetAst { name, init, then };
+	}
+
+	ExprAst parse_call(Lexer& lexer, Arena& arena, ExprAst arg0) {
+		// `a f b, c, d`
+		StringSlice fn_name = lexer.take_value_name();
+		Arr<TypeAst> type_arguments = parse_type_argument_asts(lexer, arena);
+		auto args = arena.small_array_builder<ExprAst>();
+		args.add(arg0);
+		if (lexer.try_take(' ')) {
+			do {
+				args.add(parse_expr_arg_ast(lexer, arena));
+			} while (lexer.try_take_comma_space());
+		}
+		return CallAst { fn_name, type_arguments, args.finish() };
+	}
+
 	ExprAst parse_expr_ast(Lexer& lexer, Arena& arena, ExprCtx where) {
 		const char* start = lexer.at();
 		ExpressionToken et = lexer.take_expression_token(arena);
-		if (where != ExprCtx::Case && et.kind == ExpressionToken::Kind::When) {
-			return parse_when(lexer, arena, start);
+		if (where != ExprCtx::Case) {
+			switch (et.kind) {
+				case ExpressionToken::Kind::Assert: {
+					lexer.take(' ');
+					ref<ExprAst> asserted = arena.put(parse_expr_ast(lexer, arena, ExprCtx::EqualsRhs));
+					return AssertAst { lexer.range(start), asserted };
+				}
+				case ExpressionToken::Kind::When:
+					return parse_when(lexer, arena, start);
+				case ExpressionToken::Kind::Pass:
+					return ExprAst(lexer.range(start), ExprAst::Kind::Pass);
+				case ExpressionToken::Kind::Name:
+				case ExpressionToken::Kind::TypeName:
+				case ExpressionToken::Kind::Literal:
+				case ExpressionToken::Kind::Lparen:
+				case ExpressionToken::Kind::As:
+					break;
+			}
 		}
 
 		// Start by parsing a simple expr
 		ExprAst arg0 = parse_expr_arg_ast(lexer, arena, et);
 		if (!lexer.try_take(' '))
 			return arg0;
-
-		if (where == ExprCtx::Statement && arg0.kind() == ExprAst::Kind::Identifier && lexer.try_take('=')) {
-			// `a = b`
-			lexer.take(' ');
-			ref<ExprAst> init = arena.put(parse_expr_ast(lexer, arena, ExprCtx::EqualsRhs));
-			lexer.take_newline_same_indent();
-			ref<ExprAst> then = arena.put(parse_expr_ast(lexer, arena, ExprCtx::Statement));
-			return LetAst { arg0.identifier(), init, then };
-		}
-		else {
-			// `a f b, c, d`
-			StringSlice fn_name = lexer.take_value_name();
-			Arr<TypeAst> type_arguments = parse_type_argument_asts(lexer, arena);
-			auto args = arena.small_array_builder<ExprAst>();
-			args.add(arg0);
-			if (lexer.try_take(' ')) {
-				do {
-					args.add(parse_expr_arg_ast(lexer, arena));
-				} while (lexer.try_take_comma_space());
-			}
-			return CallAst { fn_name, type_arguments, args.finish() };
-		}
+		else if (where == ExprCtx::Statement && arg0.kind() == ExprAst::Kind::Identifier && lexer.try_take('='))
+			return parse_let(lexer, arena, arg0.identifier());
+		else
+			return parse_call(lexer, arena, arg0);
 	}
 
 	struct AstAndShouldParseDot { ExprAst ast; bool may_parse_dot; };
@@ -82,17 +103,7 @@ namespace {
 		switch (et.kind) {
 			case ExpressionToken::Kind::Name: {
 				Arr<TypeAst> type_arguments = parse_type_argument_asts(lexer, arena);
-				if (!type_arguments.empty()) {
-					lexer.take('(');
-					lexer.take(')');
-					return { CallAst { et.name, type_arguments, {}}, true };
-				} else if (lexer.try_take('(')) {
-					lexer.take(')');
-					// `f()` is a call with no arguments
-					return { CallAst { et.name, {}, {}}, true };
-				} else {
-					return {{ et.name }, true };
-				}
+				return type_arguments.empty() ? AstAndShouldParseDot { et.name, true } : AstAndShouldParseDot { CallAst { et.name, type_arguments, {} }, true };
 			}
 
 			case ExpressionToken::Kind::TypeName: {
@@ -124,6 +135,10 @@ namespace {
 				return { { arena.put(TypeAnnotateAst { type, arg }) }, false };
 			}
 
+			case ExpressionToken::Kind::Assert:
+				throw ParseDiagnostic { lexer.diag_at_char(ParseDiag::Kind::AssertMayNotAppearInsideArg ) };
+			case ExpressionToken::Kind::Pass:
+				throw ParseDiagnostic { lexer.diag_at_char(ParseDiag::Kind::PassMayNotAppearInsideArg ) };
 			case ExpressionToken::Kind::When:
 				throw ParseDiagnostic { lexer.diag_at_char(ParseDiag::Kind::WhenMayNotAppearInsideArg ) };
 		}

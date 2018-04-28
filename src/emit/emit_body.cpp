@@ -21,10 +21,12 @@ namespace {
 			case Expression::Kind::StructCreate:
 			case Expression::Kind::StringLiteral:
 				return false;
+			// Not possible to '.' off these
+			case Expression::Kind::Pass:
 			case Expression::Kind::Let:
-			case Expression::Kind::Seq:
 			case Expression::Kind::When:
-				return true;
+			case Expression::Kind::Seq:
+			case Expression::Kind::Assert:
 			case Expression::Kind::Nil:
 			case Expression::Kind::Bogus:
 				assert(false);
@@ -67,9 +69,9 @@ namespace {
 				out << '.' << ctx.names.get_name(sa.field);
 				break;
 			}
-			case Expression::Kind::Let: {
-				throw "todo"; // iife?
-			}
+			case Expression::Kind::Pass:
+			case Expression::Kind::Assert:
+			case Expression::Kind::Let:
 			case Expression::Kind::Seq:
 				throw "todo"; // iife?
 			case Expression::Kind::Call: {
@@ -154,6 +156,15 @@ namespace {
 				ctx.out << Writer::dedent << Writer::nl << '}';
 				break;
 			}
+			case Expression::Kind::Assert: {
+				const Expression& asserted = e.asserted();
+				ctx.out << "assert(";
+				ctx << asserted;
+				ctx.out << ");";
+				break;
+			}
+			case Expression::Kind::Pass:
+				break;
 			case Expression::Kind::ParameterReference:
 			case Expression::Kind::LocalReference:
 			case Expression::Kind::StructFieldAccess:

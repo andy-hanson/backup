@@ -10,6 +10,7 @@ const plist = require('plist')
 const keywords = [
 	"_",
 	"as",
+	"assert",
 	"c",
 	"case",
 	"catch",
@@ -23,7 +24,9 @@ const keywords = [
 	"io",
 	"import",
 	"pass",
+	"private",
 	"set",
+	"spec",
 	"try",
 	"when",
 	// Operators are "keywords" too

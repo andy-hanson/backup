@@ -29,8 +29,14 @@ add_executable(oohoo
 	src/compile/check/convert_type.h
 	src/compile/check/type_utils.cpp
 	src/compile/check/type_utils.h
+
+	src/compile/diag/diag.cpp
 	src/compile/diag/diag.h
+	src/compile/diag/parse_diag.cpp
 	src/compile/diag/parse_diag.h
+	src/compile/diag/LineAndColumnGetter.cpp
+	src/compile/diag/LineAndColumnGetter.h
+
 	src/compile/compile.h
 	src/compile/compile.cpp
 
@@ -46,6 +52,11 @@ add_executable(oohoo
 	src/emit/mangle.h
 	src/emit/Names.cpp
 	src/emit/Names.h
+
+	src/host/DocumentProvider.cpp
+	src/host/DocumentProvider.h
+	src/host/Path.cpp
+	src/host/Path.h
 
 	src/compile/model/model.cpp
 	src/compile/model/model.h
@@ -81,9 +92,14 @@ add_executable(oohoo
 	src/util/io.h
 	src/util/int.cpp
 	src/util/int.h
+	src/util/rlimit.cpp
+	src/util/rlimit.h
 	src/util/Vec.h
 	src/util/Writer.cpp
 	src/util/Writer.h
 
+	src/clang.cpp
+	src/clang.h
+
 	src/cmd.h
-	src/cmd.cpp)
+	src/cmd.cpp src/compile/check/scope.h src/compile/check/scope.cpp)

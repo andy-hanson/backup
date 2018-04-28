@@ -1,32 +1,35 @@
 #pragma once
 
+#include "../diag/diag.h"
 #include "../model/model.h"
 #include "../../util/Alloc.h"
 #include "./type_utils.h"
 #include "./BuiltinTypes.h"
 
-struct Al {
+struct CheckCtx {
 	Arena& arena;
-	StringSlice source;
+	const StringSlice& source;
+	ref<const Path> path; // Path of current module
+	const Arr<ref<const Module>>& imports;
 	Vec<Diagnostic>& diags;
 
 	inline SourceRange range(StringSlice slice) {
 		return source.range_from_inner_slice(slice);
 	}
 	inline void diag(SourceRange range, Diag diag) {
-		diags.push({ range, diag });
+		diags.push({ path, range, diag });
 	}
 	inline void diag(StringSlice slice, Diag d) {
 		diag(range(slice), d);
 	}
 };
 
-inline Identifier id(Al& al, StringSlice s) {
+inline Identifier id(CheckCtx& al, StringSlice s) {
 	return Identifier { al.arena.str(s) };
 }
 
 // current_specs: the specs from the current function.
-inline void check_param_or_local_shadows_fun(Al& al, const StringSlice& name, const FunsTable& funs_table, const Arr<SpecUse>& current_specs) {
+inline void check_param_or_local_shadows_fun(CheckCtx& al, const StringSlice& name, const FunsTable& funs_table, const Arr<SpecUse>& current_specs) {
 	if (funs_table.has(name))
 		al.diag(name, Diag::Kind::LocalShadowsFun);
 	for (const SpecUse& spec_use : current_specs)
@@ -36,7 +39,7 @@ inline void check_param_or_local_shadows_fun(Al& al, const StringSlice& name, co
 }
 
 struct ExprContext {
-	Al& al;
+	CheckCtx& check_ctx;
 	Arena& scratch_arena; // cleared after every convert call.
 	const FunsTable& funs_table;
 	const StructsTable& structs_table;
@@ -72,7 +75,7 @@ public:
 	bool had_expectation() const { return _had_expectation; }
 
 	bool has_expectation_or_inferred_type() const {
-		return type;
+		return type.has();
 	}
 
 	const Type& inferred_type() const {
@@ -87,7 +90,7 @@ public:
 
 	void check_no_infer(Type actual) {
 		_was_checked = true;
-		if (type) {
+		if (type.has()) {
 			Type t = type.get();
 			if (!does_type_match_no_infer(t, actual)) {
 				throw "todo";
@@ -100,7 +103,7 @@ public:
 	}
 
 	void set_inferred(Type actual) {
-		assert(!_had_expectation && !type);
+		assert(!_had_expectation && !type.has());
 		_was_checked = true;
 		type = actual;
 	}

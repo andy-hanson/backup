@@ -4,6 +4,7 @@
 
 using uint = unsigned int;
 using ushort = unsigned short;
+using ulong = unsigned long;
 
 size_t to_unsigned(std::ptrdiff_t s);
 uint to_uint(size_t u);

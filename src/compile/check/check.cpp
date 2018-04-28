@@ -3,9 +3,10 @@
 #include "./check_effects.h"
 #include "./check_expr.h"
 #include "./convert_type.h"
+#include "./scope.h"
 
 namespace {
-	Arr<TypeParameter> check_type_parameters(const Arr<TypeParameterAst> asts, Al& al, const Arr<TypeParameter>& spec_type_parameters) {
+	Arr<TypeParameter> check_type_parameters(const Arr<TypeParameterAst> asts, CheckCtx& al, const Arr<TypeParameter>& spec_type_parameters) {
 		return al.arena.map_with_prevs<TypeParameter>()(asts, [&](const TypeParameterAst& ast, const Arr<TypeParameter>& prevs, uint index) {
 			if (some(spec_type_parameters, [&](const TypeParameter& s) { return s.name == ast.name; }))
 				al.diag(ast.name, Diag::Kind::TypeParameterShadowsSpecTypeParameter);
@@ -22,35 +23,43 @@ namespace {
 	}
 
 	Effect check_parameter_effect(const Option<Effect>& declared, const Type& type) {
-		if (!declared) return Effect::Get; // Yes, even for 'copy' types.
+		if (!declared.has()) return Effect::EGet; // Yes, even for 'copy' types.
 
 		Effect e = declared.get();
 		switch (e) {
-			case Effect::Get:
+			case Effect::EGet:
 				throw "todo";
-			case Effect::Set:
-			case Effect::Io:
+			case Effect::ESet:
+			case Effect::EIo:
 				break;
-			case Effect::Own:
+			case Effect::EOwn:
 				if (type_is_copy(type)) throw "todo"; //diagnostic: This isn't really necessary. We'll copy when we need it.
 				break;
 		}
 		return e;
 	}
-	Effect check_return_effect(const Option<Effect>& declared, const Type& return_type) {
-		bool is_copy = type_is_copy(return_type);
-		Effect default_effect = is_copy ? Effect::Own : Effect::Io;
-		if (!declared) return default_effect; // Note: for Io, a 'from' parameter will reduce this effect, and there will be an error later if there is no 'from' parameter.
-
-		Effect e = declared.get();
-		if (e == default_effect) throw "todo"; //diagnostic: this is the default
-		return e;
+	Effect check_return_effect(const Option<Effect>& declared, const Arr<Parameter>& parameters) {
+		bool some_from = some(parameters, [](const Parameter& p) { return p.from; });
+		if (some_from) {
+			if (declared.has()) {
+				assert(declared.get() != Effect::EOwn);
+				if (declared.get() == Effect::EIo)
+					throw "todo"; // This is pointless since EIo is the maximum by-reference effect anyway.
+				return declared.get();
+			} else {
+				return Effect::EIo;
+			}
+		} else {
+			if (declared.has())
+				throw "todo"; // Can't declare an effect, since returning by value
+			return Effect::EOwn;
+		}
 	}
 
 	Arr<Parameter> check_parameters(
-		const Arr<ParameterAst>& asts, Al& al,
+		const Arr<ParameterAst>& asts, CheckCtx& al,
 		const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope, const FunsTable& funs_table, const Arr<SpecUse>& current_specs) {
-		return al.arena.map_with_prevs<Parameter>()(asts, [&](const ParameterAst& ast, const Arr<Parameter>& prevs, uint index) {
+		return al.arena.map_with_prevs<Parameter>()(asts, [&](const ParameterAst& ast, const Arr<Parameter>& prevs, uint index) -> Parameter {
 			check_param_or_local_shadows_fun(al, ast.name, funs_table, current_specs);
 			if (some(prevs, [&](const Parameter& prev) { return prev.name == ast.name; }))
 				throw "todo";
@@ -59,18 +68,18 @@ namespace {
 		});
 	}
 
-	Arr<SpecUse> check_spec_uses(const Arr<SpecUseAst>& asts, Al& al, const StructsTable& structs_table, const SpecsTable& specs_table, const TypeParametersScope& type_parameters_scope) {
-		return al.arena.map_op<SpecUse>()(asts, [&](const SpecUseAst& ast) -> Option<SpecUse> {
-			Option<const ref<const SpecDeclaration>&> spec_op = specs_table.get(ast.spec);
-			if (!spec_op) {
-				al.diag(ast.spec, Diag::Kind::SpecNameNotFound);
+	Arr<SpecUse> check_spec_uses(const Arr<SpecUseAst>& asts, CheckCtx& ctx, const StructsTable& structs_table, const SpecsTable& specs_table, const TypeParametersScope& type_parameters_scope) {
+		return ctx.arena.map_op<SpecUse>()(asts, [&](const SpecUseAst& ast) -> Option<SpecUse> {
+			Option<ref<const SpecDeclaration>> spec_op = find_spec(ast.spec, ctx, specs_table);
+			if (!spec_op.has()) {
+				ctx.diag(ast.spec, Diag::Kind::SpecNameNotFound);
 				return {};
 			};
 
 			ref<const SpecDeclaration> spec = spec_op.get();
-			Arr<Type> args = type_arguments_from_asts(ast.type_arguments, al, structs_table, type_parameters_scope);
+			Arr<Type> args = type_arguments_from_asts(ast.type_arguments, ctx, structs_table, type_parameters_scope);
 			if (args.size() != spec->type_parameters.size()) {
-				al.diag(ast.spec, { Diag::Kind::WrongNumberTypeArguments, { spec->type_parameters.size(), args.size() } });
+				ctx.diag(ast.spec, { Diag::Kind::WrongNumberTypeArguments, { spec->type_parameters.size(), args.size() } });
 				return {};
 			}
 			return Option<SpecUse>({ spec, args });
@@ -78,7 +87,7 @@ namespace {
 	}
 
 	FunSignature check_signature(
-		const FunSignatureAst& ast, Al& al,
+		const FunSignatureAst& ast, CheckCtx& al,
 		const StructsTable& structs_table, const SpecsTable& specs_table, const FunsTable& funs_table,
 		const Arr<TypeParameter>& spec_type_parameters, Identifier name
 	) {
@@ -87,10 +96,10 @@ namespace {
 		Type return_type = type_from_ast(ast.return_type, al, structs_table, type_parameters_scope);
 		Arr<SpecUse> specs = check_spec_uses(ast.spec_uses, al, structs_table, specs_table, type_parameters_scope);
 		Arr<Parameter> parameters = check_parameters(ast.parameters, al, structs_table, type_parameters_scope, funs_table, specs);
-		return { type_parameters, check_return_effect(ast.effect, return_type), return_type, name, parameters, specs };
+		return { type_parameters, check_return_effect(ast.effect, parameters), return_type, name, parameters, specs };
 	}
 
-	Arr<StructField> check_struct_fields(const Arr<StructFieldAst>& asts, Al& al, const StructsTable& structs_table, const Arr<TypeParameter>& struct_type_parameters) {
+	Arr<StructField> check_struct_fields(const Arr<StructFieldAst>& asts, CheckCtx& al, const StructsTable& structs_table, const Arr<TypeParameter>& struct_type_parameters) {
 		TypeParametersScope type_parameters_scope { {}, struct_type_parameters };
 		return al.arena.map<StructField>()(asts, [&](const StructFieldAst& field) {
 			return StructField { type_from_ast(field.type, al, structs_table, type_parameters_scope), id(al, field.name) };
@@ -98,7 +107,7 @@ namespace {
 	}
 
 	void check_type_headers(
-		const Vec<DeclarationAst>& declarations, Al& al, ref<const Module> containing_module,
+		const Vec<DeclarationAst>& declarations, CheckCtx& al, ref<const Module> containing_module,
 		StructsDeclarationOrder& structs, SpecsDeclarationOrder& specs, FunsDeclarationOrder& funs,
 		StructsTable& structs_table, SpecsTable& specs_table, FunsTable& funs_table) {
 
@@ -109,7 +118,7 @@ namespace {
 
 				case DeclarationAst::Kind::Struct: {
 					const StructDeclarationAst& ast = decl.strukt();
-					ref<StructDeclaration> strukt = al.arena.put(StructDeclaration { containing_module, ast.range, check_type_parameters(ast.type_parameters, al, {}), id(al, ast.name), ast.copy });
+					ref<StructDeclaration> strukt = al.arena.put(StructDeclaration { containing_module, ast.range, ast.is_public, check_type_parameters(ast.type_parameters, al, {}), id(al, ast.name), ast.copy });
 					if (structs_table.try_insert(strukt->name, strukt))
 						structs.push(strukt);
 					else
@@ -119,7 +128,7 @@ namespace {
 
 				case DeclarationAst::Kind::Spec: {
 					const SpecDeclarationAst& ast = decl.spec();
-					ref<SpecDeclaration> spec = al.arena.put(SpecDeclaration { containing_module, check_type_parameters(ast.type_parameters, al, {}), id(al, ast.name) });
+					ref<SpecDeclaration> spec = al.arena.put(SpecDeclaration { containing_module, ast.is_public, check_type_parameters(ast.type_parameters, al, {}), id(al, ast.name) });
 					if (specs_table.try_insert(spec->name, spec))
 						specs.push(spec);
 					else
@@ -129,7 +138,7 @@ namespace {
 
 				case DeclarationAst::Kind::Fun:
 					const FunDeclarationAst& fun_ast = decl.fun();
-					ref<FunDeclaration> fun = al.arena.put(FunDeclaration { containing_module, {}, {} });
+					ref<FunDeclaration> fun = al.arena.put(FunDeclaration { containing_module, fun_ast.is_public, {}, {} });
 					// Need this allocated now so we can use it in the table.
 					Identifier name = id(al, fun_ast.signature.name);
 					fun->signature.name = name;
@@ -152,7 +161,7 @@ namespace {
 	// Now that we've allocated every struct and spec, fill in every struct and spec, and fill in the header of every function.
 	// Can't check function bodies at this point as it may call a future function -- we need to get the headers of every function first.
 	void check_fun_headers_and_type_bodies(
-		const Vec<DeclarationAst>& declarations, Al& al,
+		const Vec<DeclarationAst>& declarations, CheckCtx& al,
 		StructsDeclarationOrder& structs, SpecsDeclarationOrder& specs, FunsDeclarationOrder& funs,
 		const StructsTable& structs_table, const SpecsTable& specs_table, FunsTable& funs_table
 	) {
@@ -201,7 +210,7 @@ namespace {
 	const StringSlice STRING = StringSlice { "String" };
 	const StringSlice VOID = StringSlice { "Void" };
 
-	Option<Type> get_special_named_type(const StructsTable& structs_table, Al& al, StringSlice type_name) {
+	Option<Type> get_special_named_type(const StructsTable& structs_table, CheckCtx& al, StringSlice type_name) {
 		return map_op<Type>()(structs_table.get(type_name), [&](ref<const StructDeclaration> strukt) -> Type {
 			if (strukt->arity()) {
 				al.diag(strukt->range, Diag::Kind::SpecialTypeShouldNotHaveTypeParameters);
@@ -212,14 +221,14 @@ namespace {
 	}
 
 	Expression check_function_body(
-		const ExprAst& ast, Al& al, const FunsTable& funs_table, const StructsTable& structs_table, const FunDeclaration& fun, const BuiltinTypes& builtin_types) {
+		const ExprAst& ast, CheckCtx& al, const FunsTable& funs_table, const StructsTable& structs_table, const FunDeclaration& fun, const BuiltinTypes& builtin_types) {
 		Arena scratch_arena;
 		ExprContext ctx { al, scratch_arena, funs_table, structs_table, &fun, {}, builtin_types };
 		return check_and_expect(ast, ctx, fun.signature.return_type);
 	}
 
 	// Now that we have the bodies of every type and the headers of every function, we can fill in every function.
-	void check_fun_bodies(const Vec<DeclarationAst>& declarations, Al& al, FunsDeclarationOrder& funs, const StructsTable& structs_table, const FunsTable& funs_table) {
+	void check_fun_bodies(const Vec<DeclarationAst>& declarations, CheckCtx& al, FunsDeclarationOrder& funs, const StructsTable& structs_table, const FunsTable& funs_table) {
 		FunsDeclarationOrder::iterator fun_iter = funs.begin();
 		FunsDeclarationOrder::iterator fun_end = funs.end();
 		BuiltinTypes builtin_types { get_special_named_type(structs_table, al, BOOL), get_special_named_type(structs_table, al, STRING), get_special_named_type(structs_table, al, VOID) };
@@ -245,14 +254,16 @@ namespace {
 	}
 }
 
-void check(ref<Module> m, const StringSlice& source, const Vec<DeclarationAst>& declarations, Arena& arena) {
-	Al al { arena, source, m->diagnostics };
-	check_type_headers(declarations, al, m, m->structs_declaration_order, m->specs_declaration_order, m->funs_declaration_order, m->structs_table, m->specs_table, m->funs_table);
+void check(ref<Module> m, const FileAst& ast, Arena& arena, Vec<Diagnostic>& diagnostics) {
+	CheckCtx al { arena, ast.source, m->path, m->imports, diagnostics };
 
-	check_fun_headers_and_type_bodies(declarations, al,
+	if (!ast.imports.empty()) throw "todo";
+
+	check_type_headers(ast.declarations, al, m, m->structs_declaration_order, m->specs_declaration_order, m->funs_declaration_order, m->structs_table, m->specs_table, m->funs_table);
+
+	check_fun_headers_and_type_bodies(ast.declarations, al,
 		m->structs_declaration_order, m->specs_declaration_order, m->funs_declaration_order,
 		m->structs_table, m->specs_table, m->funs_table);
 
-	check_fun_bodies(declarations, al, m->funs_declaration_order, m->structs_table, m->funs_table);
-
+	check_fun_bodies(ast.declarations, al, m->funs_declaration_order, m->structs_table, m->funs_table);
 }

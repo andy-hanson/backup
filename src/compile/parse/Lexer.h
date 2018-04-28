@@ -8,7 +8,7 @@
 
 struct ExpressionToken {
 	enum class Kind {
-		Name, TypeName, Literal, Lparen, As, When
+		Name, TypeName, Literal, Lparen, As, When, Assert, Pass
 	};
 	Kind kind;
 	union {
@@ -36,6 +36,8 @@ class Lexer {
 
 	void expect(const char* expected);
 	uint take_tabs();
+
+	Arena::StringBuilder string_builder(Arena& arena);
 
 public:
 	// May throw a ParseDiagnostic.
@@ -68,6 +70,8 @@ public:
 	bool try_take_copy_keyword();
 	bool try_take_from_keyword();
 	bool try_take_else_keyword();
+	bool try_take_import_space();
+	bool try_take_private_nl();
 
 	inline bool try_take_comma_space() {
 		if (try_take(',')) {
@@ -89,7 +93,9 @@ public:
 
 	void take_newline_same_indent();
 	void take_indent();
-	StringSlice take_indented_string(Arena& arena);
+	ArenaString take_indented_string(Arena& arena);
+
+	ArenaString try_take_comment(Arena& arena);
 
 	StringSlice take_cpp_include();
 	StringSlice take_type_name();

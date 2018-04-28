@@ -125,6 +125,8 @@ public:
 		// This is the argument passed to a call to `literal`.
 		StringLiteral,
 		When,
+		Assert,
+		Pass,
 	};
 
 private:
@@ -139,6 +141,7 @@ private:
 		StructCreate struct_create;
 		ArenaString string_literal;
 		When when;
+		ref<Expression> asserted;
 
 		Data() {} // uninitialized
 		~Data() {} // Nothing in here should need to be deleted
@@ -201,6 +204,15 @@ public:
 		data.when = when;
 	}
 
+	Expression(ref<Expression> asserted, Kind kind) : _kind(kind) {
+		assert(kind == Kind::Assert);
+		data.asserted = asserted;
+	}
+
+	Expression(Kind kind) : _kind(Kind::Pass) {
+		assert(kind == Kind::Pass);
+	}
+
 	~Expression() {
 		// Nothing to do, none have destructors
 	}
@@ -257,6 +269,14 @@ public:
 		assert(_kind == Kind::When);
 		return data.when;
 	}
+	Expression& asserted() {
+		assert(_kind == Kind::Assert);
+		return data.asserted;
+	}
+	const Expression& asserted() const {
+		assert(_kind == Kind::Assert);
+		return data.asserted;
+	}
 
 	void operator=(const Expression& e) {
 		_kind = e._kind;
@@ -290,6 +310,11 @@ public:
 				break;
 			case Kind::When:
 				data.when = e.data.when;
+				break;
+			case Kind::Assert:
+				data.asserted = e.data.asserted;
+				break;
+			case Kind::Pass:
 				break;
 		}
 	}

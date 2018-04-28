@@ -12,5 +12,5 @@ Arr<TypeAst> parse_type_argument_asts(Lexer& lexer, Arena& arena) {
 TypeAst parse_type_ast(Lexer& lexer, Arena& arena) {
 	bool is_type_parameter = lexer.try_take('?');
 	StringSlice name = lexer.take_type_name();
-	return { is_type_parameter, name, is_type_parameter ? Arr<TypeAst>{} : parse_type_argument_asts(lexer, arena) };
+	return is_type_parameter ? TypeAst { name } : TypeAst { name, parse_type_argument_asts(lexer, arena) };
 }

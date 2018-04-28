@@ -2,9 +2,9 @@
 
 StringSlice effect::name(Effect e) {
 	switch (e) {
-		case Effect::Get: return "get";
-		case Effect::Set: return "set";
-		case Effect::Io: return "io";
-		case Effect::Own: return "own";
+		case Effect::EGet: return "get";
+		case Effect::ESet: return "set";
+		case Effect::EIo: return "io";
+		case Effect::EOwn: return "own";
 	}
 }

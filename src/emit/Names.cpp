@@ -56,7 +56,7 @@ namespace {
 		const FunSignature& sig = f.fun_declaration->signature;
 		sb << mangle{sig.name};
 		if (is_overloaded) {
-			sb << "_overload_" << mangle {f.fun_declaration->containing_module->name};
+			sb << "_overload_" << mangle {f.fun_declaration->containing_module->name()};
 			write_type_for_fun_name(sb, sig.return_type);
 			for (const Parameter& p : sig.parameters) {
 				sb << '_';
@@ -86,14 +86,14 @@ Names get_names(const Vec<ref<Module>>& modules, const FunInstantiations& fun_in
 	for (ref<const Module> module : modules) {
 		for (ref<const StructDeclaration> s : module->structs_declaration_order)
 			global_structs_table.add(s->name, s);
-		module_names.must_insert(module->name); //TODO: if 2 modules have the same name, harder to generate overload names
+		module_names.must_insert(module->name());
 	}
 
 	Names names;
 	for (const auto& a : global_structs_table) {
 		const Identifier& name = a.first;
 		ref<const StructDeclaration> strukt = a.second;
-		names.struct_names.must_insert(strukt, escape_struct_name(strukt->containing_module->name, name, arena, global_structs_table.count(a.first) != 1));
+		names.struct_names.must_insert(strukt, escape_struct_name(strukt->containing_module->name(), name, arena, global_structs_table.count(a.first) != 1));
 
 		if (strukt->body.is_fields()) {
 			for (const StructField& field : strukt->body.fields()) {

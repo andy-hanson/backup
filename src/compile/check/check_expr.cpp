@@ -25,14 +25,14 @@ namespace {
 
 	Expression check_struct_create(const StructCreateAst& create, ExprContext& ctx, Expected& expected) {
 		Option<const ref<const StructDeclaration>&> struct_op = ctx.structs_table.get(create.struct_name);
-		if (!struct_op) {
-			ctx.al.diag(create.struct_name, Diag::Kind::StructNameNotFound);
+		if (!struct_op.has()) {
+			ctx.check_ctx.diag(create.struct_name, Diag::Kind::StructNameNotFound);
 			return Expression::bogus();
 		}
 
 		const StructDeclaration& strukt = *struct_op.get();
 		if (!strukt.body.is_fields()) {
-			ctx.al.diag(create.struct_name, Diag::Kind::CantCreateNonStruct);
+			ctx.check_ctx.diag(create.struct_name, Diag::Kind::CantCreateNonStruct);
 			return Expression::bogus();
 		}
 
@@ -40,11 +40,11 @@ namespace {
 
 		size_t size = strukt.body.fields().size();
 		if (create.arguments.size() != size) {
-			ctx.al.diag(create.struct_name, Diag::Kind::WrongNumberNewStructArguments);
+			ctx.check_ctx.diag(create.struct_name, Diag::Kind::WrongNumberNewStructArguments);
 			return Expression::bogus();
 		}
 
-		Arr<Expression> arguments = ctx.al.arena.fill_array<Expression>()(size, [&](uint i) {
+		Arr<Expression> arguments = ctx.check_ctx.arena.fill_array<Expression>()(size, [&](uint i) {
 			return check_and_expect(create.arguments[i], ctx, struct_field_type(inst_struct, i));
 		});
 
@@ -54,24 +54,24 @@ namespace {
 
 	Expression check_type_annotate(const TypeAnnotateAst& ast, ExprContext& ctx, Expected& expected) {
 		if (expected.has_expectation_or_inferred_type()) {
-			ctx.al.diag(ast.type.type_name, Diag::Kind::UnnecessaryTypeAnnotate);
+			ctx.check_ctx.diag(ast.type.name(), Diag::Kind::UnnecessaryTypeAnnotate);
 			return Expression::bogus(); // Note: could continue anyway, but must check that the actual type here matches the actual type.
 		}
-		Type type = type_from_ast(ast.type, ctx.al, ctx.structs_table, ctx.current_fun->signature.type_parameters);
+		Type type = type_from_ast(ast.type, ctx.check_ctx, ctx.structs_table, ctx.current_fun->signature.type_parameters);
 		expected.set_inferred(type);
 		return check_and_expect(ast.expression, ctx, type);
 	}
 
 	Expression check_let(const LetAst& ast, ExprContext& ctx, Expected& expected) {
 		StringSlice name = ast.name;
-		check_param_or_local_shadows_fun(ctx.al, name, ctx.funs_table, ctx.current_fun->signature.specs);
-		if (find_parameter(ctx, name))
-			ctx.al.diag(name, Diag::Kind::LocalShadowsParameter);
-		if (find_local(ctx, name))
-			ctx.al.diag(name, Diag::Kind::LocalShadowsLocal);
+		check_param_or_local_shadows_fun(ctx.check_ctx, name, ctx.funs_table, ctx.current_fun->signature.specs);
+		if (find_parameter(ctx, name).has())
+			ctx.check_ctx.diag(name, Diag::Kind::LocalShadowsParameter);
+		if (find_local(ctx, name).has())
+			ctx.check_ctx.diag(name, Diag::Kind::LocalShadowsLocal);
 
 		ExpressionAndType init = check_and_infer(*ast.init, ctx);
-		ref<Let> l = ctx.al.arena.put(Let { init.type, Identifier { ctx.al.arena.str(name) }, init.expression, {}, {} });
+		ref<Let> l = ctx.check_ctx.arena.put(Let { init.type, Identifier { ctx.check_ctx.arena.str(name) }, init.expression, {}, {} });
 		ctx.locals.push(l);
 		l->then = check(*ast.then, ctx, expected);
 		assert(ctx.locals.peek() == l);
@@ -80,40 +80,64 @@ namespace {
 	}
 
 	Expression check_seq(const SeqAst& ast, ExprContext& ctx, Expected& expected) {
-		if (!ctx.builtin_types.void_type) {
-			ctx.al.diag(ast.range, Diag::Kind::MissingVoidType);
+		if (!ctx.builtin_types.void_type.has()) {
+			ctx.check_ctx.diag(ast.range, Diag::Kind::MissingVoidType);
 			return Expression::bogus();
 		}
 		Expression first = check_and_expect(*ast.first, ctx, ctx.builtin_types.void_type.get());
 		Expression then = check(*ast.then, ctx, expected);
-		return { ctx.al.arena.put(Seq { first, then }) };
+		return { ctx.check_ctx.arena.put(Seq { first, then }) };
 	}
 
 	Expression check_when(const WhenAst& ast, ExprContext& ctx, Expected& expected) {
-		if (!ctx.builtin_types.bool_type) {
-			ctx.al.diag(ast.range, Diag::Kind::MissingBoolType);
+		if (!ctx.builtin_types.bool_type.has()) {
+			ctx.check_ctx.diag(ast.range, Diag::Kind::MissingBoolType);
 			return Expression::bogus();
 		}
 
-		Arr<Case> cases = ctx.al.arena.map<Case>()(ast.cases, [&](const CaseAst& c) {
+		Arr<Case> cases = ctx.check_ctx.arena.map<Case>()(ast.cases, [&](const CaseAst& c) {
 			Expression cond = check_and_expect(c.condition, ctx, ctx.builtin_types.bool_type.get());
 			Expression then = check(c.then, ctx, expected);
 			return Case { cond, then };
 		});
-		ref<Expression> elze = ctx.al.arena.put(check(*ast.elze, ctx, expected));
+		ref<Expression> elze = ctx.check_ctx.arena.put(check(*ast.elze, ctx, expected));
 		return When { cases, elze };
+	}
+
+	Expression check_assert(const AssertAst& ast, ExprContext& ctx, Expected& expected) {
+		if (!ctx.builtin_types.void_type.has()) {
+			ctx.check_ctx.diag(ast.range, Diag::Kind::MissingVoidType);
+			return Expression::bogus();
+		}
+		expected.check_no_infer(ctx.builtin_types.void_type.get());
+
+		if (!ctx.builtin_types.bool_type.has()) {
+			ctx.check_ctx.diag(ast.range, Diag::Kind::MissingBoolType);
+			return Expression::bogus();
+		}
+		ref<Expression> asserted = ctx.check_ctx.arena.put(check_and_expect(ast.asserted, ctx, ctx.builtin_types.bool_type.get()));
+		return Expression(asserted, Expression::Kind::Assert);
+	}
+
+	Expression check_pass(const SourceRange& range, ExprContext& ctx, Expected& expected) {
+		if (!ctx.builtin_types.void_type.has()) {
+			ctx.check_ctx.diag(range, Diag::Kind::MissingVoidType);
+			return Expression::bogus();
+		}
+		expected.check_no_infer(ctx.builtin_types.void_type.get());
+		return Expression(Expression::Kind::Pass);
 	}
 
 	const StringSlice LITERAL { "literal" };
 
 	Expression check_no_call_literal_inner(const StringSlice& literal, ExprContext& ctx, Expected& expected) {
 		if (expected.has_expectation_or_inferred_type()) expected.as_if_checked(); else expected.set_inferred(ctx.builtin_types.string_type.get());
-		return Expression{ctx.al.arena.str(literal)};
+		return Expression{ctx.check_ctx.arena.str(literal)};
 	}
 
 	Expression check_no_call_literal(const StringSlice& literal, ExprContext& ctx, Expected& expected) {
-		if (!ctx.builtin_types.string_type) {
-			ctx.al.diag(literal, Diag::Kind::MissingStringType);
+		if (!ctx.builtin_types.string_type.has()) {
+			ctx.check_ctx.diag(literal, Diag::Kind::MissingStringType);
 			return Expression::bogus();
 		}
 		const Type& string_type = ctx.builtin_types.string_type.get();
@@ -122,17 +146,17 @@ namespace {
 	}
 
 	Expression check_literal(const LiteralAst& literal, ExprContext& ctx, Expected& expected) {
-		if (!ctx.builtin_types.string_type) {
-			ctx.al.diag(literal.literal, Diag::Kind::MissingStringType);
+		if (!ctx.builtin_types.string_type.has()) {
+			ctx.check_ctx.diag(literal.literal, Diag::Kind::MissingStringType);
 			return Expression::bogus();
 		}
 		const Type& string_type = ctx.builtin_types.string_type.get();
 		const Option<Type>& current_expectation = expected.get_current_expectation();
-		if (literal.type_arguments.size() == 0 && literal.arguments.size() == 0 && (!current_expectation || current_expectation.get() == string_type)) {
+		if (literal.type_arguments.size() == 0 && literal.arguments.size() == 0 && (!current_expectation.has() || current_expectation.get() == string_type)) {
 			return check_no_call_literal_inner(literal.literal, ctx, expected);
 		} else {
 			Arena::SmallArrayBuilder<ExprAst> b = ctx.scratch_arena.small_array_builder<ExprAst>();
-			b.add(ctx.al.arena.str(literal.literal)); // This is a NoCallLiteral
+			b.add(ctx.check_ctx.arena.str(literal.literal)); // This is a NoCallLiteral
 			for (const ExprAst &arg : literal.arguments)
 				b.add(arg);
 			return check_call(LITERAL, b.finish(), literal.type_arguments, ctx, expected);
@@ -141,21 +165,20 @@ namespace {
 
 	Expression check_identifier(const StringSlice& name, ExprContext& ctx, Expected& expected) {
 		Option<ref<const Parameter>> param_op = find_parameter(ctx, name);
-		if (param_op) {
+		if (param_op.has()) {
 			const Parameter& param = param_op.get();
 			expected.check_no_infer(param.type);
 			return Expression(&param);
 		}
 
 		Option<ref<const Let>> let_op = find_local(ctx, name);
-		if (let_op) {
+		if (let_op.has()) {
 			ref<const Let> let = let_op.get();
 			expected.check_no_infer(let->type);
 			return Expression(let, Expression::Kind::LocalReference);
 		}
 
-		ctx.al.diag(name, Diag::UnrecognizedParameterOrLocal);
-		return Expression::bogus();
+		return check_call(name, {}, {}, ctx, expected);
 	}
 }
 
@@ -181,5 +204,9 @@ Expression check(const ExprAst& ast, ExprContext& ctx, Expected& expected) {
 			return check_seq(ast.seq(), ctx, expected);
 		case ExprAst::Kind::When:
 			return check_when(ast.when(), ctx, expected);
+		case ExprAst::Kind::Assert:
+			return check_assert(ast.assert_ast(), ctx, expected);
+		case ExprAst::Kind::Pass:
+			return check_pass(ast.pass(), ctx, expected);
 	}
 }

@@ -45,6 +45,11 @@ struct WhenAst {
 	ref<ExprAst> elze;
 };
 
+struct AssertAst {
+	SourceRange range;
+	ref<ExprAst> asserted;
+};
+
 class ExprAst {
 public:
 	enum class Kind {
@@ -57,6 +62,8 @@ public:
 		Let,
 		Seq,
 		When,
+		Assert,
+		Pass,
 	};
 
 private:
@@ -70,6 +77,8 @@ private:
 		LetAst let;
 		SeqAst seq;
 		WhenAst when;
+		AssertAst assert;
+		SourceRange pass;
 		Data() {} // uninitialized
 		~Data() {} // It's in an arena, don't need a destructor
 	};
@@ -112,6 +121,12 @@ public:
 			case Kind::When:
 				data.when = other.data.when;
 				break;
+			case Kind::Assert:
+				data.assert = other.data.assert;
+				break;
+			case Kind::Pass:
+				data.pass = other.data.pass;
+				break;
 		}
 	}
 
@@ -141,6 +156,13 @@ public:
 	}
 	ExprAst(WhenAst when) : _kind(Kind::When) {
 		data.when = when;
+	}
+	ExprAst(AssertAst assert) : _kind(Kind::Assert) {
+		data.assert = assert;
+	}
+	ExprAst(SourceRange range, Kind kind) : _kind(Kind::Pass) {
+		data.pass = range;
+		assert(kind == Kind::Pass);
 	}
 
 	const StringSlice& identifier() const {
@@ -178,6 +200,14 @@ public:
 	const WhenAst& when() const {
 		assert(_kind == Kind::When);
 		return data.when;
+	}
+	const AssertAst& assert_ast() const {
+		assert(_kind == Kind::Assert);
+		return data.assert;
+	}
+	const SourceRange& pass() const {
+		assert(_kind == Kind::Pass);
+		return data.pass;
 	}
 };
 

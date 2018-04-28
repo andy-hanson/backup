@@ -38,23 +38,26 @@ namespace {
 	}
 
 	Arr<ParameterAst> parse_parameter_asts(Lexer& lexer, Arena& arena) {
+		if (!lexer.try_take('(')) {
+			return {};
+		}
 		Arena::SmallArrayBuilder<ParameterAst> parameters = arena.small_array_builder<ParameterAst>();
 		lexer.take('(');
-		if (!lexer.try_take(')')) {
-			while (true) {
-				bool from = false;
-				if (lexer.try_take_from_keyword()) {
-					lexer.take(' ');
-					from = true;
-				}
-				Option<Effect> effect = lexer.try_take_effect();
-				TypeAst type = parse_type_ast(lexer, arena);
+		while (true) {
+			if (lexer.try_take(')')) throw "todo"; //error: Don't write `()`
+
+			bool from = false;
+			if (lexer.try_take_from_keyword()) {
 				lexer.take(' ');
-				parameters.add({ from, effect, type, lexer.take_value_name() });
-				if (lexer.try_take(')')) break;
-				lexer.take(',');
-				lexer.take(' ');
+				from = true;
 			}
+			Option<Effect> effect = lexer.try_take_effect();
+			TypeAst type = parse_type_ast(lexer, arena);
+			lexer.take(' ');
+			parameters.add({ from, effect, type, lexer.take_value_name() });
+			if (lexer.try_take(')')) break;
+			lexer.take(',');
+			lexer.take(' ');
 		}
 		return parameters.finish();
 	}
@@ -87,58 +90,88 @@ namespace {
 
 	const StringSlice INCLUDE { "include" };
 
-	DeclarationAst parse_single_declaration(Lexer& lexer, Arena& arena) {
-		const char* start = lexer.at();
-		if (lexer.try_take('$')) {
-			StringSlice name = lexer.take_type_name();
-			Arr<TypeParameterAst> type_parameters = lexer.try_take(' ') ? parse_type_parameter_asts(lexer, arena) : Arr<TypeParameterAst>{};
-			lexer.take_indent();
-			Arena::SmallArrayBuilder<FunSignatureAst> sigs = arena.small_array_builder<FunSignatureAst>();
-			do {
-				StringSlice sig_name = lexer.take_value_name();
-				lexer.take(' ');
-				sigs.add(parse_signature_ast(lexer, arena, sig_name));
-			} while (lexer.take_newline_or_dedent() == NewlineOrDedent::Newline);
-			return SpecDeclarationAst { name, type_parameters, sigs.finish() };
-		} else {
-			bool c = lexer.try_take('c');
-			if (c) lexer.take(' ');
+	SpecDeclarationAst parse_spec(Lexer& lexer, Arena& arena, bool is_public) {
+		StringSlice name = lexer.take_type_name();
+		Arr<TypeParameterAst> type_parameters = lexer.try_take(' ') ? parse_type_parameter_asts(lexer, arena) : Arr<TypeParameterAst>{};
+		lexer.take_indent();
+		Arena::SmallArrayBuilder<FunSignatureAst> sigs = arena.small_array_builder<FunSignatureAst>();
+		do {
+			StringSlice sig_name = lexer.take_value_name();
+			lexer.take(' ');
+			sigs.add(parse_signature_ast(lexer, arena, sig_name));
+		} while (lexer.take_newline_or_dedent() == NewlineOrDedent::Newline);
+		return SpecDeclarationAst { is_public, name, type_parameters, sigs.finish() };
+	}
 
-			Lexer::ValueOrTypeName vt = lexer.take_value_or_type_name();
-			if (vt.is_value) {
-				lexer.take(' ');
-				if (vt.name == INCLUDE) {
-					return lexer.take_cpp_include();
-				} else {
-					FunSignatureAst signature = parse_signature_ast(lexer, arena, vt.name);
-					FunBodyAst body = c ? FunBodyAst { lexer.take_indented_string(arena) } : FunBodyAst { parse_body_ast(lexer, arena) };
-					return FunDeclarationAst { signature, body };
-				}
+	DeclarationAst parse_struct_or_fun(Lexer& lexer, Arena& arena, bool is_public, const char* start) {
+		bool c = lexer.try_take('c');
+		if (c) lexer.take(' ');
+
+		Lexer::ValueOrTypeName name = lexer.take_value_or_type_name();
+		if (name.is_value) {
+			lexer.take(' ');
+			if (name.name == INCLUDE) {
+				// is_public is irrelevant for these
+				return lexer.take_cpp_include();
 			} else {
-				bool copy = false;
-				Arr<TypeParameterAst> type_parameters;
-				if (lexer.try_take(' ')) {
-					copy = lexer.try_take_copy_keyword();
-					if (!copy || lexer.try_take(' '))
-						type_parameters = parse_type_parameter_asts(lexer, arena);
-				}
-				StructBodyAst body = c ? parse_cpp_struct_body(lexer) : parse_struct_field_asts(lexer, arena);
-				return StructDeclarationAst { lexer.range(start), vt.name, type_parameters, copy, body };
+				FunSignatureAst signature = parse_signature_ast(lexer, arena, name.name);
+				FunBodyAst body = c ? FunBodyAst { lexer.take_indented_string(arena) } : FunBodyAst { parse_body_ast(lexer, arena) };
+				return FunDeclarationAst { is_public, signature, body };
 			}
+		} else {
+			bool copy = false;
+			Arr<TypeParameterAst> type_parameters;
+			if (lexer.try_take(' ')) {
+				copy = lexer.try_take_copy_keyword();
+				if (!copy || lexer.try_take(' '))
+					type_parameters = parse_type_parameter_asts(lexer, arena);
+			}
+			StructBodyAst body = c ? parse_cpp_struct_body(lexer) : parse_struct_field_asts(lexer, arena);
+			return StructDeclarationAst { lexer.range(start), is_public, name.name, type_parameters, copy, body };
 		}
+	}
+
+	ImportAst parse_single_import(Lexer& lexer, PathCache& path_cache) {
+		// Note: 1 dot = 0 parents
+		uint n_dots = 0;
+		while (lexer.try_take('.')) ++n_dots;
+
+		ref<const Path> path = path_cache.from_part_slice(lexer.take_value_name());
+
+		while (lexer.try_take('.'))
+			path = path_cache.resolve(path, lexer.take_value_name());
+		return { n_dots == 0 ? Option<uint>{} : Option<uint>{ n_dots - 1 }, path };
+	}
+
+	Arr<ImportAst> parse_imports(Lexer& lexer, Arena& arena, PathCache& path_cache) {
+		Arena::SmallArrayBuilder<ImportAst> b = arena.small_array_builder<ImportAst>();
+		do {
+			b.add(parse_single_import(lexer, path_cache));
+		} while (lexer.try_take(' '));
+		return b.finish();
 	}
 }
 
-Vec<DeclarationAst> parse_file(const StringSlice& file_content, Arena& arena) {
-	Lexer::validate_file(file_content);
+void parse_file(FileAst& ast, PathCache& path_cache, Arena& arena) {
+	Lexer::validate_file(ast.source);
+	Lexer lexer { ast.source };
 
-	Vec<DeclarationAst> declarations;
-	Lexer lexer { file_content };
+	if (lexer.try_take_import_space()) {
+		lexer.take(' ');
+		ast.imports = parse_imports(lexer, arena, path_cache);
+		lexer.take('\n');
+	}
+
+	bool is_public = true;
 	while (true) {
 		lexer.skip_blank_lines();
 		if (lexer.try_take('\0'))
 			break;
-		declarations.push(parse_single_declaration(lexer, arena));
+		if (lexer.try_take_private_nl()) {
+			if (is_public) throw "todo: duplicate private";
+			is_public = false;
+		}
+		const char* start = lexer.at();
+		ast.declarations.push(lexer.try_take('$') ? parse_spec(lexer, arena, is_public) : parse_struct_or_fun(lexer, arena, is_public, start));
 	}
-	return declarations;
 }

@@ -1,0 +1,8 @@
+c Void
+	void
+c Bool
+	bool
+c true Bool
+	return true;
+run Void
+	assert true

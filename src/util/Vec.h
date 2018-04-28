@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <vector>
 #include "./int.h"
 
@@ -17,12 +18,27 @@ public:
 	Vec<T>& operator=(Vec<T>&& other) = default;
 	explicit Vec(T value) : inner{value} {}
 
-	void push(T value) { inner.push_back(value); }
+	T& push(T value) {
+		inner.push_back(value);
+		return inner.back();
+	}
+	T& emplace(T&& value) {
+		inner.emplace_back(std::forward<T>(value));
+		return inner.back();
+	}
 	bool empty() const { return inner.empty(); }
-	T pop() {
+	T pop_and_return() {
+		assert(!empty());
 		T res = inner.back();
 		inner.pop_back();
 		return res;
+	}
+	void pop() {
+		inner.pop_back();
+	}
+	const T& back() const {
+		assert(!empty());
+		return inner.back();
 	}
 	size_t size() const { return inner.size(); }
 

@@ -45,6 +45,16 @@ public:
 	inline const char* begin() const { return _begin; }
 	inline const char* end() const { return _end; }
 
+	inline const char* cstr() const {
+		assert(!empty() && *(_end - 1) == '\0');
+		return _begin;
+	}
+
+	inline StringSlice slice(uint begin) const {
+		assert(begin < size());
+		return { _begin + begin, _end };
+	}
+
 	inline bool empty() const { return _end == _begin; }
 
 	inline constexpr size_t size() const {
