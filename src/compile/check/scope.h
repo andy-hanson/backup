@@ -9,9 +9,9 @@ Option<ref<const StructDeclaration>> find_struct(const StringSlice& name, CheckC
 template <typename /*CalledDeclaration => void*/ Cb>
 void each_fun_with_name(const ExprContext& ctx, const StringSlice& name, Cb cb) {
 	for (ref<const FunDeclaration> f : ctx.funs_table.all_with_key(name))
-		cb(f);
+		cb(CalledDeclaration { f });
 	for (ref<const Module> m : ctx.check_ctx.imports)
 		for (ref<const FunDeclaration> f : m->funs_table.all_with_key(name))
 			if (f->is_public)
-				cb(f);
+				cb(CalledDeclaration { f });
 }

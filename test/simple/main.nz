@@ -4,5 +4,7 @@ c Bool
 	bool
 c true Bool
 	return true;
+
+| Main function
 run Void
 	assert true

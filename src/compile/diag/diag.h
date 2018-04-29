@@ -15,6 +15,8 @@ public:
 	enum Kind {
 		Parse,
 
+		CircularImport,
+
 		// Top-level diags
 		StructNameNotFound,
 		TypeParameterNameNotFound,
@@ -60,6 +62,7 @@ public:
 			case Kind::WrongNumberNewStructArguments:
 				assert(false);
 
+			case Kind::CircularImport:
 			case Kind::SpecNameNotFound:
 			case Kind::StructNameNotFound:
 			case Kind::TypeParameterNameNotFound:
@@ -88,12 +91,12 @@ public:
 };
 
 struct Diagnostic {
-	ref<const Path> path;
+	Path path;
 	SourceRange range;
 	Diag diag;
 
-	Diagnostic(ref<const Path> _path, SourceRange _range, Diag _diag) : path(_path), range(_range), diag(_diag) {}
-	Diagnostic(ref<const Path> _path, ParseDiagnostic p) : path(_path), range(p.range), diag(p.diag) {}
+	Diagnostic(Path _path, SourceRange _range, Diag _diag) : path(_path), range(_range), diag(_diag) {}
+	Diagnostic(Path _path, ParseDiagnostic p) : path(_path), range(p.range), diag(p.diag) {}
 
 	void write(Writer& out, const StringSlice& source, const LineAndColumnGetter& lc) const;
 };

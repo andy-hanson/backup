@@ -224,15 +224,17 @@ namespace {
 	}
 }
 
-ArenaString Lexer::try_take_comment(Arena& arena) {
+Option<ArenaString> Lexer::try_take_comment(Arena& arena) {
+	if (*ptr != '|') return {};
 	Arena::StringBuilder b = string_builder(arena);
-	while (*ptr == '|') {
+	do {
 		++ptr;
 		take(' ');
 		if (!b.empty()) b << '\n';
+		for (uint i = _indent; i != 0; --i) take('\t');
 		b << take_rest_of_line(ptr);
-	}
-	return b.finish();
+	} while (*ptr == '|');
+	return Option { b.finish() };
 }
 
 StringSlice Lexer::take_cpp_include() {

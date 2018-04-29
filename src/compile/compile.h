@@ -13,4 +13,4 @@ struct CompiledProgram {
 
 extern const StringSlice NZ_EXTENSION;
 
-void compile(CompiledProgram& out, DocumentProvider& document_provider, ref<const Path> first_path);
+void compile(CompiledProgram& out, DocumentProvider& document_provider, Path first_path);

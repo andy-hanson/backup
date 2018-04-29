@@ -1,15 +1,13 @@
 #pragma once
 
 #include <cassert>
-#include <functional> // hash
-#include <string>
 
-#include "int.h"
+#include "./int.h"
 
 struct SourceRange {
 	ushort begin;
 	ushort end;
-	SourceRange(ushort _begin, ushort _end) : begin(_begin), end(_end) {
+	inline SourceRange(ushort _begin, ushort _end) : begin(_begin), end(_end) {
 		assert(end >= begin);
 	}
 };
@@ -34,9 +32,7 @@ public:
 		assert(size() < 1000); // Or else we probably screwed up
 	}
 
-	StringSlice(const std::string& s) : _begin(s.begin().base()), _end(s.end().base()) {}
-
-	static StringSlice from_range(const StringSlice& slice, const SourceRange& range) {
+	inline static StringSlice from_range(const StringSlice& slice, const SourceRange& range) {
 		size_t len = slice.size();
 		assert(range.end < len);
 		return { slice.begin() + range.begin, slice.begin() + range.end };
@@ -74,11 +70,8 @@ public:
 	}
 
 	friend bool operator==(StringSlice a, StringSlice b);
-};
 
-namespace std {
-	template<>
-	struct hash<StringSlice> {
+	struct hash {
 		size_t operator()(StringSlice slice) const {
 			// Just use the first 8 characters as the hash.
 			static_assert(sizeof(size_t) == 8, "!");
@@ -87,5 +80,6 @@ namespace std {
 			};
 			return at(0) | at(1) | at(2) | at(3) | at(4) | at(5) | at(6) | at(7);
 		}
-	} __attribute__((unused)); // clion thinks this is unused;
-}
+	};
+};
+

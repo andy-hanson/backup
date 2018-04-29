@@ -29,11 +29,9 @@ namespace {
 
 	template <typename WriterLike>
 	void write_mangled(WriterLike& out, const StringSlice& name) {
-		if (name == TRUE) {
-			out << "_true";
-		} else if (name == FALSE) {
-			out << "_false";
-		} else {
+		if (name == TRUE || name == FALSE)
+			out << '_' << name;
+		else {
 			for (char c : name) {
 				auto m = mangle_char(c);
 				if (m.has())

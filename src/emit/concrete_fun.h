@@ -22,40 +22,35 @@ struct ConcreteFun {
 		}));
 		assert(every(type_arguments, [](const InstStruct& p) { return p.is_deeply_concrete(); }));
 	}
+
+	struct hash {
+		size_t operator()(const ConcreteFun& c) const {
+			// Don't hash the spec_impls because that could lead to infinite recursion.
+			return hash_combine(ref<const FunDeclaration>::hash{}(c.fun_declaration), hash_dyn_array(c.type_arguments, InstStruct::hash{}));
+		}
+	};
 };
 
 bool operator==(const ConcreteFun& a, const ConcreteFun& b);
 
 InstStruct substitute_type_arguments(const Type& type_argument, const ConcreteFun& fun, Arena& arena);
 
-namespace std {
-	template<>
-	struct hash<ConcreteFun> {
-		size_t operator()(const ConcreteFun& c) const {
-			// Don't hash the spec_impls because that could lead to infinite recursion.
-			return hash_combine(hash<::ref<const FunDeclaration> >{}(c.fun_declaration), hash_dyn_array(c.type_arguments));
-		}
-	};
-};
-
 struct ConcreteFunAndCalled {
 	ref<const ConcreteFun> fun;
 	ref<const Called> called;
-};
-namespace std {
-	template <>
-	struct hash<ConcreteFunAndCalled> {
+
+	struct hash {
 		size_t operator()(const ConcreteFunAndCalled& c) const {
-			return hash_combine(hash<::ref<const ConcreteFun> >{}(c.fun), hash<::ref<const Called> >{}(c.called));
+			return hash_combine(ref<const ConcreteFun>::hash{}(c.fun), ref<const Called>::hash{}(c.called));
 		}
 	};
-}
+};
 inline bool operator==(const ConcreteFunAndCalled& a, const ConcreteFunAndCalled& b) {
 	return a.fun == b.fun && a.called == b.called;
 }
 
-using FunInstantiations = Map<ref<const FunDeclaration>, Set<ConcreteFun>>;
-using ResolvedCalls = Map<ConcreteFunAndCalled, ref<const ConcreteFun>>;
+using FunInstantiations = Map<ref<const FunDeclaration>, Set<ConcreteFun, ConcreteFun::hash>, ref<const FunDeclaration>::hash>;
+using ResolvedCalls = Map<ConcreteFunAndCalled, ref<const ConcreteFun>, ConcreteFunAndCalled::hash>;
 struct EveryConcreteFun {
 	FunInstantiations fun_instantiations;
 	ResolvedCalls resolved_calls;

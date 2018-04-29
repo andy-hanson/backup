@@ -1,5 +1,6 @@
-#include <cstring>
-#include "StringSlice.h"
+#include "./StringSlice.h"
+
+#include <algorithm>
 
 bool operator==(StringSlice a, StringSlice b) {
 	assert(!a.empty() && !b.empty()); // Empty StringSlice uses nullptr, and std::equal segfaults on that

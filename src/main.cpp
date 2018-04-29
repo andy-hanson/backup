@@ -6,7 +6,6 @@
 #include <vector>
 #include <unistd.h>
 
-#include "./cmd.h"
 #include "./test/test.h"
 
 #include "./host/DocumentProvider.h"
@@ -44,10 +43,9 @@ namespace {
 	void go() {
 		//std::cout << compile_to_string("../stdlib/auto") << std::endl;
 		//std::cout << "done" << std::endl;
-		test(test_directory(), TestMode::Accept);
+		test(test_directory(), "simple", TestMode::Accept); //"module/circular-dependency"
 
 		//try_exec();
-
 
 		//run("../stdlib/auto");
 		//compile_and_run("../stdlib/auto");
@@ -67,12 +65,7 @@ namespace {
 }
 
 int main() {
-	//"/home/andy/bin/clang+llvm-6.0.0-x86_64-linux-gnu-ubuntu-14.04/bin/clang++ /home/andy/CLionProjects/oohoo/test/a/main.cpp -o /home/andy/CLionProjects/oohoo/test/a/main.exe"
-	//std::string command = "../cc.py";
-	//command += " /home/andy/CLionProjects/oohoo/test/a/main.cpp -o /home/andy/CLionProjects/oohoo/test/a/main.exe";
-
-	set_limits(); //This makes subprocesses crash!!!!!!!!!!!!!!!
-	unset_limits();
+	set_limits();
 	try {
 		go();
 	} catch (std::bad_alloc a) {

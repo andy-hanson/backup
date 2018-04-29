@@ -9,13 +9,17 @@
 template <typename V>
 struct InsertResult { ref<const V> value; bool was_added; };
 
-template <typename T>
+template <typename T, typename Hash>
 class Set {
-	std::unordered_set<T> inner;
+	using Inner = typename std::unordered_set<T, Hash>;
+	Inner inner;
 
 public:
+	using iterator = typename Inner::iterator;
+	using const_iterator = typename Inner::const_iterator;
+
 	InsertResult<T> insert(T value) {
-		typename std::pair<typename std::unordered_set<T>::iterator, bool> inserted = inner.insert(value);
+		typename std::pair<iterator, bool> inserted = inner.insert(value);
 		return { &*inserted.first, inserted.second };
 	}
 
@@ -30,7 +34,7 @@ public:
 
 	// Get the object in the set equivalent to the argument.
 	Option<ref<const T>> get_in_set(const T& value) const {
-		typename std::unordered_set<T>::const_iterator found = inner.find(value);
+		const_iterator found = inner.find(value);
 		return found == inner.end() ? Option<ref<const T>>{} : Option<ref<const T>>{&*found};
 	}
 
@@ -47,20 +51,23 @@ public:
 	}
 
 	ref<const T> must_insert(T value) {
-		std::pair<typename std::unordered_set<T>::iterator, bool> inserted = inner.insert(std::forward<T>(value));
+		std::pair<iterator, bool> inserted = inner.insert(std::forward<T>(value));
 		assert(inserted.second);
 		return &*inserted.first;
 	}
 
-	typename std::unordered_set<T>::const_iterator begin() const { return inner.begin(); }
-	typename std::unordered_set<T>::const_iterator end() const { return inner.end(); }
+	const_iterator begin() const { return inner.begin(); }
+	const_iterator end() const { return inner.end(); }
 };
 
-template <typename K, typename V>
+template <typename K, typename V, typename Hash>
 class Map {
-	std::unordered_map<K, V> inner;
+	using Inner = typename std::unordered_map<K, V, Hash>;
+	Inner inner;
 
 public:
+	using const_iterator = typename Inner::const_iterator;
+
 	void must_insert(K key, V value) {
 		bool inserted = try_insert(key, value);
 		assert(inserted);
@@ -70,7 +77,7 @@ public:
 		return inner.insert({ key, value }).second;
 	}
 
-	V& get_or_create(K key) {
+	inline V& get_or_create(K key) {
 		return inner[key];
 	}
 
@@ -82,61 +89,67 @@ public:
 		return has(key) ? Option<const V&>{inner.at(key)} : Option<const V&> {};
 	}
 
-	void clear() {
+	inline void clear() {
 		inner.clear();
 	}
 
-	const V& must_get(K key) const {
+	inline const V& must_get(K key) const {
 		return inner.at(key);
 	}
 
 	struct Values {
 		struct iterator {
-			typename std::unordered_map<K, V>::const_iterator inner;
-			void operator++() { ++inner; }
-			const V& operator*() { return inner->second; }
-			bool operator==(const iterator& other) const { return inner == other.inner; }
-			bool operator!=(const iterator& other) const { return inner != other.inner; }
+			const_iterator inner;
+			inline void operator++() { ++inner; }
+			inline const V& operator*() { return inner->second; }
+			inline bool operator==(const iterator& other) const { return inner == other.inner; }
+			inline bool operator!=(const iterator& other) const { return inner != other.inner; }
 		};
 
-		const Map<K, V>& map;
-		iterator begin() const {
-			return iterator { map.inner.begin() };
-		}
-		iterator end() const {
-			return iterator { map.inner.end() };
- 		}
+		const Map<K, V, Hash>& map;
+		inline iterator begin() const { return iterator { map.inner.begin() }; }
+		inline iterator end() const { return iterator { map.inner.end() }; }
 	};
+	inline Values values() const { return { *this }; }
 
-	Values values() const {
-		return { *this };
-	}
+	struct Keys {
+		struct iterator {
+			const_iterator inner;
+			inline void operator++() { ++inner; }
+			inline const K& operator*() { return inner->first; }
+			inline bool operator==(const iterator& other) const { return inner == other.inner; }
+			inline bool operator!=(const iterator& other) const { return inner != other.inner; }
+		};
 
-	typename std::unordered_map<K, V>::const_iterator begin() const {
+		const Map<K, V, Hash>& map;
+		inline iterator begin() const { return iterator { map.inner.begin() }; }
+		inline iterator end() const { return iterator { map.inner.end() }; }
+	};
+	inline Keys keys() const { return { *this }; }
+
+	const_iterator begin() const {
 		return inner.begin();
 	}
 
-	typename std::unordered_map<K, V>::const_iterator end() const {
+	const_iterator end() const {
 		return inner.end();
 	}
 };
 
-template <typename K, typename V>
+template <typename K, typename V, typename Hash>
 class MultiMap {
-	//unordered_multimap doesn't seem to have an easy way to iterate over groups.
-	//Note: we
-	std::unordered_multimap<K, V> inner;
+	using Inner = typename std::unordered_multimap<K, V, Hash>;
+	Inner inner;
 
 public:
-	using iterator = typename std::unordered_multimap<K, V>::iterator;
-	using const_iterator = typename std::unordered_multimap<K, V>::const_iterator;
+	using iterator = typename Inner::iterator;
+	using const_iterator = typename Inner::const_iterator;
 
 	// According to http://en.cppreference.com/w/cpp/container/unordered_map:
 	// References and pointers to either key or data stored in the container are only invalidated by erasing that element, even when the corresponding iterator is invalidated.
 	// So safe to return a pointer to the value.
 	V& add(K key, V value) {
-		typename std::unordered_multimap<K, V>::iterator i = inner.insert({ key, value });
-		return i->second;
+		return inner.insert({ key, value })->second;
 	}
 
 	size_t count(const K& key) const {

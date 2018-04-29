@@ -87,27 +87,27 @@ namespace {
 	}
 
 	FunSignature check_signature(
-		const FunSignatureAst& ast, CheckCtx& al,
+		const FunSignatureAst& ast, CheckCtx& ctx,
 		const StructsTable& structs_table, const SpecsTable& specs_table, const FunsTable& funs_table,
 		const Arr<TypeParameter>& spec_type_parameters, Identifier name
 	) {
-		Arr<TypeParameter> type_parameters = check_type_parameters(ast.type_parameters, al, spec_type_parameters);
+		Arr<TypeParameter> type_parameters = check_type_parameters(ast.type_parameters, ctx, spec_type_parameters);
 		TypeParametersScope type_parameters_scope { spec_type_parameters, type_parameters };
-		Type return_type = type_from_ast(ast.return_type, al, structs_table, type_parameters_scope);
-		Arr<SpecUse> specs = check_spec_uses(ast.spec_uses, al, structs_table, specs_table, type_parameters_scope);
-		Arr<Parameter> parameters = check_parameters(ast.parameters, al, structs_table, type_parameters_scope, funs_table, specs);
-		return { type_parameters, check_return_effect(ast.effect, parameters), return_type, name, parameters, specs };
+		Type return_type = type_from_ast(ast.return_type, ctx, structs_table, type_parameters_scope);
+		Arr<SpecUse> specs = check_spec_uses(ast.spec_uses, ctx, structs_table, specs_table, type_parameters_scope);
+		Arr<Parameter> parameters = check_parameters(ast.parameters, ctx, structs_table, type_parameters_scope, funs_table, specs);
+		return { ctx.copy_str(ast.comment), type_parameters, check_return_effect(ast.effect, parameters), return_type, name, parameters, specs };
 	}
 
-	Arr<StructField> check_struct_fields(const Arr<StructFieldAst>& asts, CheckCtx& al, const StructsTable& structs_table, const Arr<TypeParameter>& struct_type_parameters) {
+	Arr<StructField> check_struct_fields(const Arr<StructFieldAst>& asts, CheckCtx& ctx, const StructsTable& structs_table, const Arr<TypeParameter>& struct_type_parameters) {
 		TypeParametersScope type_parameters_scope { {}, struct_type_parameters };
-		return al.arena.map<StructField>()(asts, [&](const StructFieldAst& field) {
-			return StructField { type_from_ast(field.type, al, structs_table, type_parameters_scope), id(al, field.name) };
+		return ctx.arena.map<StructField>()(asts, [&](const StructFieldAst& field) {
+			return StructField { ctx.copy_str(field.comment), type_from_ast(field.type, ctx, structs_table, type_parameters_scope), id(ctx, field.name) };
 		});
 	}
 
 	void check_type_headers(
-		const Vec<DeclarationAst>& declarations, CheckCtx& al, ref<const Module> containing_module,
+		const Vec<DeclarationAst>& declarations, CheckCtx& ctx, ref<const Module> containing_module,
 		StructsDeclarationOrder& structs, SpecsDeclarationOrder& specs, FunsDeclarationOrder& funs,
 		StructsTable& structs_table, SpecsTable& specs_table, FunsTable& funs_table) {
 
@@ -118,29 +118,29 @@ namespace {
 
 				case DeclarationAst::Kind::Struct: {
 					const StructDeclarationAst& ast = decl.strukt();
-					ref<StructDeclaration> strukt = al.arena.put(StructDeclaration { containing_module, ast.range, ast.is_public, check_type_parameters(ast.type_parameters, al, {}), id(al, ast.name), ast.copy });
+					ref<StructDeclaration> strukt = ctx.arena.put(StructDeclaration { containing_module, ast.range, ast.is_public, check_type_parameters(ast.type_parameters, ctx, {}), id(ctx, ast.name), ast.copy });
 					if (structs_table.try_insert(strukt->name, strukt))
 						structs.push(strukt);
 					else
-						al.diag(ast.name, Diag::Kind::DuplicateDeclaration);
+						ctx.diag(ast.name, Diag::Kind::DuplicateDeclaration);
 					break;
 				}
 
 				case DeclarationAst::Kind::Spec: {
 					const SpecDeclarationAst& ast = decl.spec();
-					ref<SpecDeclaration> spec = al.arena.put(SpecDeclaration { containing_module, ast.is_public, check_type_parameters(ast.type_parameters, al, {}), id(al, ast.name) });
+					ref<SpecDeclaration> spec = ctx.arena.put(SpecDeclaration { containing_module, ctx.copy_str(ast.comment), ast.is_public, check_type_parameters(ast.type_parameters, ctx, {}), id(ctx, ast.name) });
 					if (specs_table.try_insert(spec->name, spec))
 						specs.push(spec);
 					else
-						al.diag(ast.name, Diag::Kind::DuplicateDeclaration);
+						ctx.diag(ast.name, Diag::Kind::DuplicateDeclaration);
 					break;
 				}
 
 				case DeclarationAst::Kind::Fun:
 					const FunDeclarationAst& fun_ast = decl.fun();
-					ref<FunDeclaration> fun = al.arena.put(FunDeclaration { containing_module, fun_ast.is_public, {}, {} });
+					ref<FunDeclaration> fun = ctx.arena.put(FunDeclaration { containing_module, fun_ast.is_public, {}, {} });
 					// Need this allocated now so we can use it in the table.
-					Identifier name = id(al, fun_ast.signature.name);
+					Identifier name = id(ctx, fun_ast.signature.name);
 					fun->signature.name = name;
 					// Unlike structs and specs, functions can overload.
 					funs.push(fun);
@@ -255,15 +255,17 @@ namespace {
 }
 
 void check(ref<Module> m, const FileAst& ast, Arena& arena, Vec<Diagnostic>& diagnostics) {
-	CheckCtx al { arena, ast.source, m->path, m->imports, diagnostics };
+	CheckCtx ctx { arena, ast.source, m->path, m->imports, diagnostics };
+
+	m->comment = ctx.copy_str(ast.comment);
 
 	if (!ast.imports.empty()) throw "todo";
 
-	check_type_headers(ast.declarations, al, m, m->structs_declaration_order, m->specs_declaration_order, m->funs_declaration_order, m->structs_table, m->specs_table, m->funs_table);
+	check_type_headers(ast.declarations, ctx, m, m->structs_declaration_order, m->specs_declaration_order, m->funs_declaration_order, m->structs_table, m->specs_table, m->funs_table);
 
-	check_fun_headers_and_type_bodies(ast.declarations, al,
+	check_fun_headers_and_type_bodies(ast.declarations, ctx,
 		m->structs_declaration_order, m->specs_declaration_order, m->funs_declaration_order,
 		m->structs_table, m->specs_table, m->funs_table);
 
-	check_fun_bodies(ast.declarations, al, m->funs_declaration_order, m->structs_table, m->funs_table);
+	check_fun_bodies(ast.declarations, ctx, m->funs_declaration_order, m->structs_table, m->funs_table);
 }

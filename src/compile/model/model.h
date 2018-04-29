@@ -61,16 +61,16 @@ public:
 	}
 
 	Kind kind() const { return _kind; }
-	bool is_fields() const { return _kind == StructBody::Kind::Fields; }
-	Arr<StructField>& fields() {
+	inline bool is_fields() const { return _kind == StructBody::Kind::Fields; }
+	inline Arr<StructField>& fields() {
 		assert(_kind == Kind::Fields);
 		return data.fields;
 	}
-	const Arr<StructField>& fields() const {
+	inline const Arr<StructField>& fields() const {
 		assert(_kind == Kind::Fields);
 		return data.fields;
 	}
-	const ArenaString& cpp_name() const {
+	inline const ArenaString& cpp_name() const {
 		assert(_kind == Kind::CppName);
 		return data.cpp_name;
 	}
@@ -78,6 +78,7 @@ public:
 
 struct StructDeclaration {
 	ref<const Module> containing_module;
+	Option<ArenaString> comment;
 	SourceRange range;
 	bool is_public;
 	Arr<TypeParameter> type_parameters;
@@ -88,7 +89,7 @@ struct StructDeclaration {
 	StructDeclaration(ref<const Module> _containing_module, SourceRange _range, bool _is_public, Arr<TypeParameter> _type_parameters, Identifier _name, bool _copy)
 		: containing_module(_containing_module), range(_range), is_public(_is_public), type_parameters(_type_parameters), name(_name), copy(_copy) {}
 
-	size_t arity() const { return type_parameters.size(); }
+	inline size_t arity() const { return type_parameters.size(); }
 };
 
 class Type;
@@ -101,15 +102,11 @@ struct InstStruct {
 		assert(type_arguments.size() == strukt->type_parameters.size());
 	}
 	bool is_deeply_concrete() const;
-};
-namespace std {
-	template <>
-	struct hash<InstStruct> {
-		size_t operator()(const InstStruct& i) const {
-			return hash_combine(hash<::ref<const StructDeclaration>>{}(i.strukt), hash_dyn_array(i.type_arguments));
-		}
+
+	struct hash {
+		size_t operator()(const InstStruct& i);
 	};
-}
+};
 bool operator==(const InstStruct& a, const InstStruct& b);
 
 class Type {
@@ -154,42 +151,29 @@ public:
 		data.param = param;
 	}
 
-	bool is_inst_struct() const {
-		return _kind == Kind::InstStruct;
-	}
-	bool is_parameter() const {
-		return _kind == Kind::Param;
-	}
+	inline bool is_inst_struct() const { return _kind == Kind::InstStruct; }
+	inline bool is_parameter() const { return _kind == Kind::Param; }
 
-	const InstStruct& inst_struct() const {
+	inline const InstStruct& inst_struct() const {
 		assert(_kind == Kind::InstStruct);
 		return data.inst_struct;
 	}
 
-	ref<const TypeParameter> param() const {
+	inline ref<const TypeParameter> param() const {
 		assert(_kind == Kind::Param);
 		return data.param;
 	}
-};
-namespace std {
-	template <>
-	struct hash<Type> {
-		size_t operator()(const Type& t) const {
-			switch (t.kind()) {
-				case Type::Kind::Nil: assert(false);
-				case Type::Kind::Bogus:
-				case Type::Kind::Param:
-					throw "todo";
-				case Type::Kind::InstStruct:
-					return hash<InstStruct>{}(t.inst_struct());
-			}
-		}
+
+	struct hash {
+		size_t operator()(const Type& t) const;
 	};
-}
+};
+
 bool operator==(const Type& a, const Type& b);
 inline bool operator!=(const Type& a, const Type& b) { return !(a == b); }
 
 struct StructField {
+	Option<ArenaString> comment;
 	Type type;
 	Identifier name;
 };
@@ -212,6 +196,7 @@ struct SpecUse {
 };
 
 struct FunSignature {
+	Option<ArenaString> comment;
 	Arr<TypeParameter> type_parameters;
 	Effect effect; // Return effect will be the worst of this, and the effects of all 'from' parameters
 	Type return_type;
@@ -219,10 +204,8 @@ struct FunSignature {
 	Arr<Parameter> parameters;
 	Arr<SpecUse> specs;
 
-	uint arity() const { return to_uint(parameters.size()); }
-	bool is_generic() const {
-		return !type_parameters.empty() || !specs.empty();
-	}
+	inline uint arity() const { return to_uint(parameters.size()); }
+	bool is_generic() const;
 };
 
 class AnyBody {
@@ -288,29 +271,31 @@ struct FunDeclaration {
 
 struct SpecDeclaration {
 	ref<const Module> containing_module;
+	Option<ArenaString> comment;
 	bool is_public;
 	Arr<TypeParameter> type_parameters;
 	Identifier name;
 	Arr<FunSignature> signatures;
 
-	SpecDeclaration(ref<const Module> _containing_module, bool _is_public, Arr<TypeParameter> _type_parameters, Identifier _name)
-		: containing_module(_containing_module), is_public(_is_public), type_parameters(_type_parameters), name(_name) {}
+	SpecDeclaration(ref<const Module> _containing_module, Option<ArenaString> _comment, bool _is_public, Arr<TypeParameter> _type_parameters, Identifier _name)
+		: containing_module(_containing_module), comment(_comment), is_public(_is_public), type_parameters(_type_parameters), name(_name) {}
 };
 
 // Within a single module, maps a struct name to declaration.
-using StructsTable = Map<StringSlice, ref<const StructDeclaration>>;
+using StructsTable = Map<StringSlice, ref<const StructDeclaration>, StringSlice::hash>;
 // Within a single module, maps a spec name to declaration.
-using SpecsTable = Map<StringSlice, ref<const SpecDeclaration>>;
+using SpecsTable = Map<StringSlice, ref<const SpecDeclaration>, StringSlice::hash>;
 // Within a single module, maps a fun name to the list of functions *in that module* with that name.
-using FunsTable = MultiMap<StringSlice, ref<const FunDeclaration>>;
+using FunsTable = MultiMap<StringSlice, ref<const FunDeclaration>, StringSlice::hash>;
 using StructsDeclarationOrder = Vec<ref<StructDeclaration>>;
 using SpecsDeclarationOrder = Vec<ref<SpecDeclaration>>;
 using FunsDeclarationOrder = Vec<ref<FunDeclaration>>;
 
 // Note: if there is a parse error, this will just be empty.
 struct Module {
-	ref<const Path> path;
+	Path path;
 	Arr<ref<const Module>> imports;
+	Option<ArenaString> comment;
 	StructsDeclarationOrder structs_declaration_order;
 	SpecsDeclarationOrder specs_declaration_order;
 	FunsDeclarationOrder funs_declaration_order;
@@ -318,9 +303,7 @@ struct Module {
 	SpecsTable specs_table;
 	FunsTable funs_table;
 
-	Module(ref<const Path> _path, Arr<ref<const Module>> _imports) : path(_path), imports(_imports) {}
+	Module(Path _path, Arr<ref<const Module>> _imports) : path(_path), imports(_imports) {}
 
-	inline Identifier name() const {
-		return path->base_name();
-	}
+	inline Identifier name() const { return path.base_name(); }
 };

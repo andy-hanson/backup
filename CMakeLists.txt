@@ -12,9 +12,6 @@ set(CMAKE_CXX_FLAGS "-pedantic -Weverything -Wno-c++98-compat -Wno-c++98-compat-
 add_executable(oohoo
 	src/main.cpp
 
-	src/cmd.cpp
-	src/cmd.h
-
 	src/compile/check/BuiltinTypes.h
 	src/compile/check/check.cpp
 	src/compile/check/check.h
@@ -101,5 +98,4 @@ add_executable(oohoo
 	src/clang.cpp
 	src/clang.h
 
-	src/cmd.h
-	src/cmd.cpp src/compile/check/scope.h src/compile/check/scope.cpp)
+	src/compile/check/scope.h src/compile/check/scope.cpp src/emit/emit_comment.h src/emit/emit_comment.cpp src/compile/model/expr.cpp)

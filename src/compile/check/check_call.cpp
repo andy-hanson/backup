@@ -40,7 +40,7 @@ namespace {
 		for (const SpecUse& spec_use : ctx.current_fun->signature.specs)
 			for (const FunSignature& sig : spec_use.spec->signatures)
 				if (sig.name == fun_name)
-					cb(SpecUseSig { &spec_use, &sig });
+					cb(CalledDeclaration { SpecUseSig { &spec_use, &sig } });
 		each_fun_with_name(ctx, fun_name, cb);
 	}
 
@@ -200,7 +200,7 @@ namespace {
 				if (field.has()) {
 					// TODO: also check plain.effect to narrow the field type
 					expected.check_no_infer(field.get()->type);
-					return Option<Expression> { StructFieldAccess { ctx.check_ctx.arena.put_copy(argument_and_type.expression), field.get() }};
+					return Option { Expression { StructFieldAccess { ctx.check_ctx.arena.put_copy(argument_and_type.expression), field.get() } } };
 				}
 			}
 		}
@@ -260,5 +260,5 @@ Expression check_call(const StringSlice& fun_name, const Arr<ExprAst>& argument_
 	if (!already_checked_return_type)
 		expected.set_inferred(get_candidate_return_type(candidate));
 
-	return Call { check_specs(ctx, candidate.called, candidate_type_arguments), arguments };
+	return Expression { Call { check_specs(ctx, candidate.called, candidate_type_arguments), arguments } };
 }

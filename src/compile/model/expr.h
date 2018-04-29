@@ -13,13 +13,13 @@ struct SpecUseSig {
 	ref<const SpecUse> spec_use;
 	ref<const FunSignature> signature;
 
-	SpecUseSig(ref<const SpecUse> _spec_use, ref<const FunSignature> _signature) : spec_use(_spec_use), signature(_signature) {
+	inline SpecUseSig(ref<const SpecUse> _spec_use, ref<const FunSignature> _signature) : spec_use(_spec_use), signature(_signature) {
 		assert(spec_use->spec->signatures.contains_ref(signature));
 	}
 };
 
 /**
-The theing being called during overload resolution.
+The thing being called during overload resolution.
 Note that are still inferring the type arguments for the function.
 But SigUse will have filled-in type arguments for the *sigs*'s type parameters, which are different from the function's type parameters.
 */
@@ -38,40 +38,23 @@ private:
 	Data data;
 
 public:
-	CalledDeclaration(ref<const FunDeclaration> fun_decl) : _kind(Kind::Fun) {
+	explicit CalledDeclaration(ref<const FunDeclaration> fun_decl) : _kind(Kind::Fun) {
 		data.fun_decl = fun_decl;
 	}
-	CalledDeclaration(SpecUseSig spec) : _kind(Kind::Spec) {
+	explicit CalledDeclaration(SpecUseSig spec) : _kind(Kind::Spec) {
 		data.spec_use_sig = spec;
 	}
-	CalledDeclaration(const CalledDeclaration& other) {
-		*this = other;
-	}
-	void operator=(const CalledDeclaration& other) {
-		_kind = other._kind;
-		switch (_kind) {
-			case Kind::Fun: data.fun_decl = other.data.fun_decl; break;
-			case Kind::Spec: data.spec_use_sig = other.data.spec_use_sig; break;
-		}
-	}
+	inline CalledDeclaration(const CalledDeclaration& other) { *this = other; }
+	void operator=(const CalledDeclaration& other);
 
-	const FunSignature& sig() const {
-		switch (_kind) {
-			case Kind::Fun:
-				return fun()->signature;
-			case Kind::Spec:
-				return spec().signature;
-		}
-	}
+	const FunSignature& sig() const;
 
-	Kind kind() const { return _kind; }
-
-	ref<const FunDeclaration> fun() const {
+	inline Kind kind() const { return _kind; }
+	inline ref<const FunDeclaration> fun() const {
 		assert(_kind == Kind::Fun);
 		return data.fun_decl;
 	}
-
-	const SpecUseSig& spec() const {
+	inline const SpecUseSig& spec() const {
 		assert(_kind == Kind::Spec);
 		return data.spec_use_sig;
 	}
@@ -105,7 +88,7 @@ struct When {
 	Arr<Case> cases;
 	ref<Expression> elze;
 
-	When(Arr<Case> _cases, ref<Expression> _elze) : cases(_cases), elze(_elze) {
+	inline When(Arr<Case> _cases, ref<Expression> _elze) : cases(_cases), elze(_elze) {
 		assert(cases.size() != 0);
 	}
 };
@@ -151,56 +134,54 @@ private:
 	Data data;
 
 public:
-	Kind kind() const { return _kind; }
+	inline Kind kind() const { return _kind; }
 
 	Expression() : _kind(Kind::Nil) {}
 
-	static Expression bogus() {
-		Expression e;
-		e._kind = Kind::Bogus;
-		return e;
+	inline static Expression bogus() {
+		return Expression { Kind::Bogus };
 	}
 
-	Expression(const Expression& e) {
+	inline Expression(const Expression& e) {
 		_kind = Kind::Nil; // operator= asserts this
 		*this = e;
 	}
 
-	Expression(ref<const Parameter> p) : _kind(Kind::ParameterReference) {
+	explicit Expression(ref<const Parameter> p) : _kind(Kind::ParameterReference) {
 		data.parameter_reference = p;
 	}
 
-	Expression(ref<const Let> l, Kind kind) : _kind(kind) {
+	inline Expression(ref<const Let> l, Kind kind) : _kind(kind) {
 		assert(kind == Kind::LocalReference);
 		data.local_reference = l;
 	}
 
-	Expression(ref<Let> l, Kind kind) : _kind(kind) {
+	inline Expression(ref<Let> l, Kind kind) : _kind(kind) {
 		assert(kind == Kind::Let);
 		data.let = l;
 	}
 
-	Expression(ref<Seq> seq) : _kind(Kind::Seq) {
+	inline explicit Expression(ref<Seq> seq) : _kind(Kind::Seq) {
 		data.seq = seq;
 	}
 
-	Expression(StructFieldAccess s) : _kind(Kind::StructFieldAccess) {
+	inline explicit Expression(StructFieldAccess s) : _kind(Kind::StructFieldAccess) {
 		data.struct_field_access = s;
 	}
 
-	Expression(Call call) : _kind(Kind::Call) {
+	inline explicit Expression(Call call) : _kind(Kind::Call) {
 		data.call = call;
 	}
 
-	Expression(StructCreate create) : _kind(Kind::StructCreate) {
+	inline explicit Expression(StructCreate create) : _kind(Kind::StructCreate) {
 		data.struct_create = create;
 	}
 
-	explicit Expression(ArenaString value) : _kind(Kind::StringLiteral) {
+	inline explicit Expression(ArenaString value) : _kind(Kind::StringLiteral) {
 		data.string_literal = value;
 	}
 
-	Expression(When when) : _kind(Kind::When) {
+	inline explicit Expression(When when) : _kind(Kind::When) {
 		data.when = when;
 	}
 
@@ -210,114 +191,75 @@ public:
 	}
 
 	Expression(Kind kind) : _kind(Kind::Pass) {
-		assert(kind == Kind::Pass);
+		assert(kind == Kind::Pass || kind == Kind::Bogus);
 	}
 
 	~Expression() {
 		// Nothing to do, none have destructors
 	}
 
-	ref<const Parameter> parameter() const {
+	inline ref<const Parameter> parameter() const {
 		assert(_kind == Kind::ParameterReference);
 		return data.parameter_reference;
 	}
-	ref<const Let> local_reference() const {
+	inline ref<const Let> local_reference() const {
 		assert(_kind == Kind::LocalReference);
 		return data.local_reference;
 	}
-	StructFieldAccess& struct_field_access() {
+	inline StructFieldAccess& struct_field_access() {
 		assert(_kind == Kind::StructFieldAccess);
 		return data.struct_field_access;
 	}
-	const StructFieldAccess& struct_field_access() const {
+	inline const StructFieldAccess& struct_field_access() const {
 		assert(_kind == Kind::StructFieldAccess);
 		return data.struct_field_access;
 	}
-	Let& let() {
+	inline Let& let() {
 		assert(_kind == Kind::Let);
 		return *data.let;
 	}
-	const Let& let() const {
+	inline const Let& let() const {
 		assert(_kind == Kind::Let);
 		return *data.let;
 	}
-	Seq& seq() {
+	inline Seq& seq() {
 		assert(_kind == Kind::Seq);
 		return *data.seq;
 	}
-	const Seq& seq() const {
+	inline const Seq& seq() const {
 		assert(_kind == Kind::Seq);
 		return *data.seq;
 	}
-	Call& call() {
+	inline Call& call() {
 		assert(_kind == Kind::Call);
 		return data.call;
 	}
-	const Call& call() const {
+	inline const Call& call() const {
 		assert(_kind == Kind::Call);
 		return data.call;
 	}
-	const StructCreate& struct_create() const {
+	inline const StructCreate& struct_create() const {
 		assert(_kind == Kind::StructCreate);
 		return data.struct_create;
 	}
-	const ArenaString& string_literal() const {
+	inline const ArenaString& string_literal() const {
 		assert(_kind == Kind::StringLiteral);
 		return data.string_literal;
 	}
-	const When& when() const {
+	inline const When& when() const {
 		assert(_kind == Kind::When);
 		return data.when;
 	}
-	Expression& asserted() {
+	inline Expression& asserted() {
 		assert(_kind == Kind::Assert);
 		return data.asserted;
 	}
-	const Expression& asserted() const {
+	inline const Expression& asserted() const {
 		assert(_kind == Kind::Assert);
 		return data.asserted;
 	}
 
-	void operator=(const Expression& e) {
-		_kind = e._kind;
-		switch (_kind) {
-			case Kind::Nil:
-			case Kind::Bogus:
-				break;
-			case Kind::ParameterReference:
-				data.parameter_reference = e.data.parameter_reference;
-				break;
-			case Kind::LocalReference:
-				data.local_reference = e.data.local_reference;
-				break;
-			case Kind::StructFieldAccess:
-				data.struct_field_access = e.data.struct_field_access;
-				break;
-			case Kind::Let:
-				data.let = e.data.let;
-				break;
-			case Kind::Seq:
-				data.seq = e.data.seq;
-				break;
-			case Kind::Call:
-				data.call = e.data.call;
-				break;
-			case Kind::StructCreate:
-				data.struct_create = e.data.struct_create;
-				break;
-			case Kind::StringLiteral:
-				data.string_literal = e.data.string_literal;
-				break;
-			case Kind::When:
-				data.when = e.data.when;
-				break;
-			case Kind::Assert:
-				data.asserted = e.data.asserted;
-				break;
-			case Kind::Pass:
-				break;
-		}
-	}
+	void operator=(const Expression& e);
 };
 
 struct Let {

@@ -15,6 +15,7 @@ Diag::Diag(const Diag& other) : _kind(other._kind) {
 		case Kind::WrongNumberNewStructArguments:
 			data.wrong_number = other.data.wrong_number;
 			break;
+		case Kind::CircularImport:
 		case Kind::SpecNameNotFound:
 		case Kind::StructNameNotFound:
 		case Kind::TypeParameterNameNotFound:
@@ -39,6 +40,9 @@ void Diag::write(Writer& out, const StringSlice& slice) const {
 	switch (_kind) {
 		case Kind::Parse:
 			data.parse_diag.write(out);
+			break;
+		case Kind::CircularImport:
+			out << "Import of '" << slice << "' is circular";
 			break;
 		case Kind::SpecNameNotFound:
 			out << "Could not find a spec named '" << slice << "'";
@@ -101,6 +105,6 @@ void Diag::write(Writer& out, const StringSlice& slice) const {
 }
 
 void Diagnostic::write(Writer& out, const StringSlice& module_source, const LineAndColumnGetter& lc) const {
-	out << '[' << lc.line_and_column_at_pos(range.begin) << '-' << lc.line_and_column_at_pos(range.begin) << "]: ";
+	out << this->path << ' ' << lc.line_and_column_at_pos(range.begin) << '-' << lc.line_and_column_at_pos(range.end) << ": ";
 	diag.write(out, StringSlice::from_range(module_source, range));
 }

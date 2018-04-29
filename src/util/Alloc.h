@@ -1,6 +1,8 @@
 #pragma once
 
-#include <assert.h>
+#include <cassert>
+#include <algorithm> // std::copy
+#include <utility> // std::forward
 
 #include "./MaxSizeVector.h"
 #include "./StringSlice.h"
@@ -60,15 +62,13 @@ public:
 		assert(index < slice().size());
 		return *(_begin + index);
 	}
+
+	struct hash {
+		inline size_t operator()(const ArenaString& a) const { return StringSlice::hash{}(a); }
+	};
 };
 inline bool operator==(const ArenaString& a, const ArenaString& b) { return a.slice() == b.slice();}
 inline bool operator==(const ArenaString& a, const StringSlice& b) { return a.slice() == b; }
-namespace std {
-	template <>
-	struct hash<ArenaString> {
-		size_t operator()(const ArenaString& a) const { return hash<StringSlice>{}(a); }
-	};
-}
 
 class Arena {
 	void* alloc_begin;
@@ -194,6 +194,31 @@ public:
 	template <typename Out>
 	MapOp<Out> map_op() {
 		return MapOp<Out>{*this};
+	}
+
+	template<typename Out>
+	struct MapOrFail {
+		Arena& arena;
+
+		template<typename In, typename /*const In& => Option<Out>*/ Cb>
+		Option<Arr<Out>> operator()(const Arr<In>& inputs, Cb cb) {
+			Arr<Out> out = arena.new_array<Out>(inputs.size());
+			uint i = 0;
+			for (const In& input : inputs) {
+				Option<Out> o = cb(input);
+				if (!o.has())
+					return {};
+				out[i] = o.get();
+				++i;
+			}
+			assert(i == out.len);
+			return Option { out };
+		}
+	};
+
+	template<typename Out>
+	MapOrFail<Out> map_or_fail() {
+		return MapOrFail<Out>{*this};
 	}
 
 	template <typename Out>

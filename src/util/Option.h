@@ -1,13 +1,11 @@
 #pragma once
 
 #include <cassert>
-
-#include "ptr.h"
+#include <type_traits> // remove_const
+#include "./ptr.h"
 
 template <typename T>
 class Option {
-	static_assert(!std::is_pointer<T>::value, "Use opt_ref instead");
-
 	bool is_present;
 	union OptionStorage {
 		char dummy __attribute__((unused));
@@ -102,10 +100,6 @@ OptionMap<Out> map() { return {}; }
 template <typename T>
 Option<ref<T>> un_ref(const Option<const ref<T>&> in) {
 	return in.has() ? Option { in.get() } : Option<ref<T>>{};
-}
-template <typename T>
-Option<ref<T>> to_ref(const Option<T&> in) {
-	return in.has() ? Option { &in.get() } : Option<ref<T>>{};
 }
 
 template <typename Out>

@@ -11,6 +11,7 @@ struct TypeParameterAst {
 };
 
 struct StructFieldAst {
+	Option<ArenaString> comment;
 	TypeAst type;
 	StringSlice name;
 };
@@ -54,6 +55,7 @@ struct SpecUseAst {
 };
 
 struct FunSignatureAst {
+	Option<ArenaString> comment;
 	StringSlice name;
 	Option<Effect> effect;
 	TypeAst return_type;
@@ -63,6 +65,7 @@ struct FunSignatureAst {
 };
 
 struct StructDeclarationAst {
+	Option<ArenaString> comment;
 	SourceRange range;
 	bool is_public;
 	StringSlice name;
@@ -72,6 +75,7 @@ struct StructDeclarationAst {
 };
 
 struct SpecDeclarationAst {
+	Option<ArenaString> comment;
 	bool is_public;
 	StringSlice name;
 	Arr<TypeParameterAst> type_parameters;
@@ -174,13 +178,15 @@ public:
 };
 
 struct ImportAst {
+	SourceRange range;
 	Option<uint> n_parents; // None for global import
-	ref<const Path> path;
+	Path path;
 };
 
 struct FileAst {
-	ref<const Path> path;
+	Path path;
 	StringSlice source;
+	Option<ArenaString> comment;
 	Arr<ImportAst> imports;
 	Vec<DeclarationAst> declarations;//TODO: Arena structure for potentially-large arrays -- blocked list?
 };

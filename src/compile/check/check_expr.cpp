@@ -49,7 +49,7 @@ namespace {
 		});
 
 		expected.check_no_infer(Type { inst_struct });
-		return StructCreate { inst_struct, arguments };
+		return Expression { StructCreate { inst_struct, arguments } };
 	}
 
 	Expression check_type_annotate(const TypeAnnotateAst& ast, ExprContext& ctx, Expected& expected) {
@@ -86,7 +86,7 @@ namespace {
 		}
 		Expression first = check_and_expect(*ast.first, ctx, ctx.builtin_types.void_type.get());
 		Expression then = check(*ast.then, ctx, expected);
-		return { ctx.check_ctx.arena.put(Seq { first, then }) };
+		return Expression { ctx.check_ctx.arena.put(Seq { first, then }) };
 	}
 
 	Expression check_when(const WhenAst& ast, ExprContext& ctx, Expected& expected) {
@@ -101,7 +101,7 @@ namespace {
 			return Case { cond, then };
 		});
 		ref<Expression> elze = ctx.check_ctx.arena.put(check(*ast.elze, ctx, expected));
-		return When { cases, elze };
+		return Expression { When { cases, elze } };
 	}
 
 	Expression check_assert(const AssertAst& ast, ExprContext& ctx, Expected& expected) {

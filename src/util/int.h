@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <cstddef>
 
 using uint = unsigned int;

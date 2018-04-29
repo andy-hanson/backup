@@ -3,11 +3,11 @@
 #include "../compile/model/expr.h"
 #include "../util/Alloc.h"
 #include "../util/Writer.h"
-#include "./mangle.h"
-
 #include "./concrete_fun.h"
 #include "./emit_body.h"
+#include "./emit_comment.h"
 #include "./emit_type.h"
+#include "./mangle.h"
 #include "./Names.h"
 
 namespace {
@@ -22,19 +22,19 @@ namespace {
 	}
 
 	void emit_struct(Writer& out, const StructDeclaration& s, const Names& names) {
+		emit_comment(out, s.comment);
 		write_type_parameters(out, s.type_parameters);
 		const StringSlice& name = names.get_name(&s);
 		switch (s.body.kind()) {
 			case StructBody::Kind::Nil: assert(false);
 			case StructBody::Kind::Fields:
-				out << "struct " << name << " {\n";
+				out << "struct " << name << " {" << Writer::indent << Writer::nl;
 				for (const StructField& field : s.body.fields()) {
-					const char TAB = '\t'; // https://youtrack.jetbrains.com/issue/CPP-12650
-					out << TAB;
+					emit_comment(out, field.comment);
 					write_type(out, field.type, names);
-					out << ' ' << names.get_name(&field) << ";\n";
+					out << ' ' << names.get_name(&field) << ';' << Writer::nl;
 				}
-				out << "};\n\n";
+				out << Writer::dedent << Writer::nl << "};" << Writer::nl << Writer::nl;
 				break;
 			case StructBody::Kind::CppName:
 				out << "typedef " << s.body.cpp_name() << ' ' << name << ";\n\n";
@@ -43,6 +43,7 @@ namespace {
 	}
 
 	void write_fun_header(Writer& out, const ConcreteFun &f, const Names& names, Arena& scratch_arena) {
+		emit_comment(out, f.fun_declaration->signature.comment);
 		substitute_and_write_inst_struct(out, f, f.fun_declaration->signature.return_type, names, scratch_arena, f.fun_declaration->signature.effect == Effect::EOwn);
 		out << ' ' << names.get_name(&f) << '(';
 		bool first_param = true;
@@ -68,7 +69,7 @@ namespace {
 	}
 
 	void emit_structs(Writer& out, const StructsDeclarationOrder& structs, const Names& names) {
-		Map<ref<const StructDeclaration>, EmitStructState> map;
+		Map<ref<const StructDeclaration>, EmitStructState, ref<const StructDeclaration>::hash> map;
 		MaxSizeVector<16, ref<const StructDeclaration>> stack;
 
 		for (const StructDeclaration& struct_in_order : structs) {
@@ -111,7 +112,7 @@ namespace {
 	template <typename /*ref<constConcreteFun>> => void>*/ Cb>
 	void each_concrete_fun(const Module& module, const FunInstantiations& fun_instantiations, Cb cb) {
 		for (ref<const FunDeclaration> f : module.funs_declaration_order) {
-			Option<const Set<ConcreteFun>&> instantiations = fun_instantiations.get(f);
+			Option<const Set<ConcreteFun, ConcreteFun::hash>&> instantiations = fun_instantiations.get(f);
 			if (instantiations.has())
 				for (const ConcreteFun& cf : instantiations.get())
 					cb(&cf);
@@ -130,6 +131,7 @@ std::string emit(const Vec<ref<Module>>& modules) {
 
 	// First, emit all structs and function headers.
 	for (const Module& module : modules) {
+		emit_comment(out, module.comment);
 		emit_structs(out, module.structs_declaration_order, names);
 		each_concrete_fun(module, every_concrete_fun.fun_instantiations, [&](ref<const ConcreteFun> cf) { emit_fun_header(out, cf, names, scratch_arena); });
 	}
@@ -137,7 +139,7 @@ std::string emit(const Vec<ref<Module>>& modules) {
 	for (const Module& module : modules)
 		each_concrete_fun(module, every_concrete_fun.fun_instantiations, [&](ref<const ConcreteFun> cf) { emit_fun_with_body(out, cf, names, every_concrete_fun.resolved_calls, scratch_arena); });
 
-	out << "\nint main() { run(); }\n";
+	out << "int main() { run(); }\n";
 
 	return out.finish();
 }

@@ -13,4 +13,4 @@ public:
 	virtual ~DocumentProvider();
 };
 
-std::unique_ptr<DocumentProvider> file_system_document_provider(const std::string& root);
+std::unique_ptr<DocumentProvider> file_system_document_provider(StringSlice root);

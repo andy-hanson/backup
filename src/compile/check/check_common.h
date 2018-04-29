@@ -9,7 +9,7 @@
 struct CheckCtx {
 	Arena& arena;
 	const StringSlice& source;
-	ref<const Path> path; // Path of current module
+	Path path; // Path of current module
 	const Arr<ref<const Module>>& imports;
 	Vec<Diagnostic>& diags;
 
@@ -21,6 +21,9 @@ struct CheckCtx {
 	}
 	inline void diag(StringSlice slice, Diag d) {
 		diag(range(slice), d);
+	}
+	inline Option<ArenaString> copy_str(Option<ArenaString> str) {
+		return str.has() ? Option { arena.str(str.get()) } : Option<ArenaString> {};
 	}
 };
 

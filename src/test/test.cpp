@@ -12,8 +12,7 @@ namespace {
 		Writer w;
 		Arena temp;
 		for (const Diagnostic& d : diags) {
-			ref<const Path> p = d.path;
-			StringSlice document = document_provider.try_get_document(p, temp, NZ_EXTENSION).get();
+			StringSlice document = document_provider.try_get_document(d.path, temp, NZ_EXTENSION).get();
 			d.write(w, document, LineAndColumnGetter::for_text(document));
 			w << Writer::nl;
 		}
@@ -59,16 +58,17 @@ namespace {
 		}
 	}
 
-	void do_test(const std::string& root, TestMode mode) {
+	void do_test(StringSlice root, TestMode mode) {
 		std::unique_ptr<DocumentProvider> document_provider = file_system_document_provider(root);
 
 		CompiledProgram out;
-		ref<const Path> first_path = out.paths.from_part_slice("main");
+		Path first_path = out.paths.from_part_slice("main");
 		compile(out, *document_provider, first_path);
 
-		std::string diags_path = root + "/diagnostics-baseline.txt";
-		std::string cpp_path = root + "/main.cpp";
-		std::string exe_path = root + "/main.exe";
+		std::string root_s { root.begin(), root.end() };
+		std::string diags_path = root_s + "/diagnostics-baseline.txt";
+		std::string cpp_path = root_s + "/main.cpp";
+		std::string exe_path = root_s + "/main.exe";
 
 		if (out.diagnostics.empty()) {
 			no_baseline(diags_path, mode);
@@ -87,9 +87,10 @@ namespace {
 	}
 }
 
-void test(const std::string& test_dir, TestMode mode) {
+void test(const std::string& test_dir, const std::string& test_name, TestMode mode) {
 	try {
-		do_test(test_dir + "/a", mode);
+		std::string t = test_dir + "/" + test_name;
+		do_test(StringSlice { t.begin().base(), t.end().base() }, mode);
 	} catch (TestFailure) {
 		std::cerr << "There was a test failure." << std::endl;
 	}

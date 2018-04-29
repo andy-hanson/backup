@@ -37,7 +37,7 @@ namespace {
 
 	class FunIds {
 		// Filled lazily, because we won't need ids for most funs.
-		Map<ref<const ConcreteFun>, uint> ids;
+		Map<ref<const ConcreteFun>, uint, ref<const ConcreteFun>::hash> ids;
 		uint next_id = 1;
 
 	public:
@@ -51,12 +51,15 @@ namespace {
 		}
 	};
 
+	const StringSlice OVERLOAD = "_overload_";
+	const StringSlice INST = "_inst";
+
 	ArenaString escape_fun_name(const ConcreteFun& f, bool is_overloaded, bool is_instantiated, FunIds& ids, Arena& arena) {
 		Arena::StringBuilder sb = arena.string_builder(100);
 		const FunSignature& sig = f.fun_declaration->signature;
 		sb << mangle{sig.name};
 		if (is_overloaded) {
-			sb << "_overload_" << mangle {f.fun_declaration->containing_module->name()};
+			sb << OVERLOAD << mangle {f.fun_declaration->containing_module->name()};
 			write_type_for_fun_name(sb, sig.return_type);
 			for (const Parameter& p : sig.parameters) {
 				sb << '_';
@@ -64,7 +67,7 @@ namespace {
 			}
 		}
 		if (is_instantiated) {
-			sb << "_inst";
+			sb << INST;
 			for (const InstStruct& i : f.type_arguments) {
 				sb << '_';
 				write_type_for_fun_name(sb, i);
@@ -75,46 +78,54 @@ namespace {
 		}
 		return sb.finish();
 	}
+
+	class DuplicateNamesGetter {
+		Set<Identifier, Identifier::hash> seen;
+		Set<Identifier, Identifier::hash> duplicates;
+
+	public:
+		void add(const Identifier& i) {
+			if (!seen.insert(i).was_added)
+				duplicates.insert(i);
+		}
+
+		bool has_duplicate(const Identifier& i) {
+			return duplicates.has(i);
+		}
+	};
 }
 
 Names get_names(const Vec<ref<Module>>& modules, const FunInstantiations& fun_instantiations, Arena& arena) {
-	Set<Identifier> module_names;
-
-	// Map from a name to all structs with that name.
-	MultiMap<Identifier, ref<const StructDeclaration>> global_structs_table;
+	Set<Identifier, Identifier::hash> all_module_names;
+	DuplicateNamesGetter all_struct_names;
+	DuplicateNamesGetter all_fun_names;
 
 	for (ref<const Module> module : modules) {
-		for (ref<const StructDeclaration> s : module->structs_declaration_order)
-			global_structs_table.add(s->name, s);
-		module_names.must_insert(module->name());
+		for (ref<const StructDeclaration> strukt : module->structs_declaration_order)
+			all_struct_names.add(strukt->name);
+		for (ref<const FunDeclaration> f : module->funs_declaration_order)
+			all_fun_names.add(f->name());
+		all_module_names.must_insert(module->name()); // TODO: if there are two modules with the same name, need to improve escaping
 	}
-
-	Names names;
-	for (const auto& a : global_structs_table) {
-		const Identifier& name = a.first;
-		ref<const StructDeclaration> strukt = a.second;
-		names.struct_names.must_insert(strukt, escape_struct_name(strukt->containing_module->name(), name, arena, global_structs_table.count(a.first) != 1));
-
-		if (strukt->body.is_fields()) {
-			for (const StructField& field : strukt->body.fields()) {
-				names.field_names.must_insert(&field, escape_field_name(field.name, arena));
-			}
-		}
-	}
-
-	// Map from a name to all funs with that name.
-	MultiMap<Identifier, ref<const Set<ConcreteFun>>> global_funs_table;
-	for (const auto& a : fun_instantiations) global_funs_table.add(a.first->name(), &a.second);
 
 	FunIds ids;
+	Names names;
 
-	for (const auto& a : global_funs_table) {
-		const Identifier& name = a.first;
-		const Set<ConcreteFun>& fn_instances = a.second;
-		for (const ConcreteFun& f : fn_instances) {
-			// If there are two separate fns with the same name, name them based on their *declaration*.
-			// Then if there are two separate instantiations of the same fn, name them based on the types used to instantiate them.
-			names.fun_names.must_insert(&f, escape_fun_name(f, /*is_overloaded*/ global_funs_table.count(name) > 1, /*is_instantiated*/ fn_instances.size() > 1, ids, arena));
+	for (ref<const Module> module : modules) {
+		for (ref<const StructDeclaration> strukt : module->structs_declaration_order) {
+			names.struct_names.must_insert(strukt, escape_struct_name(strukt->containing_module->name(), strukt->name, arena, all_struct_names.has_duplicate(strukt->name)));
+
+			if (strukt->body.is_fields())
+				for (const StructField& field : strukt->body.fields())
+					names.field_names.must_insert(&field, escape_field_name(field.name, arena));
+		}
+
+		for (ref<const FunDeclaration> f : module->funs_declaration_order) {
+			const Set<ConcreteFun, ConcreteFun::hash>& instances = fun_instantiations.must_get(f);
+			bool is_overloaded = all_fun_names.has_duplicate(f->name());
+			bool is_instantiated = instances.size() != 1;
+			for (const ConcreteFun& cf : instances)
+				names.fun_names.must_insert(&cf, escape_fun_name(cf, is_overloaded, is_instantiated, ids, arena));
 		}
 	}
 

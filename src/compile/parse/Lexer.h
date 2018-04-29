@@ -95,7 +95,7 @@ public:
 	void take_indent();
 	ArenaString take_indented_string(Arena& arena);
 
-	ArenaString try_take_comment(Arena& arena);
+	Option<ArenaString> try_take_comment(Arena& arena);
 
 	StringSlice take_cpp_include();
 	StringSlice take_type_name();

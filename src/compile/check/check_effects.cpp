@@ -111,7 +111,7 @@ namespace {
 	};
 
 	struct Ctx {
-		Map<ref<const Let>, ExprEffect> local_effects;
+		Map<ref<const Let>, ExprEffect, ref<const Let>::hash> local_effects;
 	};
 
 	ExprEffect infer_effect(Expression& e, Ctx& ctx);

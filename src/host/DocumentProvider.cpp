@@ -5,8 +5,8 @@
 
 namespace {
 	struct FileDocumentProvider final : public DocumentProvider {
-		const std::string root;
-		FileDocumentProvider(std::string _root) : root(_root) {}
+		const StringSlice root;
+		FileDocumentProvider(StringSlice _root) : root(_root) {}
 		Option<ArenaString> try_get_document(const Path& path, Arena& out, const StringSlice& extension) override {
 			const char* c_path = path.to_cstring(root, out, extension).slice().cstr();
 			std::ifstream i(c_path);
@@ -27,6 +27,6 @@ namespace {
 
 DocumentProvider::~DocumentProvider() {}
 
-std::unique_ptr<DocumentProvider> file_system_document_provider(const std::string& root) {
+std::unique_ptr<DocumentProvider> file_system_document_provider(StringSlice root) {
 	return std::make_unique<FileDocumentProvider>(root);
 }

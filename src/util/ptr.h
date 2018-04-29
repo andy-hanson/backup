@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cassert>
-#include <cstddef> // size_t
-#include <functional> // hash
+
+#include "./int.h" // size_t
 
 /** Type of non-null references. */
 template <typename T>
@@ -10,54 +10,51 @@ class ref {
 	T* _ptr;
 
 public:
-	ref(T* ptr) : _ptr(ptr) {
+	inline ref(T* ptr) : _ptr(ptr) {
 		assert(ptr != nullptr);
 	}
 
-	T* ptr() { return _ptr; }
-	const T* ptr() const { return _ptr; }
+	inline T* ptr() { return _ptr; }
+	inline const T* ptr() const { return _ptr; }
 
 	// Just as T& implicitly converts to const T&, ref<T> is a ref<const T>
-	operator ref<const T>() const {
+	inline operator ref<const T>() const {
 		return ref<const T>(_ptr);
 	}
 	// Since ref is non-null, might as well make coversion to const& implicit
-	operator const T&() const {
+	inline operator const T&() const {
 		return *_ptr;
 	}
-	operator T&() {
+	inline operator T&() {
 		return *_ptr;
 	}
 
 
-	bool operator==(ref<T> other) const {
+	inline bool operator==(ref<T> other) const {
 		return _ptr == other._ptr;
 	}
-	bool operator!=(ref<T> other) const {
+	inline bool operator!=(ref<T> other) const {
 		return _ptr != other._ptr;
 	}
 
-	T& operator*() {
+	inline T& operator*() {
 		return *_ptr;
 	}
-	const T& operator*() const {
+	inline const T& operator*() const {
 		return *_ptr;
 	}
 
-	T* operator->() {
+	inline T* operator->() {
 		return _ptr;
 	}
-	const T* operator->() const {
+	inline const T* operator->() const {
 		return _ptr;
 	}
-};
 
-namespace std {
-	template<typename T>
-	struct hash<::ref<T>> {
-		size_t operator()(::ref<T> r) const {
-			// TODO: better hash
+	struct hash {
+		inline size_t operator()(ref<T> r) const {
+			// TODO:PERF
 			return reinterpret_cast<size_t>(r.ptr());
 		}
-	} __attribute__((unused)); // clion thinks this is unused
-}
+	};
+};

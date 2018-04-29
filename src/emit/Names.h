@@ -7,9 +7,9 @@
 #include "./concrete_fun.h"
 
 struct Names {
-	Map<ref<const StructDeclaration>, ArenaString> struct_names;
-	Map<ref<const StructField>, ArenaString> field_names;
-	Map<ref<const ConcreteFun>, ArenaString> fun_names;
+	Map<ref<const StructDeclaration>, ArenaString, ref<const StructDeclaration>::hash> struct_names;
+	Map<ref<const StructField>, ArenaString, ref<const StructField>::hash> field_names;
+	Map<ref<const ConcreteFun>, ArenaString, ref<const ConcreteFun>::hash> fun_names;
 
 	StringSlice get_name(ref<const StructDeclaration> s) const {
 		return struct_names.must_get(s);
