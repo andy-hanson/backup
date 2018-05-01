@@ -82,16 +82,17 @@ namespace {
 		return b.finish();
 	}
 
-	StructBodyAst parse_cpp_struct_body(Lexer& lexer) {
+	StringSlice parse_cpp_struct_body(Lexer& lexer) {
 		lexer.take_indent();
 		StringSlice name = lexer.take_cpp_type_name();
 		lexer.take_dedent();
-		return StructBodyAst(name);
+		return name;
 	}
 
 	const StringSlice INCLUDE { "include" };
 
 	SpecDeclarationAst parse_spec(Lexer& lexer, Arena& arena, bool is_public, Option<ArenaString> comment) {
+		const char* start = lexer.at();
 		StringSlice name = lexer.take_type_name();
 		Arr<TypeParameterAst> type_parameters = lexer.try_take(' ') ? parse_type_parameter_asts(lexer, arena) : Arr<TypeParameterAst>{};
 		lexer.take_indent();
@@ -102,10 +103,10 @@ namespace {
 			lexer.take(' ');
 			sigs.add(parse_signature_ast(lexer, arena, sig_name, sig_comment));
 		} while (lexer.take_newline_or_dedent() == NewlineOrDedent::Newline);
-		return SpecDeclarationAst { comment, is_public, name, type_parameters, sigs.finish() };
+		return SpecDeclarationAst { comment, lexer.range(start), is_public, name, type_parameters, sigs.finish() };
 	}
 
-	DeclarationAst parse_struct_or_fun(Lexer& lexer, Arena& arena, bool is_public, const char* start, Option<ArenaString> comment) {
+	void parse_struct_or_fun(FileAst& ast, Lexer& lexer, Arena& arena, bool is_public, const char* start, Option<ArenaString> comment) {
 		bool c = lexer.try_take('c');
 		if (c) lexer.take(' ');
 
@@ -114,11 +115,11 @@ namespace {
 			lexer.take(' ');
 			if (name.name == INCLUDE) {
 				// is_public is irrelevant for these
-				return lexer.take_cpp_include();
+				ast.includes.push(lexer.take_cpp_include());
 			} else {
 				FunSignatureAst signature = parse_signature_ast(lexer, arena, name.name, comment);
 				FunBodyAst body = c ? FunBodyAst { lexer.take_indented_string(arena) } : FunBodyAst { parse_body_ast(lexer, arena) };
-				return FunDeclarationAst { is_public, signature, body };
+				ast.funs.push({ is_public, signature, body });
 			}
 		} else {
 			bool copy = false;
@@ -128,8 +129,8 @@ namespace {
 				if (!copy || lexer.try_take(' '))
 					type_parameters = parse_type_parameter_asts(lexer, arena);
 			}
-			StructBodyAst body = c ? parse_cpp_struct_body(lexer) : parse_struct_field_asts(lexer, arena);
-			return StructDeclarationAst { comment, lexer.range(start), is_public, name.name, type_parameters, copy, body };
+			StructBodyAst body = c ? StructBodyAst { parse_cpp_struct_body(lexer) } : StructBodyAst { parse_struct_field_asts(lexer, arena) };
+			ast.structs.push({ comment, lexer.range(start), is_public, name.name, type_parameters, copy, body });
 		}
 	}
 
@@ -178,6 +179,9 @@ void parse_file(FileAst& ast, PathCache& path_cache, Arena& arena) {
 
 		Option<ArenaString> comment = lexer.try_take_comment(arena);
 		const char* start = lexer.at();
-		ast.declarations.push(lexer.try_take('$') ? parse_spec(lexer, arena, is_public, comment) : parse_struct_or_fun(lexer, arena, is_public, start, comment));
+		if (lexer.try_take('$'))
+			ast.specs.push(parse_spec(lexer, arena, is_public, comment));
+		else
+			parse_struct_or_fun(ast, lexer, arena, is_public, start, comment);
 	}
 }

@@ -91,121 +91,84 @@ public:
 	ExprAst(const ExprAst& other) {
 		*this = other;
 	}
-	void operator=(const ExprAst& other) {
-		_kind = other._kind;
-		switch (_kind) {
-			case Kind::Identifier:
-				data.identifier = other.data.identifier;
-				break;
-			case Kind::Literal:
-				data.literal = other.data.literal;
-				break;
-			case Kind::NoCallLiteral:
-				data.no_call_literal = other.data.no_call_literal;
-				break;
-			case Kind::Call:
-				data.call = other.data.call;
-				break;
-			case Kind::StructCreate:
-				data.struct_create = other.data.struct_create;
-				break;
-			case Kind::TypeAnnotate:
-				data.type_annotate = other.data.type_annotate;
-				break;
-			case Kind::Let:
-				data.let = other.data.let;
-				break;
-			case Kind::Seq:
-				data.seq = other.data.seq;
-				break;
-			case Kind::When:
-				data.when = other.data.when;
-				break;
-			case Kind::Assert:
-				data.assert = other.data.assert;
-				break;
-			case Kind::Pass:
-				data.pass = other.data.pass;
-				break;
-		}
-	}
+	void operator=(const ExprAst& other);
 
-	ExprAst(StringSlice identifier) : _kind(Kind::Identifier) {
+	inline explicit ExprAst(StringSlice identifier) : _kind(Kind::Identifier) {
 		data.identifier = identifier;
 	}
-	ExprAst(LiteralAst literal) : _kind(Kind::Literal) {
+	inline explicit ExprAst(LiteralAst literal) : _kind(Kind::Literal) {
 		data.literal = literal;
 	}
-	ExprAst(ArenaString no_call_literal) : _kind(Kind::NoCallLiteral) {
+	inline explicit ExprAst(ArenaString no_call_literal) : _kind(Kind::NoCallLiteral) {
 		data.no_call_literal = no_call_literal;
 	}
-	ExprAst(CallAst call) : _kind(Kind::Call) {
+	inline explicit ExprAst(CallAst call) : _kind(Kind::Call) {
 		data.call = call;
 	}
-	ExprAst(StructCreateAst struct_create) : _kind(Kind::StructCreate) {
+	inline explicit ExprAst(StructCreateAst struct_create) : _kind(Kind::StructCreate) {
 		data.struct_create = struct_create;
 	}
-	ExprAst(ref<TypeAnnotateAst> type_annotate) : _kind(Kind::TypeAnnotate) {
+	inline explicit ExprAst(ref<TypeAnnotateAst> type_annotate) : _kind(Kind::TypeAnnotate) {
 		data.type_annotate = type_annotate;
 	}
-	ExprAst(LetAst let) : _kind(Kind::Let) {
+	inline explicit ExprAst(LetAst let) : _kind(Kind::Let) {
 		data.let = let;
 	}
-	ExprAst(SeqAst seq) : _kind(Kind::Seq) {
+	inline explicit ExprAst(SeqAst seq) : _kind(Kind::Seq) {
 		data.seq = seq;
 	}
-	ExprAst(WhenAst when) : _kind(Kind::When) {
+	inline explicit ExprAst(WhenAst when) : _kind(Kind::When) {
 		data.when = when;
 	}
-	ExprAst(AssertAst assert) : _kind(Kind::Assert) {
+	inline explicit ExprAst(AssertAst assert) : _kind(Kind::Assert) {
 		data.assert = assert;
 	}
-	ExprAst(SourceRange range, Kind kind) : _kind(Kind::Pass) {
+	inline ExprAst(SourceRange range, Kind kind) : _kind(Kind::Pass) {
 		data.pass = range;
 		assert(kind == Kind::Pass);
 	}
 
-	const StringSlice& identifier() const {
+	inline const StringSlice& identifier() const {
 		assert(_kind == Kind::Identifier);
 		return data.identifier;
 	}
-	const LiteralAst& literal() const {
+	inline const LiteralAst& literal() const {
 		assert(_kind == Kind::Literal);
 		return data.literal;
 	}
-	const ArenaString& no_call_literal() const {
+	inline const ArenaString& no_call_literal() const {
 		assert(_kind == Kind::NoCallLiteral);
 		return data.no_call_literal;
 	}
-	const CallAst& call() const {
+	inline const CallAst& call() const {
 		assert(_kind == Kind::Call);
 		return data.call;
 	}
-	const StructCreateAst& struct_create() const {
+	inline const StructCreateAst& struct_create() const {
 		assert(_kind == Kind::StructCreate);
 		return data.struct_create;
 	}
-	const TypeAnnotateAst& type_annotate() const {
+	inline const TypeAnnotateAst& type_annotate() const {
 		assert(_kind == Kind::TypeAnnotate);
 		return data.type_annotate;
 	}
-	const LetAst& let() const {
+	inline const LetAst& let() const {
 		assert(_kind == Kind::Let);
 		return data.let;
 	}
-	const SeqAst& seq() const {
+	inline const SeqAst& seq() const {
 		assert(_kind == Kind::Seq);
 		return data.seq;
 	}
-	const WhenAst& when() const {
+	inline const WhenAst& when() const {
 		assert(_kind == Kind::When);
 		return data.when;
 	}
-	const AssertAst& assert_ast() const {
+	inline const AssertAst& assert_ast() const {
 		assert(_kind == Kind::Assert);
 		return data.assert;
 	}
-	const SourceRange& pass() const {
+	inline const SourceRange& pass() const {
 		assert(_kind == Kind::Pass);
 		return data.pass;
 	}

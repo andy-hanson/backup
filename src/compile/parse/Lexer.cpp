@@ -1,14 +1,4 @@
-#include "Lexer.h"
-#include "../diag/parse_diag.h"
-
-void Lexer::validate_file(const StringSlice& source) {
-	assert(source.size() >= 2 && *(source.end() - 1) == '\0');
-	for (const char* ptr = source.begin() + 1; *ptr != '\0'; ++ptr)
-		if (*ptr == '\n' && (*(ptr - 1) == ' ' || *(ptr - 1) == '\t'))
-			throw ParseDiagnostic { source.range_from_inner_slice({ ptr - 1, ptr }), ParseDiag::Kind::TrailingSpace };
-	if (*(source.end() - 2) != '\n')
-		throw ParseDiagnostic { source.range_from_inner_slice({ source.end() - 1, source.end() }), ParseDiag::Kind::MustEndInBlankLine };
-}
+#include "./Lexer.h"
 
 namespace {
 	bool is_operator_char(char c) {
@@ -67,6 +57,23 @@ namespace {
 		while (next_char_pred(*ptr)) ++ptr;
 		return { begin, ptr };
 	}
+}
+
+ParseDiagnostic Lexer::unexpected() {
+	return diag_at_char({ ParseDiag::Kind::UnexpectedCharacter, *ptr });
+}
+
+void Lexer::validate_file(const StringSlice& source) {
+	assert(source.size() >= 2 && *(source.end() - 1) == '\0');
+	for (const char* ptr = source.begin() + 1; *ptr != '\0'; ++ptr)
+		if (*ptr == '\n' && (*(ptr - 1) == ' ' || *(ptr - 1) == '\t'))
+			throw ParseDiagnostic { source.range_from_inner_slice({ ptr - 1, ptr }), ParseDiag::Kind::TrailingSpace };
+	if (*(source.end() - 2) != '\n')
+		throw ParseDiagnostic { source.range_from_inner_slice({ source.end() - 1, source.end() }), ParseDiag::Kind::MustEndInBlankLine };
+}
+
+ParseDiagnostic Lexer::diag_at_char(ParseDiag diag) {
+	return { source.range_from_inner_slice({ ptr, ptr + 1 }), diag };
 }
 
 Arena::StringBuilder Lexer::string_builder(Arena& arena) {

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <memory> // unique_ptr
 #include "../util/Alloc.h"
 #include "../util/Option.h"
 #include "../util/StringSlice.h"
+#include "../util/unique_ptr.h"
 #include "../util/Writer.h"
 
 // Can only be constructed through a PathCache.
@@ -48,7 +48,7 @@ struct RelPath {
 // Memoizes construction of paths.
 class PathCache {
 	struct Impl;
-	std::unique_ptr<Impl> impl;
+	unique_ptr<Impl> impl;
 	PathCache(const PathCache& other) = delete;
 
 public:

@@ -1,6 +1,45 @@
 #include "model.h"
 
 #include "../../util/collection_util.h"
+#include "../../util/hash_util.h"
+
+void StructBody::operator=(const StructBody& other) {
+	_kind = other._kind;
+	switch (_kind) {
+		case Kind::Nil: break;
+		case Kind::Fields:
+			data.fields = other.data.fields;
+			break;
+		case Kind::CppName:
+			data.cpp_name = other.data.cpp_name;
+			break;
+	}
+}
+
+void Type::operator=(const Type& other) {
+	_kind = other._kind;
+	switch (other._kind) {
+		case Kind::Nil:
+		case Kind::Bogus:
+			break;
+		case Kind::InstStruct: data.inst_struct = other.data.inst_struct; break;
+		case Kind::Param: data.param = other.data.param; break;
+	}
+}
+
+void AnyBody::operator=(const AnyBody& other) {
+	_kind = other._kind;
+	switch (other._kind) {
+		case Kind::Nil:
+			break;
+		case Kind::Expr:
+			data.expression = other.data.expression;
+			break;
+		case Kind::CppSource:
+			data.cpp_source = other.data.cpp_source;
+			break;
+	}
+}
 
 SpecUse::SpecUse(ref<const SpecDeclaration> _spec, Arr<Type> _type_arguments) : spec(_spec), type_arguments(_type_arguments) {
 	assert(spec->type_parameters.size() == type_arguments.size());
@@ -11,7 +50,7 @@ bool InstStruct::is_deeply_concrete() const {
 }
 
 size_t InstStruct::hash::operator()(const InstStruct& i) {
-	return hash_combine(ref<const StructDeclaration>::hash{}(i.strukt), hash_dyn_array(i.type_arguments, Type::hash{}));
+	return hash_combine(ref<const StructDeclaration>::hash{}(i.strukt), hash_arr(i.type_arguments, Type::hash {}));
 }
 
 bool operator==(const InstStruct& a, const InstStruct& b) {

@@ -1,50 +1,13 @@
 #pragma once
 
 #include <cassert>
-#include <algorithm> // std::copy
-#include <utility> // std::forward
 
 #include "./MaxSizeVector.h"
 #include "./StringSlice.h"
 #include "./ptr.h"
 #include "./Option.h"
-
-template <typename T>
-class Arr {
-	T* data;
-	size_t len;
-
-	friend class Arena;
-
-	Arr(T* _data, size_t _len) : data(_data), len(_len) {}
-
-public:
-	Arr() : data(nullptr), len(0) {}
-
-	T& operator[](size_t index) {
-		assert(index < len);
-		return data[index];
-	}
-
-	const T& operator[](size_t index) const {
-		assert(index < len);
-		return data[index];
-	}
-
-	bool contains_ref(ref<const T> r) const {
-		return begin() <= r.ptr() && r.ptr() < end();
-	}
-
-	using iterator = T*;
-	using const_iterator = const T*;
-
-	size_t size() const { return len; }
-	bool empty() const { return len == 0; }
-	iterator begin() { return data; }
-	iterator end() { return data + len; }
-	const_iterator begin() const { return data; }
-	const_iterator end() const { return data + len; }
-};
+#include "./Slice.h"
+#include "Grow.h"
 
 // Wrapper around StringSlice that ensures it's in an arena.
 class ArenaString {
@@ -58,7 +21,7 @@ public:
 	char* begin() { return _begin; }
 	inline operator StringSlice() const { return slice(); }
 	inline StringSlice slice() const { return { _begin, _end }; }
-	char& operator[](size_t index) {
+	inline char& operator[](size_t index) {
 		assert(index < slice().size());
 		return *(_begin + index);
 	}
@@ -75,48 +38,34 @@ class Arena {
 	void* alloc_next;
 	void* alloc_end;
 
-	void* allocate(size_t n_bytes) {
-		void* res = alloc_next;
-		alloc_next = static_cast<char*>(alloc_next) + n_bytes;
-		assert(alloc_next <= alloc_end);
-		return res;
-	}
-
-public:
-	Arena() {
-		size_t size = 10000;
-		alloc_begin = ::operator new(size);
-		alloc_end = static_cast<char*>(alloc_begin) + size;
-		alloc_next = alloc_begin;
-	}
-	Arena(const Arena& other) = delete;
-	void operator=(const Arena& other) = delete;
-	~Arena() {
-		::operator delete(alloc_begin);
-	}
+	void* allocate(size_t n_bytes);
 
 	template <typename T>
-	ref<T> put(T&& value) {
-		T* ptr =  static_cast<T*>(allocate(sizeof(T)));
-		new(ptr) T(std::forward<T>(value));
-		return ptr;
-	}
-
-	template <typename T>
-	ref<T> put_copy(T value) {
-		T* ptr =  static_cast<T*>(allocate(sizeof(T)));
-		new(ptr) T(value);
-		return ptr;
-	}
-
-	template <typename T>
-	Arr<T> new_array(size_t len) {
+	Arr<T> uninitialized_array(size_t len) {
 		return Arr<T>(static_cast<T*>(allocate(sizeof(T) * len)), len);
 	}
 
+public:
+	Arena();
+	Arena(const Arena& other) = delete;
+	void operator=(const Arena& other) = delete;
+	~Arena();
+
 	template <typename T>
-	Arr<T> make_array(T elem) {
-		return fill_array<T>()(1, [&](uint i) { assert(i == 0); return elem; });
+	ref<T> allocate_uninitialized() {
+		return static_cast<T*>(allocate(sizeof(T)));
+	}
+
+	template <typename T>
+	ref<T> put(T value) {
+		ref<T> ptr = allocate_uninitialized<T>();
+		new(ptr.ptr()) T(value);
+		return ptr;
+	}
+
+	template <typename T>
+	Arr<T> single_element_array(T elem) {
+		return Arr<T>(put(elem).ptr(), 1);
 	}
 
 	template <typename T>
@@ -127,7 +76,7 @@ public:
 	public:
 		template <typename Cb>
 		Arr<T> operator()(size_t len, Cb cb) {
-			Arr<T> arr = arena.new_array<T>(len);
+			Arr<T> arr = arena.uninitialized_array<T>(len);
 			for (uint i = 0; i < len; ++i)
 				arr[i] = cb(i);
 			return arr;
@@ -138,15 +87,29 @@ public:
 	ArrayFiller<T> fill_array() { return {*this}; }
 
 	template <typename Out>
-	struct ArrayMapper {
+	struct Map {
 		Arena& arena;
+
 		template <typename In, typename /*const In& => Out*/ Cb>
 		Arr<Out> operator()(const Arr<In>& in, Cb cb) {
 			return arena.fill_array<Out>()(in.size(), [&](uint i) { return cb(in[i]); });
 		}
+
+		template <typename In, typename /*const In& => Out*/ Cb>
+		Arr<Out> operator()(const Grow<In>& in, Cb cb) {
+			uint size = in.size();
+			Arr<Out> arr = arena.uninitialized_array<Out>(size);
+			uint i = 0;
+			for (const In& input : in) {
+				arr[i] = cb(input);
+				++i;
+			}
+			assert(i == size);
+			return arr;
+		}
 	};
 	template <typename Out>
-	ArrayMapper<Out> map() {
+	Map<Out> map() {
 		return {*this};
 	}
 
@@ -155,16 +118,16 @@ public:
 		Arena& arena;
 		template <typename In, typename /*const In&, const Arr<Out>&, uint => Out*/ Cb>
 		Arr<Out> operator()(const Arr<In>& inputs, Cb cb) {
-			Arr<Out> out = arena.new_array<Out>(inputs.size());
-			out.len = 0;
+			Arr<Out> out = arena.uninitialized_array<Out>(inputs.size());
+			out._size = 0;
 			uint i = 0;
 			for (const In& input : inputs) {
 				Out o = cb(input, out, i);
-				++out.len;
+				++out._size;
 				out[i] = o;
 				++i;
 			}
-			assert(out.len == i);
+			assert(out._size == i);
 			return out;
 		}
 	};
@@ -177,7 +140,7 @@ public:
 
 		template <typename In, typename /*const In& => Option<Out>*/ Cb>
 		Arr<Out> operator()(const Arr<In>& inputs, Cb cb) {
-			Arr<Out> out = arena.new_array<Out>(inputs.size());
+			Arr<Out> out = arena.uninitialized_array<Out>(inputs.size());
 			uint i = 0;
 			for (const In& input : inputs) {
 				Option<Out> o = cb(input);
@@ -186,7 +149,7 @@ public:
 					++i;
 				}
 			}
-			out.len = i;
+			out._size = i;
 			return out;
 		}
 	};
@@ -200,9 +163,9 @@ public:
 	struct MapOrFail {
 		Arena& arena;
 
-		template<typename In, typename /*const In& => Option<Out>*/ Cb>
-		Option<Arr<Out>> operator()(const Arr<In>& inputs, Cb cb) {
-			Arr<Out> out = arena.new_array<Out>(inputs.size());
+		template <typename InCollection, typename In, typename Cb>
+		Option<Arr<Out>> worker(const InCollection& inputs, Cb cb) {
+			Arr<Out> out = arena.uninitialized_array<Out>(inputs.size());
 			uint i = 0;
 			for (const In& input : inputs) {
 				Option<Out> o = cb(input);
@@ -211,14 +174,45 @@ public:
 				out[i] = o.get();
 				++i;
 			}
-			assert(i == out.len);
+			assert(i == out._size);
 			return Option { out };
 		}
-	};
 
+		template<typename In, typename /*const In& => Option<Out>*/ Cb>
+		Option<Arr<Out>> operator()(const Arr<In>& inputs, Cb cb) {
+			return worker<Arr<In>, In, Cb>(inputs, cb);
+		}
+
+		template<typename In, typename /*const In& => Option<Out>*/ Cb>
+		Option<Arr<Out>> operator()(const Grow<In>& inputs, Cb cb) {
+			return worker<Grow<In>, In, Cb>(inputs, cb);
+		}
+	};
 	template<typename Out>
 	MapOrFail<Out> map_or_fail() {
-		return MapOrFail<Out>{*this};
+		return {*this};
+	}
+
+	template <typename Out>
+	struct MapOrFailReverse {
+		Arena& arena;
+		template <typename In, typename /*const In&, uninitialized T* => Out*/ Cb>
+		Option<Arr<Out>> operator()(const Grow<In>& inputs, Cb cb) {
+			Arr<Out> out = arena.uninitialized_array<Out>(inputs.size());
+			uint i = 0;
+			bool success = true;
+			inputs.each_reverse([&](const In& input) {
+				if (!success) return;
+				success = cb(input, &out[i]);
+				++i;
+			});
+			assert(i == out._size);
+			return success ? Option { out } : Option<Arr<Out>> {};
+		}
+	};
+	template <typename Out>
+	MapOrFailReverse<Out> map_or_fail_reverse() {
+		return {*this};
 	}
 
 	template <typename Out>
@@ -227,30 +221,29 @@ public:
 
 		template <typename In, typename /*(const In&, const Arr<Out>&) => Option<Out>*/ Cb>
 		Arr<Out> operator()(const Arr<In>& inputs, Cb cb) {
-			Arr<Out> out = arena.new_array<Out>(inputs.size());
-			out.len = 0;
+			Arr<Out> out = arena.uninitialized_array<Out>(inputs.size());
+			out._size = 0;
 			uint i = 0;
 			for (const In& input : inputs) {
 				Option<Out> o = cb(input, out);
 				if (o) {
-					++out.len;
+					++out._size;
 					out[i] = o.get();
 					++i;
 				}
 			}
-			out.len = i;
+			out._size = i;
 			return out;
 		}
 	};
 	template <typename Out>
 	MapOpWithPrevs<Out> map_op_with_prevs() { return MapOpWithPrevs<Out>{*this}; }
 
-	template <typename T>
+	template <typename T, uint max_size = 8>
 	class SmallArrayBuilder {
 		friend class Arena;
 		ref<Arena> arena;
-		MaxSizeVector<8, T> v;
-
+		MaxSizeVector<max_size, T> v;
 		SmallArrayBuilder(ref<Arena> _arena) : arena(_arena) {}
 
 	public:
@@ -260,10 +253,9 @@ public:
 			return arena->fill_array<T>()(v.size(), [&](uint i) { return v[i]; });
 		}
 	};
-
-	template <typename T>
-	SmallArrayBuilder<T> small_array_builder() {
-		return SmallArrayBuilder<T>(this);
+	template <typename T, uint max_size = 8>
+	SmallArrayBuilder<T, max_size> small_array_builder() {
+		return { this };
 	}
 
 	class StringBuilder {
@@ -275,70 +267,35 @@ public:
 		StringBuilder(Arena& _arena, ArenaString _slice) : arena(_arena), slice(_slice), ptr(_slice._begin) {}
 
 	public:
-		StringBuilder& operator<<(char c) {
+		inline StringBuilder& operator<<(char c) {
 			assert(ptr != slice._end);
 			*ptr = c;
 			++ptr;
 			return *this;
 		}
 
-		StringBuilder& operator<<(uint u) {
-			assert(ptr != slice._end);
-			//TODO: better
-			if (u < 10) {
-				*ptr = '0' + char(u);
-				++ptr;
-			} else if (u < 100) {
-				assert(ptr + 1 != slice._end);
-				*ptr = '0' + char(u % 10);
-				*(ptr + 1) = '0' + char(u / 10);
-				++ptr;
-			} else
-				throw "todo";
-			return *this;
-		}
+		StringBuilder& operator<<(uint u);
 
-		StringBuilder& operator<<(StringSlice s) {
-			for (char c : s)
-				*this << c;
-			return *this;
-		}
+		StringBuilder& operator<<(StringSlice s);
 
-		bool empty() const {
-			return ptr == slice._begin;
-		}
+		inline bool empty() const { return ptr == slice._begin; }
 
-		char back() const {
+		inline char back() const {
 			assert(ptr != slice._begin);
 			return *(ptr - 1);
 		}
 
-		void pop() {
+		inline void pop() {
 			assert(ptr != slice._begin);
 			--ptr;
 		}
 
-		ArenaString finish() {
-			assert(arena.alloc_next == slice._end); // no intervening allocations
-			arena.alloc_next = ptr; // Only used up this much space, don't waste the rest
-			return { slice._begin, ptr };
-		}
+		ArenaString finish();
 	};
 
-	StringBuilder string_builder(size_t max_size) {
-		return StringBuilder(*this, allocate_slice(max_size));
-	}
+	StringBuilder string_builder(size_t max_size);
 
-	ArenaString allocate_slice(size_t size) {
-		char* begin = static_cast<char*>(allocate(size));
-		return { begin, begin + size };
-	}
+	ArenaString allocate_slice(size_t size);
 
-	ArenaString str(StringSlice slice) {
-		char* begin = static_cast<char*>(allocate(slice.size()));
-		char* end = std::copy(slice.begin(), slice.end(), begin);
-		assert(size_t(end - begin) == slice.size());
-		assert(alloc_next == end);
-		return { begin, end };
-	}
+	ArenaString str(const StringSlice& slice);
 };

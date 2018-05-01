@@ -3,12 +3,13 @@
 #include "./diag/diag.h"
 #include "./model/model.h"
 #include "../host/DocumentProvider.h"
+#include "../util/Grow.h"
 
 struct CompiledProgram {
 	Arena arena;
 	PathCache paths;
-	Vec<ref<Module>> modules;
-	Vec<Diagnostic> diagnostics;
+	Arr<Module> modules;
+	Grow<Diagnostic> diagnostics;
 };
 
 extern const StringSlice NZ_EXTENSION;

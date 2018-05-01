@@ -6,13 +6,13 @@ namespace {
 	}
 }
 
-LineAndColumnGetter LineAndColumnGetter::for_text(StringSlice text) {
-	Vec<uint> line_to_pos;
-	line_to_pos.push(0); // Line 0 starts at text index 0
+LineAndColumnGetter LineAndColumnGetter::for_text(const StringSlice& text, Arena& arena) {
+	Arena::SmallArrayBuilder<uint, 1024> lines = arena.small_array_builder<uint, 1024>();
+	lines.add(0); // Line 0 starts at text index 0
 	for (uint i = 0; i != text.size(); ++i)
 		if (text[i] == '\n')
-			line_to_pos.push(i + 1);
-	return LineAndColumnGetter { std::move(line_to_pos) };
+			lines.add(i + 1);
+	return LineAndColumnGetter { lines.finish() };
 }
 
 LineAndColumn LineAndColumnGetter::line_and_column_at_pos(uint pos) const {

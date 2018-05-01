@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>
+#include "../util/StringSlice.h"
 
 enum TestMode { Test, Accept };
 
-void test(const std::string& test_dir, const std::string& test_name, TestMode mode);
+void test(const StringSlice& test_dir, const StringSlice& test_name, TestMode mode);

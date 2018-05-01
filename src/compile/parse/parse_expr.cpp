@@ -23,7 +23,7 @@ namespace {
 		}
 	}
 
-	ExprAst parse_when(Lexer& lexer, Arena& arena, const char* start) {
+	WhenAst parse_when(Lexer& lexer, Arena& arena, const char* start) {
 		lexer.take_indent();
 		Arena::SmallArrayBuilder<CaseAst> cases = arena.small_array_builder<CaseAst>();
 		while (true) {
@@ -31,7 +31,7 @@ namespace {
 				lexer.take_indent();
 				ref<ExprAst> elze = arena.put(parse_expr_ast(lexer, arena, ExprCtx::Statement));
 				lexer.reduce_indent_by_2();
-				return WhenAst { lexer.range(start), cases.finish(), elze };
+				return { lexer.range(start), cases.finish(), elze };
 			}
 
 			ExprAst cond = parse_expr_ast(lexer, arena, ExprCtx::Case);
@@ -42,16 +42,16 @@ namespace {
 		}
 	}
 
-	ExprAst parse_let(Lexer& lexer, Arena& arena, const StringSlice& name) {
+	LetAst parse_let(Lexer& lexer, Arena& arena, const StringSlice& name) {
 		// `a = b`
 		lexer.take(' ');
 		ref<ExprAst> init = arena.put(parse_expr_ast(lexer, arena, ExprCtx::EqualsRhs));
 		lexer.take_newline_same_indent();
 		ref<ExprAst> then = arena.put(parse_expr_ast(lexer, arena, ExprCtx::Statement));
-		return LetAst { name, init, then };
+		return { name, init, then };
 	}
 
-	ExprAst parse_call(Lexer& lexer, Arena& arena, ExprAst arg0) {
+	CallAst parse_call(Lexer& lexer, Arena& arena, ExprAst arg0) {
 		// `a f b, c, d`
 		StringSlice fn_name = lexer.take_value_name();
 		Arr<TypeAst> type_arguments = parse_type_argument_asts(lexer, arena);
@@ -62,7 +62,7 @@ namespace {
 				args.add(parse_expr_arg_ast(lexer, arena));
 			} while (lexer.try_take_comma_space());
 		}
-		return CallAst { fn_name, type_arguments, args.finish() };
+		return { fn_name, type_arguments, args.finish() };
 	}
 
 	ExprAst parse_expr_ast(Lexer& lexer, Arena& arena, ExprCtx where) {
@@ -73,12 +73,12 @@ namespace {
 				case ExpressionToken::Kind::Assert: {
 					lexer.take(' ');
 					ref<ExprAst> asserted = arena.put(parse_expr_ast(lexer, arena, ExprCtx::EqualsRhs));
-					return AssertAst { lexer.range(start), asserted };
+					return ExprAst { AssertAst { lexer.range(start), asserted } };
 				}
 				case ExpressionToken::Kind::When:
-					return parse_when(lexer, arena, start);
+					return ExprAst { parse_when(lexer, arena, start) };
 				case ExpressionToken::Kind::Pass:
-					return ExprAst(lexer.range(start), ExprAst::Kind::Pass);
+					return ExprAst { lexer.range(start), ExprAst::Kind::Pass };
 				case ExpressionToken::Kind::Name:
 				case ExpressionToken::Kind::TypeName:
 				case ExpressionToken::Kind::Literal:
@@ -93,9 +93,9 @@ namespace {
 		if (!lexer.try_take(' '))
 			return arg0;
 		else if (where == ExprCtx::Statement && arg0.kind() == ExprAst::Kind::Identifier && lexer.try_take('='))
-			return parse_let(lexer, arena, arg0.identifier());
+			return ExprAst { parse_let(lexer, arena, arg0.identifier()) };
 		else
-			return parse_call(lexer, arena, arg0);
+			return ExprAst { parse_call(lexer, arena, arg0) };
 	}
 
 	struct AstAndShouldParseDot { ExprAst ast; bool may_parse_dot; };
@@ -103,12 +103,12 @@ namespace {
 		switch (et.kind) {
 			case ExpressionToken::Kind::Name: {
 				Arr<TypeAst> type_arguments = parse_type_argument_asts(lexer, arena);
-				return type_arguments.empty() ? AstAndShouldParseDot { et.name, true } : AstAndShouldParseDot { CallAst { et.name, type_arguments, {} }, true };
+				return type_arguments.empty() ? AstAndShouldParseDot { ExprAst { et.name }, true } : AstAndShouldParseDot { ExprAst { CallAst { et.name, type_arguments, {} } }, true };
 			}
 
 			case ExpressionToken::Kind::TypeName: {
 				Arr<TypeAst> type_args = parse_type_argument_asts(lexer, arena);
-				return { StructCreateAst { et.name, type_args, parse_prefix_args(lexer, arena) }, false };
+				return { ExprAst { StructCreateAst { et.name, type_args, parse_prefix_args(lexer, arena) } }, false };
 			}
 
 			case ExpressionToken::Kind::Lparen: {
@@ -125,14 +125,14 @@ namespace {
 					args = parse_prefix_args(lexer, arena);
 					lexer.take(')');
 				}
-				return { LiteralAst { et.literal, type_args, args }, true };
+				return { ExprAst { LiteralAst { et.literal, type_args, args } }, true };
 			}
 
 			case ExpressionToken::Kind::As: {
 				lexer.take(' ');
 				TypeAst type = parse_type_ast(lexer, arena);
 				ExprAst arg = parse_expr_arg_ast(lexer, arena, lexer.take_expression_token(arena));
-				return { { arena.put(TypeAnnotateAst { type, arg }) }, false };
+				return { ExprAst { arena.put(TypeAnnotateAst { type, arg }) }, false };
 			}
 
 			case ExpressionToken::Kind::Assert:
@@ -146,7 +146,7 @@ namespace {
 
 	ExprAst parse_dots(ExprAst initial, Lexer& lexer, Arena& arena) {
 		return lexer.try_take('.')
-			? parse_dots(CallAst { lexer.take_value_name(), {}, arena.make_array(initial) }, lexer, arena)
+			? parse_dots(ExprAst { CallAst { lexer.take_value_name(), {}, arena.single_element_array(initial) } }, lexer, arena)
 			: initial;
 	}
 
@@ -162,8 +162,8 @@ ExprAst parse_body_ast(Lexer& lexer, Arena& arena) {
 	ExprAst res = parse_expr_ast(lexer, arena, ExprCtx::Statement);
 	while (lexer.take_newline_or_dedent() == NewlineOrDedent::Newline) {
 		ExprAst next_line = parse_expr_ast(lexer, arena, ExprCtx::Statement);
-		res = SeqAst { lexer.range(start), arena.put_copy(res), arena.put_copy(next_line) };
+		res = ExprAst { SeqAst { lexer.range(start), arena.put(res), arena.put(next_line) } };
 	}
-	assert(lexer.indent() == 0);
+	lexer.assert_no_indent();
 	return res;
 }

@@ -111,8 +111,8 @@ namespace {
 
 	template <typename /*ref<constConcreteFun>> => void>*/ Cb>
 	void each_concrete_fun(const Module& module, const FunInstantiations& fun_instantiations, Cb cb) {
-		for (ref<const FunDeclaration> f : module.funs_declaration_order) {
-			Option<const Set<ConcreteFun, ConcreteFun::hash>&> instantiations = fun_instantiations.get(f);
+		for (const FunDeclaration& f : module.funs_declaration_order) {
+			Option<const Set<ConcreteFun, ConcreteFun::hash>&> instantiations = fun_instantiations.get(&f);
 			if (instantiations.has())
 				for (const ConcreteFun& cf : instantiations.get())
 					cb(&cf);
@@ -120,7 +120,7 @@ namespace {
 	}
 }
 
-std::string emit(const Vec<ref<Module>>& modules) {
+std::string emit(const Arr<Module>& modules) {
 	assert(!modules.empty());
 	Writer out;
 	out << "#include <assert.h>\n\n";

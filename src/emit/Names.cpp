@@ -95,34 +95,33 @@ namespace {
 	};
 }
 
-Names get_names(const Vec<ref<Module>>& modules, const FunInstantiations& fun_instantiations, Arena& arena) {
+Names get_names(const Arr<Module>& modules, const FunInstantiations& fun_instantiations, Arena& arena) {
 	Set<Identifier, Identifier::hash> all_module_names;
 	DuplicateNamesGetter all_struct_names;
 	DuplicateNamesGetter all_fun_names;
 
-	for (ref<const Module> module : modules) {
-		for (ref<const StructDeclaration> strukt : module->structs_declaration_order)
-			all_struct_names.add(strukt->name);
-		for (ref<const FunDeclaration> f : module->funs_declaration_order)
-			all_fun_names.add(f->name());
-		all_module_names.must_insert(module->name()); // TODO: if there are two modules with the same name, need to improve escaping
+	for (const Module& module : modules) {
+		for (const StructDeclaration& strukt : module.structs_declaration_order)
+			all_struct_names.add(strukt.name);
+		for (const FunDeclaration& f : module.funs_declaration_order)
+			all_fun_names.add(f.name());
+		all_module_names.must_insert(module.name()); // TODO: if there are two modules with the same name, need to improve escaping
 	}
 
 	FunIds ids;
 	Names names;
 
-	for (ref<const Module> module : modules) {
-		for (ref<const StructDeclaration> strukt : module->structs_declaration_order) {
-			names.struct_names.must_insert(strukt, escape_struct_name(strukt->containing_module->name(), strukt->name, arena, all_struct_names.has_duplicate(strukt->name)));
-
-			if (strukt->body.is_fields())
-				for (const StructField& field : strukt->body.fields())
+	for (const Module& module : modules) {
+		for (const StructDeclaration& strukt : module.structs_declaration_order) {
+			names.struct_names.must_insert(&strukt, escape_struct_name(strukt.containing_module->name(), strukt.name, arena, all_struct_names.has_duplicate(strukt.name)));
+			if (strukt.body.is_fields())
+				for (const StructField& field : strukt.body.fields())
 					names.field_names.must_insert(&field, escape_field_name(field.name, arena));
 		}
 
-		for (ref<const FunDeclaration> f : module->funs_declaration_order) {
-			const Set<ConcreteFun, ConcreteFun::hash>& instances = fun_instantiations.must_get(f);
-			bool is_overloaded = all_fun_names.has_duplicate(f->name());
+		for (const FunDeclaration& f : module.funs_declaration_order) {
+			const Set<ConcreteFun, ConcreteFun::hash>& instances = fun_instantiations.must_get(&f);
+			bool is_overloaded = all_fun_names.has_duplicate(f.name());
 			bool is_instantiated = instances.size() != 1;
 			for (const ConcreteFun& cf : instances)
 				names.fun_names.must_insert(&cf, escape_fun_name(cf, is_overloaded, is_instantiated, ids, arena));

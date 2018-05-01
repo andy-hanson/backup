@@ -4,4 +4,4 @@
 
 #include "../compile/model/model.h"
 
-std::string emit(const Vec<ref<Module>>& modules);
+std::string emit(const Arr<Module>& modules);

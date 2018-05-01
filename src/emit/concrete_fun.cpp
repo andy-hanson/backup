@@ -1,7 +1,6 @@
 #include "concrete_fun.h"
 
-#include "../util/collection_util.h"
-#include "../util/Map.h"
+#include "../util/hash_util.h"
 
 namespace {
 	// Recursively replaces every type parameter with a corresponding type argument.
@@ -28,7 +27,7 @@ namespace {
 	}
 
 	template<typename K, typename V, typename KH, typename VH>
-	InsertResult<V> add_to_map_of_sets(Map<K, Set<V, VH>, KH>& map, K key, V value) {
+	typename Set<V, VH>::InsertResult add_to_map_of_sets(Map<K, Set<V, VH>, KH>& map, K key, V value) {
 		return map.get_or_create(key).insert(value);
 	}
 
@@ -126,23 +125,46 @@ namespace {
 	}
 }
 
+ConcreteFun::ConcreteFun(ref<const FunDeclaration> _fun_declaration, Arr<InstStruct> _type_arguments, Arr<Arr<ref<const ConcreteFun>>> _spec_impls)
+	: fun_declaration(_fun_declaration), type_arguments(_type_arguments), spec_impls(_spec_impls) {
+	assert(fun_declaration->signature.type_parameters.size() == type_arguments.size());
+	assert(fun_declaration->signature.specs.size() == spec_impls.size());
+	assert(each_corresponds(fun_declaration->signature.specs, spec_impls, [](const SpecUse& spec_use, const Arr<ref<const ConcreteFun>>& sig_impls) {
+		return spec_use.spec->signatures.size() == sig_impls.size();
+	}));
+	assert(every(type_arguments, [](const InstStruct& p) { return p.is_deeply_concrete(); }));
+}
+
+size_t ConcreteFun::hash::operator()(const ConcreteFun& c) const {
+	// Don't hash the spec_impls because that could lead to infinite recursion.
+	return hash_combine(ref<const FunDeclaration>::hash{}(c.fun_declaration), hash_arr(c.type_arguments, InstStruct::hash {}));
+}
+
 bool operator==(const ConcreteFun& a, const ConcreteFun& b) {
 	return a.fun_declaration == b.fun_declaration && a.type_arguments == b.type_arguments && a.spec_impls == b.spec_impls;
+}
+
+size_t ConcreteFunAndCalled::hash::operator()(const ConcreteFunAndCalled& c) const {
+	return hash_combine(ref<const ConcreteFun>::hash{}(c.fun), ref<const Called>::hash{}(c.called));
+}
+
+bool operator==(const ConcreteFunAndCalled& a, const ConcreteFunAndCalled& b) {
+	return a.fun == b.fun && a.called == b.called;
 }
 
 InstStruct substitute_type_arguments(const Type& type_argument, const ConcreteFun& fun, Arena& arena) {
 	return substitute_type_arguments(type_argument, fun.fun_declaration->signature.type_parameters, fun.type_arguments, arena);
 }
 
-EveryConcreteFun get_every_concrete_fun(const Vec<ref<Module>>& modules, Arena& scratch_arena) {
+EveryConcreteFun get_every_concrete_fun(const Arr<Module>& modules, Arena& scratch_arena) {
 	EveryConcreteFun res;
 	// Stack of ConcreteFun_s whose bodies we need to analyze for references.
-	Vec<ref<const ConcreteFun>> to_analyze;
+	MaxSizeVector<16, ref<const ConcreteFun>> to_analyze;
 
-	for (ref<const Module> m : modules) {
-		for (ref<const FunDeclaration> f : m->funs_declaration_order) {
-			if (!f->signature.is_generic()) {
-				InsertResult<ConcreteFun> a = add_to_map_of_sets(res.fun_instantiations, f, ConcreteFun { f, {}, {}});
+	for (const Module& m : modules) {
+		for (const FunDeclaration& f : m.funs_declaration_order) {
+			if (!f.signature.is_generic()) {
+				auto a = add_to_map_of_sets(res.fun_instantiations, ref<const FunDeclaration>{&f}, ConcreteFun { &f, {}, {}});
 				if (a.was_added) to_analyze.push(a.value);
 			}
 		}
@@ -154,7 +176,7 @@ EveryConcreteFun get_every_concrete_fun(const Vec<ref<Module>>& modules, Arena& 
 		if (body.kind() != AnyBody::Kind::Expr) continue;
 		each_dependent_fun(body.expression(), [&](ref<const Called> called) {
 			ConcreteFun concrete_called = get_concrete_called(*fun, called, res, scratch_arena);
-			InsertResult<ConcreteFun> added = add_to_map_of_sets(res.fun_instantiations, concrete_called.fun_declaration, concrete_called);
+			auto added = add_to_map_of_sets(res.fun_instantiations, concrete_called.fun_declaration, concrete_called);
 			if (added.was_added) to_analyze.push(added.value);
 			res.resolved_calls.must_insert({ fun, called }, added.value );
 		});

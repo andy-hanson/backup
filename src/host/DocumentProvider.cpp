@@ -27,6 +27,6 @@ namespace {
 
 DocumentProvider::~DocumentProvider() {}
 
-std::unique_ptr<DocumentProvider> file_system_document_provider(StringSlice root) {
-	return std::make_unique<FileDocumentProvider>(root);
+unique_ptr<DocumentProvider> file_system_document_provider(StringSlice root) {
+	return unique_ptr<DocumentProvider> { new FileDocumentProvider(root) };
 }

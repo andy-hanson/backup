@@ -2,7 +2,6 @@
 
 #include "./Alloc.h"
 #include "./Option.h"
-#include "./Vec.h"
 
 template <typename T, typename Pred>
 Option<ref<const T>> find(const Arr<T>& collection, Pred pred) {
@@ -28,14 +27,6 @@ Option<ref<const T>> find_in_either(const Arr<T>& collection_a, const Arr<T>& co
 
 template <typename T, typename Pred>
 bool every(const Arr<T>& collection, Pred pred) {
-	for (const T& t : collection)
-		if (!pred(t))
-			return false;
-	return true;
-}
-
-template <typename T, typename Pred>
-bool every(const Vec<T>& collection, Pred pred) {
 	for (const T& t : collection)
 		if (!pred(t))
 			return false;
@@ -105,27 +96,26 @@ uint get_index(const Arr<T> collection, ref<const T> value) {
 	return try_get_index(collection, value).get();
 }
 
-template <typename T, typename /*T => bool*/ Pred>
-uint get_index_where(const Arr<T> collection, Pred pred) {
-	for (uint i = 0; i != collection.size(); ++i)
-		if (pred(collection[i]))
-			return i;
-	assert(false);
-};
-
 template <typename T>
 bool contains_ref(const Arr<T>& collection, ref<const T> value) {
 	return try_get_index(collection, value).has();
 }
 
-template <typename T>
-bool contains(const Vec<T>& collection, const T& value) {
+template <uint capacity, typename T>
+bool contains(const MaxSizeVector<capacity, T>& collection, const T& value) {
 	for (const T& t : collection)
 		if (t == value)
 			return true;
 	return false;
 }
 
+template <uint capacity, typename T, typename Pred>
+bool every(const MaxSizeVector<capacity, T>& collection, Pred pred) {
+	for (const T& t : collection)
+		if (!pred(t))
+			return false;
+	return true;
+}
 
 template <uint capacity, typename T, typename Pred>
 void filter_unordered(MaxSizeVector<capacity, T>& collection, Pred pred) {

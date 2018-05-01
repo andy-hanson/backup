@@ -1,9 +1,10 @@
 #pragma once
 
 #include "../../util/StringSlice.h"
+#include "../../util/Grow.h"
+#include "../../host/Path.h"
 #include "../model/effect.h"
 #include "./expr_ast.h"
-#include "../../host/Path.h"
 
 struct TypeParameterAst {
 	StringSlice name;
@@ -29,10 +30,10 @@ private:
 	Data _data;
 
 public:
-	StructBodyAst(StringSlice cpp_name) : _kind(Kind::CppName) {
+	inline explicit StructBodyAst(StringSlice cpp_name) : _kind(Kind::CppName) {
 		_data.cpp_name = cpp_name;
 	}
-	StructBodyAst(Arr<StructFieldAst> fields) : _kind(Kind::Fields) {
+	inline explicit StructBodyAst(Arr<StructFieldAst> fields) : _kind(Kind::Fields) {
 		_data.fields = fields;
 	}
 
@@ -76,6 +77,7 @@ struct StructDeclarationAst {
 
 struct SpecDeclarationAst {
 	Option<ArenaString> comment;
+	SourceRange range;
 	bool is_public;
 	StringSlice name;
 	Arr<TypeParameterAst> type_parameters;
@@ -97,84 +99,24 @@ private:
 	Data _data;
 
 public:
-	FunBodyAst(const FunBodyAst& other) {
-		*this = other;
-	}
-	void operator=(const FunBodyAst& other) {
-		_kind = other._kind;
-		switch (_kind) {
-			case Kind::CppSource:
-				_data.cpp_source = other._data.cpp_source;
-				break;
-			case Kind::Expression:
-				_data.expression = other._data.expression;
-				break;
-		}
-	}
-	FunBodyAst(ArenaString cpp_source) : _kind(Kind::CppSource) {
+	inline FunBodyAst(const FunBodyAst& other) { *this = other; }
+	void operator=(const FunBodyAst& other);
+	inline FunBodyAst(ArenaString cpp_source) : _kind(Kind::CppSource) {
 		_data.cpp_source = cpp_source;
 	}
-	FunBodyAst(ExprAst expression) : _kind(Kind::Expression) {
+	inline FunBodyAst(ExprAst expression) : _kind(Kind::Expression) {
 		_data.expression = expression;
 	}
 
-	Kind kind() const { return _kind; }
-	const ArenaString& cpp_source() const { assert(_kind == Kind::CppSource); return _data.cpp_source; }
-	const ExprAst& expression() const { assert(_kind == Kind::Expression); return _data.expression; }
+	inline Kind kind() const { return _kind; }
+	inline const ArenaString& cpp_source() const { assert(_kind == Kind::CppSource); return _data.cpp_source; }
+	inline const ExprAst& expression() const { assert(_kind == Kind::Expression); return _data.expression; }
 };
 
 struct FunDeclarationAst {
 	bool is_public;
 	FunSignatureAst signature;
 	FunBodyAst body;
-};
-
-class DeclarationAst {
-public:
-	enum class Kind { CppInclude, Struct, Spec, Fun };
-private:
-	union Data {
-		StringSlice cpp_include;
-		StructDeclarationAst strukt;
-		SpecDeclarationAst spec;
-		FunDeclarationAst fun;
-		Data() {}
-		~Data() {}
-	};
-	Kind _kind;
-	Data _data;
-
-public:
-	DeclarationAst(const DeclarationAst& other) {
-		*this = other;
-	}
-	void operator=(const DeclarationAst& other) {
-		_kind = other._kind;
-		switch (_kind) {
-			case Kind::CppInclude:
-				_data.cpp_include = other._data.cpp_include;
-				break;
-			case Kind::Struct:
-				_data.strukt = other._data.strukt;
-				break;
-			case Kind::Spec:
-				_data.spec = other._data.spec;
-				break;
-			case Kind::Fun:
-				_data.fun = other._data.fun;
-				break;
-		}
-	}
-
-	DeclarationAst(StringSlice cpp_include) : _kind(Kind::CppInclude) { _data.cpp_include = cpp_include; }
-	DeclarationAst(StructDeclarationAst strukt) : _kind(Kind::Struct) { _data.strukt = strukt; }
-	DeclarationAst(SpecDeclarationAst spec) : _kind(Kind::Spec) { _data.spec = spec; }
-	DeclarationAst(FunDeclarationAst fun) : _kind(Kind::Fun) { _data.fun = fun; }
-
-	Kind kind() const { return _kind; }
-	const StructDeclarationAst& strukt() const { assert(_kind == Kind::Struct); return _data.strukt; }
-	const SpecDeclarationAst& spec() const { assert(_kind == Kind::Spec); return _data.spec; }
-	const FunDeclarationAst& fun() const { assert(_kind == Kind::Fun); return _data.fun; }
 };
 
 struct ImportAst {
@@ -188,5 +130,10 @@ struct FileAst {
 	StringSlice source;
 	Option<ArenaString> comment;
 	Arr<ImportAst> imports;
-	Vec<DeclarationAst> declarations;//TODO: Arena structure for potentially-large arrays -- blocked list?
+	Grow<StringSlice> includes;
+	Grow<SpecDeclarationAst> specs;
+	Grow<StructDeclarationAst> structs;
+	Grow<FunDeclarationAst> funs;
+
+	FileAst(Path _path, StringSlice _source) : path(_path), source(_source) {}
 };

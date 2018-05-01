@@ -106,104 +106,70 @@ namespace {
 		});
 	}
 
-	void check_type_headers(
-		const Vec<DeclarationAst>& declarations, CheckCtx& ctx, ref<const Module> containing_module,
-		StructsDeclarationOrder& structs, SpecsDeclarationOrder& specs, FunsDeclarationOrder& funs,
-		StructsTable& structs_table, SpecsTable& specs_table, FunsTable& funs_table) {
+	void check_type_headers(const FileAst& file_ast, CheckCtx& ctx, ref<Module> module) {
 
-		for (const DeclarationAst& decl : declarations) {
-			switch (decl.kind()) {
-				case DeclarationAst::Kind::CppInclude:
-					throw "todo";
+		if (!file_ast.includes.empty()) throw "todo";
+		//for (const StringSlice& include __attribute__((unused)) : file_ast.includes) {
+		//	throw "todo";
+		//}
 
-				case DeclarationAst::Kind::Struct: {
-					const StructDeclarationAst& ast = decl.strukt();
-					ref<StructDeclaration> strukt = ctx.arena.put(StructDeclaration { containing_module, ast.range, ast.is_public, check_type_parameters(ast.type_parameters, ctx, {}), id(ctx, ast.name), ast.copy });
-					if (structs_table.try_insert(strukt->name, strukt))
-						structs.push(strukt);
-					else
-						ctx.diag(ast.name, Diag::Kind::DuplicateDeclaration);
-					break;
-				}
+		module->specs_declaration_order = ctx.arena.map<SpecDeclaration>()(file_ast.specs, [&](const SpecDeclarationAst& ast) {
+			return SpecDeclaration { module, ast.range, ctx.copy_str(ast.comment), ast.is_public, check_type_parameters(ast.type_parameters, ctx, {}), id(ctx, ast.name) };
+		});
+		//TODO: do this in the loop somehow -- but make sure you have the address to the spec *in the array*
+		for (const SpecDeclaration& spec : module->specs_declaration_order)
+			if (!module->specs_table.try_insert(spec.name, &spec))
+				ctx.diag(spec.name, Diag::Kind::DuplicateDeclaration);
 
-				case DeclarationAst::Kind::Spec: {
-					const SpecDeclarationAst& ast = decl.spec();
-					ref<SpecDeclaration> spec = ctx.arena.put(SpecDeclaration { containing_module, ctx.copy_str(ast.comment), ast.is_public, check_type_parameters(ast.type_parameters, ctx, {}), id(ctx, ast.name) });
-					if (specs_table.try_insert(spec->name, spec))
-						specs.push(spec);
-					else
-						ctx.diag(ast.name, Diag::Kind::DuplicateDeclaration);
-					break;
-				}
+		module->structs_declaration_order = ctx.arena.map<StructDeclaration>()(file_ast.structs, [&](const StructDeclarationAst& ast) {
+			return StructDeclaration { module, ast.range, ast.is_public, check_type_parameters(ast.type_parameters, ctx, {}), id(ctx, ast.name), ast.copy };
+		});
+		for (const StructDeclaration& strukt : module->structs_declaration_order)
+			if (!module->structs_table.try_insert(strukt.name, &strukt))
+				ctx.diag(strukt.range, Diag::Kind::DuplicateDeclaration);
 
-				case DeclarationAst::Kind::Fun:
-					const FunDeclarationAst& fun_ast = decl.fun();
-					ref<FunDeclaration> fun = ctx.arena.put(FunDeclaration { containing_module, fun_ast.is_public, {}, {} });
-					// Need this allocated now so we can use it in the table.
-					Identifier name = id(ctx, fun_ast.signature.name);
-					fun->signature.name = name;
-					// Unlike structs and specs, functions can overload.
-					funs.push(fun);
-					funs_table.add(name, fun);
-					break;
-			}
-		}
+		module->funs_declaration_order = ctx.arena.map<FunDeclaration>()(file_ast.funs, [&](const FunDeclarationAst& ast) {
+			return FunDeclaration { module, ast.is_public, { id(ctx, ast.signature.name) }, {} };
+		});
+		for (const FunDeclaration& fun : module->funs_declaration_order)
+			// Unlike structs and specs, functions can overload.
+			module->funs_table.add(fun.name(), &fun);
 	}
 
-	template <typename T>
-	T& get_and_increment(typename Vec<T>::iterator& it, const typename Vec<T>::iterator& end) {
-		assert(it != end);
-		T& res = *it;
-		++it;
-		return res;
+	template <typename T, typename U, typename /*const T&, U& => void*/ Cb>
+	void zipp(const Grow<T>& grow, Arr<U>& v, Cb cb) {
+		assert(grow.size() == v.size());
+		uint i = 0;
+		for (const T& t : grow) {
+			cb(t, v[i]);
+			++i;
+		}
 	}
 
 	// Now that we've allocated every struct and spec, fill in every struct and spec, and fill in the header of every function.
 	// Can't check function bodies at this point as it may call a future function -- we need to get the headers of every function first.
 	void check_fun_headers_and_type_bodies(
-		const Vec<DeclarationAst>& declarations, CheckCtx& al,
+		const FileAst& file_ast, CheckCtx& al,
 		StructsDeclarationOrder& structs, SpecsDeclarationOrder& specs, FunsDeclarationOrder& funs,
 		const StructsTable& structs_table, const SpecsTable& specs_table, FunsTable& funs_table
 	) {
-		StructsDeclarationOrder::iterator struct_iter = structs.begin();
-		StructsDeclarationOrder::iterator struct_end = structs.end();
-		SpecsDeclarationOrder::iterator specs_iter = specs.begin();
-		SpecsDeclarationOrder::iterator specs_end = specs.end();
-		FunsDeclarationOrder::iterator funs_iter = funs.begin();
-		FunsDeclarationOrder::iterator funs_end = funs.end();
+		zipp(file_ast.specs, specs, [&](const SpecDeclarationAst& spec_ast, SpecDeclaration& spec) {
+			spec.signatures = al.arena.map<FunSignature>()(spec_ast.signatures, [&](const FunSignatureAst& ast) {
+				return check_signature(ast, al, structs_table, specs_table, funs_table, spec.type_parameters, id(al, ast.name));
+			});
+		});
 
-		for (const DeclarationAst& decl : declarations) {
-			switch (decl.kind()) {
-				case DeclarationAst::Kind::CppInclude:
-					throw "todo";
+		zipp(file_ast.structs, structs, [&](const StructDeclarationAst& struct_ast, StructDeclaration& strukt) {
+			const StructBodyAst& body_ast = struct_ast.body;
+			strukt.body = body_ast.kind() == StructBodyAst::Kind::CppName
+						   ? StructBody{al.arena.str(body_ast.cpp_name())}
+						   : StructBody{check_struct_fields(body_ast.fields(), al, structs_table, strukt.type_parameters)};
+		});
 
-				case DeclarationAst::Kind::Struct: {
-					const StructBodyAst& body_ast = decl.strukt().body;
-					ref<StructDeclaration> strukt = get_and_increment<ref<StructDeclaration>>(struct_iter, struct_end);
-					strukt->body = body_ast.kind() == StructBodyAst::Kind::CppName
-					   ? StructBody{al.arena.str(body_ast.cpp_name())}
-					   : StructBody{check_struct_fields(body_ast.fields(), al, structs_table, strukt->type_parameters)};
-					break;
-				}
-
-				case DeclarationAst::Kind::Spec: {
-					ref<SpecDeclaration> spec = get_and_increment<ref<SpecDeclaration>>(specs_iter, specs_end);
-					spec->signatures = al.arena.map<FunSignature>()(decl.spec().signatures, [&](const FunSignatureAst& ast) {
-						return check_signature(ast, al, structs_table, specs_table, funs_table, spec->type_parameters, id(al, ast.name));
-					});
-					break;
-				}
-
-				case DeclarationAst::Kind::Fun: {
-					ref<FunDeclaration> fun = get_and_increment<ref<FunDeclaration>>(funs_iter, funs_end);
-					// Name was allocated in the previous step.
-					fun->signature = check_signature(decl.fun().signature, al, structs_table, specs_table, funs_table, {}, fun->signature.name);
-					break;
-				}
-			}
-		}
-
-		assert(struct_iter == struct_end && specs_iter == specs_end && funs_iter == funs_end);
+		zipp(file_ast.funs, funs, [&](const FunDeclarationAst& fun_ast, FunDeclaration& fun) {
+			// Name was allocated in the previous step.
+			fun.signature = check_signature(fun_ast.signature, al, structs_table, specs_table, funs_table, {}, fun.signature.name);
+		});
 	}
 
 	const StringSlice BOOL = StringSlice { "Bool" };
@@ -228,44 +194,29 @@ namespace {
 	}
 
 	// Now that we have the bodies of every type and the headers of every function, we can fill in every function.
-	void check_fun_bodies(const Vec<DeclarationAst>& declarations, CheckCtx& al, FunsDeclarationOrder& funs, const StructsTable& structs_table, const FunsTable& funs_table) {
-		FunsDeclarationOrder::iterator fun_iter = funs.begin();
-		FunsDeclarationOrder::iterator fun_end = funs.end();
+	void check_fun_bodies(const FileAst& file_ast, CheckCtx& al, FunsDeclarationOrder& funs, const StructsTable& structs_table, const FunsTable& funs_table) {
 		BuiltinTypes builtin_types { get_special_named_type(structs_table, al, BOOL), get_special_named_type(structs_table, al, STRING), get_special_named_type(structs_table, al, VOID) };
-
-		for (const DeclarationAst& decl : declarations) {
-			switch (decl.kind()) {
-				case DeclarationAst::Kind::CppInclude:
-				case DeclarationAst::Kind::Struct:
-				case DeclarationAst::Kind::Spec:
-					break;
-				case DeclarationAst::Kind::Fun: {
-					const FunDeclarationAst& fun_ast = decl.fun();
-					ref<FunDeclaration> fun = get_and_increment<ref<FunDeclaration>>(fun_iter, fun_end);
-					if (fun_ast.body.kind() == FunBodyAst::Kind::CppSource)
-						fun->body = AnyBody{ al.arena.str(fun_ast.body.cpp_source())};
-					else {
-						fun->body = AnyBody { al.arena.put(check_function_body(fun_ast.body.expression(), al, funs_table, structs_table, fun, builtin_types)) };
-						check_effects(fun);
-					}
-				}
+		zipp(file_ast.funs, funs, [&](const FunDeclarationAst& ast, FunDeclaration& fun) {
+			if (ast.body.kind() == FunBodyAst::Kind::CppSource)
+				fun.body = AnyBody{ al.arena.str(ast.body.cpp_source())};
+			else {
+				fun.body = AnyBody { al.arena.put(check_function_body(ast.body.expression(), al, funs_table, structs_table, fun, builtin_types)) };
+				check_effects(fun);
 			}
-		}
+		});
 	}
 }
 
-void check(ref<Module> m, const FileAst& ast, Arena& arena, Vec<Diagnostic>& diagnostics) {
+void check(ref<Module> m, const FileAst& ast, Arena& arena, Grow<Diagnostic>& diagnostics) {
 	CheckCtx ctx { arena, ast.source, m->path, m->imports, diagnostics };
-
-	m->comment = ctx.copy_str(ast.comment);
 
 	if (!ast.imports.empty()) throw "todo";
 
-	check_type_headers(ast.declarations, ctx, m, m->structs_declaration_order, m->specs_declaration_order, m->funs_declaration_order, m->structs_table, m->specs_table, m->funs_table);
+	check_type_headers(ast, ctx, m);
 
-	check_fun_headers_and_type_bodies(ast.declarations, ctx,
+	check_fun_headers_and_type_bodies(ast, ctx,
 		m->structs_declaration_order, m->specs_declaration_order, m->funs_declaration_order,
 		m->structs_table, m->specs_table, m->funs_table);
 
-	check_fun_bodies(ast.declarations, ctx, m->funs_declaration_order, m->structs_table, m->funs_table);
+	check_fun_bodies(ast, ctx, m->funs_declaration_order, m->structs_table, m->funs_table);
 }

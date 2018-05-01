@@ -4,7 +4,6 @@
 #include "../model/effect.h"
 #include "../../util/Alloc.h"
 #include "../../util/StringSlice.h"
-#include "../../util/Vec.h"
 
 struct ExpressionToken {
 	enum class Kind {
@@ -30,9 +29,7 @@ class Lexer {
 		return c;
 	}
 
-	ParseDiagnostic unexpected() {
-		return diag_at_char({ ParseDiag::Kind::UnexpectedCharacter, *ptr });
-	}
+	inline ParseDiagnostic unexpected();
 
 	void expect(const char* expected);
 	uint take_tabs();
@@ -48,11 +45,9 @@ public:
 		return source.range_from_inner_slice({ start, ptr });
 	}
 
-	Lexer(StringSlice _source) : source(_source), ptr(_source.begin()), _indent(0) {}
+	inline Lexer(StringSlice _source) : source(_source), ptr(_source.begin()), _indent(0) {}
 
-	ParseDiagnostic diag_at_char(ParseDiag diag) {
-		return { source.range_from_inner_slice({ ptr, ptr + 1 }), diag };
-	}
+	ParseDiagnostic diag_at_char(ParseDiag diag);
 
 	void take(char expected);
 	inline bool try_take(char expected) {
@@ -62,8 +57,6 @@ public:
 		} else
 			return false;
 	}
-
-	inline uint indent() { return _indent; } // used for debugging
 
 	Option<Effect> try_take_effect();
 
@@ -79,6 +72,10 @@ public:
 			return true;
 		}
 		return false;
+	}
+
+	inline void assert_no_indent() {
+		assert(_indent == 0);
 	}
 
 	inline void reduce_indent_by_2() {

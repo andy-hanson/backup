@@ -8,12 +8,12 @@
 #include "../clang.h"
 
 namespace {
-	std::string diagnostics_baseline(const Vec<Diagnostic>& diags, DocumentProvider& document_provider) {
+	std::string diagnostics_baseline(const Grow<Diagnostic>& diags, DocumentProvider& document_provider) {
 		Writer w;
 		Arena temp;
 		for (const Diagnostic& d : diags) {
 			StringSlice document = document_provider.try_get_document(d.path, temp, NZ_EXTENSION).get();
-			d.write(w, document, LineAndColumnGetter::for_text(document));
+			d.write(w, document, LineAndColumnGetter::for_text(document, temp));
 			w << Writer::nl;
 		}
 		return w.finish();
@@ -59,7 +59,7 @@ namespace {
 	}
 
 	void do_test(StringSlice root, TestMode mode) {
-		std::unique_ptr<DocumentProvider> document_provider = file_system_document_provider(root);
+		unique_ptr<DocumentProvider> document_provider = file_system_document_provider(root);
 
 		CompiledProgram out;
 		Path first_path = out.paths.from_part_slice("main");
@@ -87,10 +87,12 @@ namespace {
 	}
 }
 
-void test(const std::string& test_dir, const std::string& test_name, TestMode mode) {
+void test(const StringSlice& test_dir, const StringSlice& test_name, TestMode mode) {
+	Arena a;
+	Arena::StringBuilder s = a.string_builder(test_dir.size() + 1 + test_name.size());
+	s << test_dir << '/' << test_name;
 	try {
-		std::string t = test_dir + "/" + test_name;
-		do_test(StringSlice { t.begin().base(), t.end().base() }, mode);
+		do_test(s.finish(), mode);
 	} catch (TestFailure) {
 		std::cerr << "There was a test failure." << std::endl;
 	}

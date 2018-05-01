@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include "./int.h"
 
 // TODO: MOVE
@@ -18,12 +19,20 @@ class MaxSizeVector {
 
 public:
 	MaxSizeVector() : _size(0) {}
-	MaxSizeVector(const MaxSizeVector& other) = delete;
+	MaxSizeVector(const MaxSizeVector& other) { *this = other; }
 	~MaxSizeVector() {
 		for (uint i = 0; i < _size; ++i)
 			data.values[i].~T();
 	}
-	void operator=(const MaxSizeVector& other) = delete;
+	void operator=(const MaxSizeVector& other) {
+		_size = other._size;
+		for (uint i = 0; i < _size; ++i)
+			data.values[i] = other.data.values[i];
+	}
+
+	MaxSizeVector(T first) : MaxSizeVector() {
+		push(first);
+	}
 
 	size_t size() const { return _size; }
 
@@ -32,6 +41,15 @@ public:
 	void push(T value) {
 		assert(_size != capacity);
 		data.values[_size] = value;
+		++_size;
+	}
+
+	void insert(uint index, T value) {
+		assert(_size != capacity);
+		assert(index <= _size);
+		for (uint i = _size; i != index; --i)
+			data.values[i] = data.values[i - 1];
+		data.values[index] = value;
 		++_size;
 	}
 
@@ -59,12 +77,7 @@ public:
 		return res;
 	}
 
-	__attribute__((unused)) // https://youtrack.jetbrains.com/issue/CPP-2151
-	const T* begin() const {
-		return &data.values[0];
-	}
-	__attribute__((unused)) // https://youtrack.jetbrains.com/issue/CPP-2151
-	const T* end() const {
-		return begin() + _size;
-	}
+	using const_iterator = const T*;
+	const_iterator begin() const { return &data.values[0]; }
+	const_iterator end() const { return begin() + _size; }
 };

@@ -29,7 +29,6 @@ public:
 		return *_ptr;
 	}
 
-
 	inline bool operator==(ref<T> other) const {
 		return _ptr == other._ptr;
 	}
@@ -37,19 +36,10 @@ public:
 		return _ptr != other._ptr;
 	}
 
-	inline T& operator*() {
-		return *_ptr;
-	}
-	inline const T& operator*() const {
-		return *_ptr;
-	}
-
-	inline T* operator->() {
-		return _ptr;
-	}
-	inline const T* operator->() const {
-		return _ptr;
-	}
+	inline T& operator*() { return *_ptr; }
+	inline const T& operator*() const { return *_ptr; }
+	inline T* operator->() { return _ptr; }
+	inline const T* operator->() const { return _ptr; }
 
 	struct hash {
 		inline size_t operator()(ref<T> r) const {

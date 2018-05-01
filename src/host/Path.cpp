@@ -1,6 +1,7 @@
 #include "./Path.h"
 
 #include "../util/Map.h"
+#include "../util/Set.h"
 
 struct Path::Impl {
 	Option<Path> parent;
@@ -87,10 +88,8 @@ struct PathCache::Impl {
 	Arena arena;
 };
 
-PathCache::PathCache() : impl(std::make_unique<PathCache::Impl>()) {}
-PathCache::~PathCache() {
-	impl.std::unique_ptr<PathCache::Impl>::~unique_ptr();
-};
+PathCache::PathCache() : impl(unique_ptr<PathCache::Impl> { new PathCache::Impl() }) {}
+PathCache::~PathCache() {}; // impl implicitly deleted
 
 Path PathCache::from_path_string(const StringSlice& s) {
 	Option<Path> p;

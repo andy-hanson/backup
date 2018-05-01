@@ -3,6 +3,7 @@
 #include "../diag/diag.h"
 #include "../model/model.h"
 #include "../../util/Alloc.h"
+#include "../../util/Grow.h"
 #include "./type_utils.h"
 #include "./BuiltinTypes.h"
 
@@ -11,7 +12,7 @@ struct CheckCtx {
 	const StringSlice& source;
 	Path path; // Path of current module
 	const Arr<ref<const Module>>& imports;
-	Vec<Diagnostic>& diags;
+	Grow<Diagnostic>& diags;
 
 	inline SourceRange range(StringSlice slice) {
 		return source.range_from_inner_slice(slice);

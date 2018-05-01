@@ -3,9 +3,8 @@
 #include <cassert>
 
 #include "../../util/Alloc.h"
-#include "../../util/hash_util.h"
 #include "../../util/Map.h"
-#include "../../util/Vec.h"
+#include "../../util/MultiMap.h"
 
 #include "./effect.h"
 #include "../../host/Path.h"
@@ -40,23 +39,12 @@ private:
 
 public:
 	StructBody() : _kind(Kind::Nil) {}
-	StructBody(const StructBody& other) { *this = other; }
-	void operator=(const StructBody& other) {
-		_kind = other._kind;
-		switch (_kind) {
-			case Kind::Nil: break;
-			case Kind::Fields:
-				data.fields = other.data.fields;
-				break;
-			case Kind::CppName:
-				data.cpp_name = other.data.cpp_name;
-				break;
-		}
-	}
-	StructBody(Arr<StructField> fields) : _kind(Kind::Fields) {
+	inline StructBody(const StructBody& other) { *this = other; }
+	void operator=(const StructBody& other);
+	inline StructBody(Arr<StructField> fields) : _kind(Kind::Fields) {
 		data.fields = fields;
 	}
-	StructBody(ArenaString cpp_name) : _kind(Kind::CppName) {
+	inline StructBody(ArenaString cpp_name) : _kind(Kind::CppName) {
 		data.cpp_name = cpp_name;
 	}
 
@@ -86,7 +74,7 @@ struct StructDeclaration {
 	bool copy;
 	StructBody body;
 
-	StructDeclaration(ref<const Module> _containing_module, SourceRange _range, bool _is_public, Arr<TypeParameter> _type_parameters, Identifier _name, bool _copy)
+	inline StructDeclaration(ref<const Module> _containing_module, SourceRange _range, bool _is_public, Arr<TypeParameter> _type_parameters, Identifier _name, bool _copy)
 		: containing_module(_containing_module), range(_range), is_public(_is_public), type_parameters(_type_parameters), name(_name), copy(_copy) {}
 
 	inline size_t arity() const { return type_parameters.size(); }
@@ -98,7 +86,7 @@ struct InstStruct {
 	ref<const StructDeclaration> strukt;
 	Arr<Type> type_arguments;
 
-	InstStruct(ref<const StructDeclaration> _strukt, Arr<Type> _type_arguments) : strukt(_strukt), type_arguments(_type_arguments) {
+	inline InstStruct(ref<const StructDeclaration> _strukt, Arr<Type> _type_arguments) : strukt(_strukt), type_arguments(_type_arguments) {
 		assert(type_arguments.size() == strukt->type_parameters.size());
 	}
 	bool is_deeply_concrete() const;
@@ -122,32 +110,20 @@ private:
 	Kind _kind;
 	Data data;
 
-public:
-	Kind kind() const { return _kind; }
+	Type(bool dummy __attribute__((unused))) : _kind(Kind::Bogus) {}
 
-	Type() : _kind(Kind::Nil) {}
-	static Type bogus() {
-		Type t;
-		t._kind = Kind::Bogus;
-		return t;
-	}
-	Type(const Type& other) {
-		*this = other;
-	}
-	void operator=(const Type& other) {
-		_kind = other._kind;
-		switch (other._kind) {
-			case Kind::Nil:
-			case Kind::Bogus:
-				break;
-			case Kind::InstStruct: data.inst_struct = other.data.inst_struct; break;
-			case Kind::Param: data.param = other.data.param; break;
-		}
-	}
-	explicit Type(InstStruct i) : _kind(Kind::InstStruct) {
+public:
+	inline Kind kind() const { return _kind; }
+
+	inline Type() : _kind(Kind::Nil) {}
+	static Type bogus() { return Type { false }; }
+	inline Type(const Type& other) { *this = other;  }
+	void operator=(const Type& other);
+
+	inline explicit Type(InstStruct i) : _kind(Kind::InstStruct) {
 		data.inst_struct = i;
 	}
-	explicit Type(ref<const TypeParameter> param) : _kind(Kind::Param) {
+	inline explicit Type(ref<const TypeParameter> param) : _kind(Kind::Param) {
 		data.param = param;
 	}
 
@@ -204,6 +180,10 @@ struct FunSignature {
 	Arr<Parameter> parameters;
 	Arr<SpecUse> specs;
 
+	inline FunSignature(Option<ArenaString> _comment, Arr<TypeParameter> _type_parameters, Effect _effect, Type _return_type, Identifier _name, Arr<Parameter> _parameters, Arr<SpecUse> _specs)
+		: comment(_comment), type_parameters(_type_parameters), effect(_effect), return_type(_return_type), name(_name), parameters(_parameters), specs(_specs) {}
+	inline FunSignature(Identifier _name) : name(_name) {}
+
 	inline uint arity() const { return to_uint(parameters.size()); }
 	bool is_generic() const;
 };
@@ -227,34 +207,22 @@ private:
 	Data data;
 
 public:
-	AnyBody() : _kind(Kind::Nil) {}
-	AnyBody(const AnyBody& other) { *this = other; }
-	void operator=(const AnyBody& other) {
-		_kind = other._kind;
-		switch (other._kind) {
-			case Kind::Nil:
-				break;
-			case Kind::Expr:
-				data.expression = other.data.expression;
-				break;
-			case Kind::CppSource:
-				data.cpp_source = other.data.cpp_source;
-				break;
-		}
-	}
-	AnyBody(ref<Expression> expression) : _kind(Kind::Expr) { data.expression = expression; }
-	AnyBody(ArenaString cpp_source) : _kind(Kind::CppSource) { data.cpp_source = cpp_source; }
+	inline AnyBody() : _kind(Kind::Nil) {}
+	inline AnyBody(const AnyBody& other) { *this = other; }
+	void operator=(const AnyBody& other);
+	inline AnyBody(ref<Expression> expression) : _kind(Kind::Expr) { data.expression = expression; }
+	inline AnyBody(ArenaString cpp_source) : _kind(Kind::CppSource) { data.cpp_source = cpp_source; }
 
-	Kind kind() const { return _kind; }
-	Expression& expression() {
+	inline Kind kind() const { return _kind; }
+	inline Expression& expression() {
 		assert(_kind == Kind::Expr);
 		return data.expression;
 	}
-	const Expression& expression() const {
+	inline const Expression& expression() const {
 		assert(_kind == Kind::Expr);
 		return data.expression;
 	}
-	const ArenaString& cpp_source() const {
+	inline const ArenaString& cpp_source() const {
 		assert(_kind == Kind::CppSource);
 		return data.cpp_source;
 	}
@@ -266,19 +234,20 @@ struct FunDeclaration {
 	FunSignature signature;
 	AnyBody body;
 
-	Identifier name() const { return signature.name; }
+	inline Identifier name() const { return signature.name; }
 };
 
 struct SpecDeclaration {
 	ref<const Module> containing_module;
+	SourceRange range;
 	Option<ArenaString> comment;
 	bool is_public;
 	Arr<TypeParameter> type_parameters;
 	Identifier name;
 	Arr<FunSignature> signatures;
 
-	SpecDeclaration(ref<const Module> _containing_module, Option<ArenaString> _comment, bool _is_public, Arr<TypeParameter> _type_parameters, Identifier _name)
-		: containing_module(_containing_module), comment(_comment), is_public(_is_public), type_parameters(_type_parameters), name(_name) {}
+	inline SpecDeclaration(ref<const Module> _containing_module, SourceRange _range, Option<ArenaString> _comment, bool _is_public, Arr<TypeParameter> _type_parameters, Identifier _name)
+		: containing_module(_containing_module), range(_range), comment(_comment), is_public(_is_public), type_parameters(_type_parameters), name(_name) {}
 };
 
 // Within a single module, maps a struct name to declaration.
@@ -287,9 +256,9 @@ using StructsTable = Map<StringSlice, ref<const StructDeclaration>, StringSlice:
 using SpecsTable = Map<StringSlice, ref<const SpecDeclaration>, StringSlice::hash>;
 // Within a single module, maps a fun name to the list of functions *in that module* with that name.
 using FunsTable = MultiMap<StringSlice, ref<const FunDeclaration>, StringSlice::hash>;
-using StructsDeclarationOrder = Vec<ref<StructDeclaration>>;
-using SpecsDeclarationOrder = Vec<ref<SpecDeclaration>>;
-using FunsDeclarationOrder = Vec<ref<FunDeclaration>>;
+using StructsDeclarationOrder = Arr<StructDeclaration>;
+using SpecsDeclarationOrder = Arr<SpecDeclaration>;
+using FunsDeclarationOrder = Arr<FunDeclaration>;
 
 // Note: if there is a parse error, this will just be empty.
 struct Module {
@@ -303,7 +272,7 @@ struct Module {
 	SpecsTable specs_table;
 	FunsTable funs_table;
 
-	Module(Path _path, Arr<ref<const Module>> _imports) : path(_path), imports(_imports) {}
+	inline Module(Path _path, Arr<ref<const Module>> _imports, Option<ArenaString> _comment) : path(_path), imports(_imports), comment(_comment) {}
 
 	inline Identifier name() const { return path.base_name(); }
 };

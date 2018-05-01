@@ -24,6 +24,8 @@ add_executable(oohoo
 	src/compile/check/check_expr.h
 	src/compile/check/convert_type.cpp
 	src/compile/check/convert_type.h
+	src/compile/check/scope.cpp
+	src/compile/check/scope.h
 	src/compile/check/type_utils.cpp
 	src/compile/check/type_utils.h
 
@@ -43,8 +45,9 @@ add_executable(oohoo
 	src/emit/emit.h
 	src/emit/emit_body.cpp
 	src/emit/emit_body.h
+	src/emit/emit_comment.cpp
+	src/emit/emit_comment.h
 	src/emit/emit_type.h
-	src/emit/function_names.h
 	src/emit/mangle.cpp
 	src/emit/mangle.h
 	src/emit/Names.cpp
@@ -59,9 +62,12 @@ add_executable(oohoo
 	src/compile/model/model.h
 	src/compile/model/effect.cpp
 	src/compile/model/effect.h
+	src/compile/model/expr.cpp
 	src/compile/model/expr.h
 
+	src/compile/parse/ast.cpp
 	src/compile/parse/ast.h
+	src/compile/parse/expr_ast.cpp
 	src/compile/parse/expr_ast.h
 	src/compile/parse/Lexer.cpp
 	src/compile/parse/Lexer.h
@@ -91,11 +97,8 @@ add_executable(oohoo
 	src/util/int.h
 	src/util/rlimit.cpp
 	src/util/rlimit.h
-	src/util/Vec.h
 	src/util/Writer.cpp
 	src/util/Writer.h
 
 	src/clang.cpp
-	src/clang.h
-
-	src/compile/check/scope.h src/compile/check/scope.cpp src/emit/emit_comment.h src/emit/emit_comment.cpp src/compile/model/expr.cpp)
+	src/clang.h src/util/unique_ptr.h src/util/Alloc.cpp src/util/Slice.h src/util/Grow.h src/util/Set.h src/util/MultiMap.h)

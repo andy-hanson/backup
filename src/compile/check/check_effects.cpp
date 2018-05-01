@@ -1,11 +1,19 @@
 #include "./check_effects.h"
 
+#include "../model/expr.h"
+#include "../../util/MaxSizeVector.h"
 #include "../../util/collection_util.h"
 
 namespace {
-	void combine_parameters(Vec<ref<const Parameter>>& a, const Vec<ref<const Parameter>>& b) {
+	// Sorted by parameter index.
+	using Params = MaxSizeVector<4, ref<const Parameter>>;
+	// Unordered.
+	using Locals = MaxSizeVector<4, ref<const Let>>;
+
+	// NOTE: this is more complicated than combine_locals because we need to preserve the order.
+	void combine_parameters(Params& a, const Params& b) {
 		uint ai = 0; // Use a numeric index because it may resize and invalidate iterators.
-		Vec<ref<const Parameter>>::const_iterator bi = b.begin();
+		Params::const_iterator bi = b.begin();
 
 		// Walk along them together, inserting anything from 'b' not in 'a'.
 		while (true) {
@@ -15,9 +23,8 @@ namespace {
 					++bi;
 				}
 				break;
-			} else if (bi == b.end()) {
+			} else if (bi == b.end())
 				break;
-			}
 
 			const Parameter& pa = a[ai];
 			ref<const Parameter> pb = *bi;
@@ -36,12 +43,11 @@ namespace {
 		}
 	}
 
-	void combine_locals(Vec<ref<const Let>>& a, const Vec<ref<const Let>>& b) {
+	void combine_locals(Locals& a, const Locals& b) {
 		for (ref<const Let> rb : b)
 			if (!contains(a, rb))
 				a.push(rb);
 	}
-
 
 	// An effect may be:
 	// * Own
@@ -51,10 +57,8 @@ namespace {
 		// If this is New, then _params and _locals should be empty.
 		// Else, this is from a declared reduction on a return type.
 		Option<Effect> _declared;
-		/** Sorted by parameter index. */
-		Vec<ref<const Parameter>> _params;
-		// Unordered.
-		Vec<ref<const Let>> _locals; // only used if kind is Local
+		Params _params;
+		Locals _locals; // only used if kind is Local
 
 		ExprEffect(Effect e) : _declared(e) { assert(e == Effect::EOwn); }
 	public:
@@ -64,14 +68,14 @@ namespace {
 		ExprEffect(ref<const Let> local) : _locals(local) {}
 		void operator=(const ExprEffect& other) {
 			_declared = other._declared;
-			_params = other._params.clone();
-			_locals = other._locals.clone();
+			_params = other._params;
+			_locals = other._locals;
 		}
-		ExprEffect(const ExprEffect& other) : _declared(other._declared), _params(other._params.clone()), _locals(other._locals.clone()) {} //todo:perf
+		ExprEffect(const ExprEffect& other) : _declared(other._declared), _params(other._params), _locals(other._locals) {} //todo:perf
 
 		bool is_own() const { return _declared.has() && _declared.get() == Effect::EOwn; }
-		const Vec<ref<const Parameter>>& params() const { return _params; }
-		const Vec<ref<const Let>>& locals() const { return _locals; }
+		const Params& params() const { return _params; }
+		const Locals& locals() const { return _locals; }
 
 		bool is_sufficient(Effect expected) const {
 			switch (expected) {
@@ -197,16 +201,17 @@ namespace {
 		}
 	}
 
+	//TODO:SHARE
+
 	// assumes v is sorted.
-	void check_params_from(const Arr<Parameter>& params, const Vec<ref<const Parameter>>& v) {
-		Vec<ref<const Parameter>>::const_iterator it = v.begin();
-		for (const Parameter& p : params) {
-			if (&p == it->ptr()) {
-				if (!p.from) throw "todo"; //parameter should be marked 'from'
-			} else {
-				if (p.from) throw "todo3"; //unnecessary 'from'
-			}
-		}
+	void check_params_from(const Arr<Parameter>& params, const Params& actual_from_params) {
+		//TODO:PERF
+		for (const Parameter& p : actual_from_params)
+			if (!p.from)
+				throw "todo"; //parameter should be marked 'from'
+		for (const Parameter& p : params)
+			if (!contains(actual_from_params, ref<const Parameter>(&p)))
+				throw "todo"; // Unnecessary 'from'
 	}
 
 	void check_return_effect(const FunSignature& sig, const ExprEffect& actual_effect) {

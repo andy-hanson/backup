@@ -156,7 +156,7 @@ namespace {
 			return check_no_call_literal_inner(literal.literal, ctx, expected);
 		} else {
 			Arena::SmallArrayBuilder<ExprAst> b = ctx.scratch_arena.small_array_builder<ExprAst>();
-			b.add(ctx.check_ctx.arena.str(literal.literal)); // This is a NoCallLiteral
+			b.add(ExprAst { ctx.check_ctx.arena.str(literal.literal) }); // This is a NoCallLiteral
 			for (const ExprAst &arg : literal.arguments)
 				b.add(arg);
 			return check_call(LITERAL, b.finish(), literal.type_arguments, ctx, expected);

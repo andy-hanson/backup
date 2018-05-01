@@ -1,7 +1,7 @@
 #pragma once
 
-#include <memory> // unique_ptr
 #include "../util/Alloc.h"
+#include "../util/unique_ptr.h"
 #include "./Path.h"
 
 /*abstract*/ class DocumentProvider {
@@ -13,4 +13,4 @@ public:
 	virtual ~DocumentProvider();
 };
 
-std::unique_ptr<DocumentProvider> file_system_document_provider(StringSlice root);
+unique_ptr<DocumentProvider> file_system_document_provider(StringSlice root);

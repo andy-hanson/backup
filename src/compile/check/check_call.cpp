@@ -200,7 +200,7 @@ namespace {
 				if (field.has()) {
 					// TODO: also check plain.effect to narrow the field type
 					expected.check_no_infer(field.get()->type);
-					return Option { Expression { StructFieldAccess { ctx.check_ctx.arena.put_copy(argument_and_type.expression), field.get() } } };
+					return Option { Expression { StructFieldAccess { ctx.check_ctx.arena.put(argument_and_type.expression), field.get() } } };
 				}
 			}
 		}
