@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cassert>
-#include <type_traits> // remove_const
 #include "./ptr.h"
 
 template <typename T>
@@ -80,11 +79,12 @@ public:
 		assert(ref != nullptr);
 		return *ref;
 	}
-
-	Option<typename std::remove_const<T>::type> copy_inner() const {
-		if (has()) return Option<typename std::remove_const<T>::type> { *ref }; else return {};
-	}
 };
+
+template <typename T>
+Option<ref<T>> copy_inner(const Option<const ref<T>&> o) {
+	if (o.has()) return Option<ref<T>> { o.get() }; else return {};
+}
 
 template <typename Out>
 struct OptionMap {

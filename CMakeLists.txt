@@ -82,14 +82,14 @@ add_executable(oohoo
 	src/test/test.cpp
 	src/test/test.h
 
+	src/util/Alloc.cpp
 	src/util/Alloc.h
 	src/util/collection_util.h
-	src/util/Map.h
+	src/util/HeapAllocatedMap.h
 	src/util/MaxSizeVector.h
 	src/util/Option.h
 	src/util/ptr.h
-	src/util/StringSlice.cpp
-	src/util/StringSlice.h
+	src/util/Grow.h
 	src/util/hash_util.h
 	src/util/io.cpp
 	src/util/io.h
@@ -97,8 +97,12 @@ add_executable(oohoo
 	src/util/int.h
 	src/util/rlimit.cpp
 	src/util/rlimit.h
+	src/util/HeapAllocatedSet.h
+	src/util/Slice.h
+	src/util/StringSlice.cpp
+	src/util/StringSlice.h
 	src/util/Writer.cpp
 	src/util/Writer.h
 
 	src/clang.cpp
-	src/clang.h src/util/unique_ptr.h src/util/Alloc.cpp src/util/Slice.h src/util/Grow.h src/util/Set.h src/util/MultiMap.h)
+	src/clang.h src/util/unique_ptr.h src/util/Map.h src/util/MultiMap.h src/util/MaxSizeMap.h src/util/KeyValuePair.h)

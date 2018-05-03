@@ -38,6 +38,7 @@ public:
 		}
 	};
 };
+inline bool operator!=(const Path& a, const Path& b) { return !(a == b); }
 
 // Path is like 'a/b/c'. RelPath is like '../../a/b/c'.
 struct RelPath {

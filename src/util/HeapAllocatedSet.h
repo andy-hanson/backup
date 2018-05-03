@@ -5,7 +5,7 @@
 #include "./ptr.h"
 
 template <typename T, typename Hash>
-class Set {
+class HeapAllocatedSet {
 	using Inner = typename std::unordered_set<T, Hash>;
 	Inner inner;
 

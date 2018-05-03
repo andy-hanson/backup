@@ -1,7 +1,7 @@
 #include "./compile.h"
 
 #include "../util/Grow.h"
-#include "../util/Set.h"
+#include "../util/MaxSizeMap.h"
 #include "../host/DocumentProvider.h"
 #include "./check/check.h"
 #include "./parse/parser.h"
@@ -15,7 +15,7 @@ namespace {
 	void parse_everything(Grow<FileAst>& out, Grow<Diagnostic>& diagnostics, Path first_path, Arena& ast_arena, DocumentProvider& document_provider, PathCache& path_cache) {
 		MaxSizeVector<16, Path> to_parse;
 		to_parse.push(first_path);
-		Set<Path, Path::hash> enqued_set; // Set of paths that are either already parsed, or in to_parse.
+		MaxSizeSet<16, Path, Path::hash> enqued_set; // Set of paths that are either already parsed, or in to_parse.
 		enqued_set.must_insert(first_path);
 
 		do {
@@ -42,8 +42,10 @@ namespace {
 		} while (!to_parse.empty());
 	}
 
+	using Compiled = MaxSizeMap<16, Path, ref<const Module>, Path::hash>;
+
 	Option<Arr<ref<const Module>>> get_imports(
-		const Arr<ImportAst>& imports, Path cur_path, const Map<Path, ref<const Module>, Path::hash>& compiled, PathCache& paths, Arena& arena, Grow<Diagnostic>& diagnostics
+		const Arr<ImportAst>& imports, Path cur_path, const Compiled& compiled, PathCache& paths, Arena& arena, Grow<Diagnostic>& diagnostics
 	) {
 		return arena.map_or_fail<ref<const Module>>()(imports, [&](const ImportAst& ast) {
 			Path p = resolve_import(cur_path, ast, paths).get(); // Should succeed because we already did this in parse_everything
@@ -67,8 +69,7 @@ void compile(CompiledProgram& out, DocumentProvider& document_provider, Path fir
 	if (!out.diagnostics.empty()) return;
 
 	// Go in reverse order -- if we ever see some dependency that's not compiled yet, it indicates a circular dependency.
-	Map<Path, ref<const Module>, Path::hash> compiled;
-
+	Compiled compiled;
 	Option<Arr<Module>> modules = out.arena.map_or_fail_reverse<Module>()(parsed, [&](const FileAst& ast, ref<Module> m) {
 		Option<Arr<ref<const Module>>> imports = get_imports(ast.imports, ast.path, compiled, out.paths, out.arena, out.diagnostics);
 		new (m.ptr()) Module { ast.path, imports.get(), ast.comment.has() ? Option { out.arena.str(ast.comment.get()) } : Option<ArenaString> {} };

@@ -27,7 +27,7 @@ namespace {
 	}
 
 	template<typename K, typename V, typename KH, typename VH>
-	typename Set<V, VH>::InsertResult add_to_map_of_sets(Map<K, Set<V, VH>, KH>& map, K key, V value) {
+	typename HeapAllocatedSet<V, VH>::InsertResult add_to_map_of_sets(HeapAllocatedMap<K, HeapAllocatedSet<V, VH>, KH>& map, K key, V value) {
 		return map.get_or_create(key).insert(value);
 	}
 

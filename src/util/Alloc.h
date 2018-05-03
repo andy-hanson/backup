@@ -76,6 +76,7 @@ public:
 	public:
 		template <typename Cb>
 		Arr<T> operator()(size_t len, Cb cb) {
+			if (len == 0) return {};
 			Arr<T> arr = arena.uninitialized_array<T>(len);
 			for (uint i = 0; i < len; ++i)
 				arr[i] = cb(i);
@@ -87,16 +88,18 @@ public:
 	ArrayFiller<T> fill_array() { return {*this}; }
 
 	template <typename Out>
-	struct Map {
+	struct Mapper {
 		Arena& arena;
 
 		template <typename In, typename /*const In& => Out*/ Cb>
 		Arr<Out> operator()(const Arr<In>& in, Cb cb) {
+			if (in.empty()) return {};
 			return arena.fill_array<Out>()(in.size(), [&](uint i) { return cb(in[i]); });
 		}
 
 		template <typename In, typename /*const In& => Out*/ Cb>
 		Arr<Out> operator()(const Grow<In>& in, Cb cb) {
+			if (in.empty()) return {};
 			uint size = in.size();
 			Arr<Out> arr = arena.uninitialized_array<Out>(size);
 			uint i = 0;
@@ -109,7 +112,7 @@ public:
 		}
 	};
 	template <typename Out>
-	Map<Out> map() {
+	Mapper<Out> map() {
 		return {*this};
 	}
 
@@ -118,6 +121,7 @@ public:
 		Arena& arena;
 		template <typename In, typename /*const In&, const Arr<Out>&, uint => Out*/ Cb>
 		Arr<Out> operator()(const Arr<In>& inputs, Cb cb) {
+			if (inputs.empty()) return {};
 			Arr<Out> out = arena.uninitialized_array<Out>(inputs.size());
 			out._size = 0;
 			uint i = 0;

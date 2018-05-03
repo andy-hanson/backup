@@ -2,14 +2,15 @@
 
 #include "../compile/model/model.h"
 #include "../util/Alloc.h"
+#include "../util/MaxSizeMap.h"
 #include "../util/StringSlice.h"
 
 #include "./concrete_fun.h"
 
 struct Names {
-	Map<ref<const StructDeclaration>, ArenaString, ref<const StructDeclaration>::hash> struct_names;
-	Map<ref<const StructField>, ArenaString, ref<const StructField>::hash> field_names;
-	Map<ref<const ConcreteFun>, ArenaString, ref<const ConcreteFun>::hash> fun_names;
+	MaxSizeMap<64, ref<const StructDeclaration>, ArenaString, ref<const StructDeclaration>::hash> struct_names;
+	MaxSizeMap<64, ref<const StructField>, ArenaString, ref<const StructField>::hash> field_names;
+	MaxSizeMap<64, ref<const ConcreteFun>, ArenaString, ref<const ConcreteFun>::hash> fun_names;
 
 	inline StringSlice get_name(ref<const StructDeclaration> s) const {
 		return struct_names.must_get(s);

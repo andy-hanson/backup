@@ -1,6 +1,7 @@
 #include "./check_effects.h"
 
 #include "../model/expr.h"
+#include "../../util/HeapAllocatedMap.h"
 #include "../../util/MaxSizeVector.h"
 #include "../../util/collection_util.h"
 
@@ -115,7 +116,7 @@ namespace {
 	};
 
 	struct Ctx {
-		Map<ref<const Let>, ExprEffect, ref<const Let>::hash> local_effects;
+		HeapAllocatedMap<ref<const Let>, ExprEffect, ref<const Let>::hash> local_effects;
 	};
 
 	ExprEffect infer_effect(Expression& e, Ctx& ctx);

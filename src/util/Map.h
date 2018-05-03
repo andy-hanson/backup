@@ -1,80 +1,65 @@
 #pragma once
 
-#include <unordered_map>
+#include "./Alloc.h"
 #include "./Option.h"
+#include "./KeyValuePair.h"
 
 template <typename K, typename V, typename Hash>
 class Map {
-	using Inner = typename std::unordered_map<K, V, Hash>;
-	Inner inner;
+	template <typename, typename, typename> friend struct BuildMap;
+	Arr<Option<KeyValuePair<K, V>>> arr;
+	Map(Arr<Option<KeyValuePair<K, V>>> _arr) : arr(_arr) {}
 
 public:
-	using const_iterator = typename Inner::const_iterator;
+	Map() : arr() {}
 
-	void must_insert(K key, V value) {
-		bool inserted = try_insert(key, value);
-		assert(inserted);
-	}
+	Option<const V&> get(const K& key) const {
+		assert(!arr.empty());
 
-	bool try_insert(K key, V value) {
-		return inner.insert({ key, value }).second;
-	}
-
-	inline V& get_or_create(K key) {
-		return inner[key];
-	}
-
-	bool has(K key) const {
-		return bool(inner.count(key));
-	}
-
-	Option<const V&> get(K key) const {
-		return has(key) ? Option<const V&>{inner.at(key)} : Option<const V&> {};
-	}
-
-	inline void clear() {
-		inner.clear();
-	}
-
-	inline const V& must_get(K key) const {
-		return inner.at(key);
-	}
-
-	struct Values {
-		struct iterator {
-			const_iterator inner;
-			inline void operator++() { ++inner; }
-			inline const V& operator*() { return inner->second; }
-			inline bool operator==(const iterator& other) const { return inner == other.inner; }
-			inline bool operator!=(const iterator& other) const { return inner != other.inner; }
-		};
-
-		const Map<K, V, Hash>& map;
-		inline iterator begin() const { return iterator { map.inner.begin() }; }
-		inline iterator end() const { return iterator { map.inner.end() }; }
-	};
-	inline Values values() const { return { *this }; }
-
-	struct Keys {
-		struct iterator {
-			const_iterator inner;
-			inline void operator++() { ++inner; }
-			inline const K& operator*() { return inner->first; }
-			inline bool operator==(const iterator& other) const { return inner == other.inner; }
-			inline bool operator!=(const iterator& other) const { return inner != other.inner; }
-		};
-
-		const Map<K, V, Hash>& map;
-		inline iterator begin() const { return iterator { map.inner.begin() }; }
-		inline iterator end() const { return iterator { map.inner.end() }; }
-	};
-	inline Keys keys() const { return { *this }; }
-
-	const_iterator begin() const {
-		return inner.begin();
-	}
-
-	const_iterator end() const {
-		return inner.end();
+		size_t hash = Hash{}(key);
+		const Option<KeyValuePair<K, V>>& op_entry = arr[hash % arr.size()];
+		if (op_entry.has()) {
+			const KeyValuePair<K, V>& entry = op_entry.get();
+			if (entry.key == key) return Option<const V&> { entry.value };
+		}
+		return Option<const V&> {};
 	}
 };
+
+template <typename K, typename V, typename Hash>
+struct BuildMap {
+	Arena& arena;
+
+	template <typename /*const V& => K*/ CbGetKey, typename /*(const V&, const V&) => void*/ CbConflict>
+	Map<K, ref<const V>, Hash> operator()(const Arr<V>& values, CbGetKey get_key, CbConflict on_conflict) {
+		if (values.empty())
+			return {};
+
+		Arr<Option<KeyValuePair<K, ref<const V>>>> arr = arena.fill_array<Option<KeyValuePair<K, ref<const V>>>>()(
+			values.size() * 2, [](uint i __attribute__((unused))) { return Option<KeyValuePair<K, ref<const V>>> {}; });
+
+		for (const V& value : values) {
+			const K& key = get_key(value);
+			size_t hash = Hash{}(key);
+			Option<KeyValuePair<K, ref<const V>>>& op_entry = arr[hash % arr.size()];
+			if (op_entry.has()) {
+				const KeyValuePair<K, ref<const V>>& entry = op_entry.get();
+				if (entry.key == key) {
+					// True conflict
+					on_conflict(entry.value, value);
+				} else {
+					throw "todo"; // false conflict, must re-hash
+				}
+			} else {
+				op_entry = KeyValuePair<K, ref<const V>> { key, ref<const V>(&value) };
+			}
+		}
+
+		return { arr };
+	}
+};
+
+template <typename K, typename V, typename Hash>
+BuildMap<K, V, Hash> build_map(Arena& arena) {
+	return { arena };
+}

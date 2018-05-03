@@ -69,7 +69,7 @@ namespace {
 	}
 
 	void emit_structs(Writer& out, const StructsDeclarationOrder& structs, const Names& names) {
-		Map<ref<const StructDeclaration>, EmitStructState, ref<const StructDeclaration>::hash> map;
+		HeapAllocatedMap<ref<const StructDeclaration>, EmitStructState, ref<const StructDeclaration>::hash> map;
 		MaxSizeVector<16, ref<const StructDeclaration>> stack;
 
 		for (const StructDeclaration& struct_in_order : structs) {
@@ -112,7 +112,7 @@ namespace {
 	template <typename /*ref<constConcreteFun>> => void>*/ Cb>
 	void each_concrete_fun(const Module& module, const FunInstantiations& fun_instantiations, Cb cb) {
 		for (const FunDeclaration& f : module.funs_declaration_order) {
-			Option<const Set<ConcreteFun, ConcreteFun::hash>&> instantiations = fun_instantiations.get(&f);
+			Option<const HeapAllocatedSet<ConcreteFun, ConcreteFun::hash>&> instantiations = fun_instantiations.get(&f);
 			if (instantiations.has())
 				for (const ConcreteFun& cf : instantiations.get())
 					cb(&cf);

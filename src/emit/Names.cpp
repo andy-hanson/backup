@@ -1,4 +1,4 @@
-#include "Names.h"
+#include "./Names.h"
 
 #include "./mangle.h"
 
@@ -37,7 +37,7 @@ namespace {
 
 	class FunIds {
 		// Filled lazily, because we won't need ids for most funs.
-		Map<ref<const ConcreteFun>, uint, ref<const ConcreteFun>::hash> ids;
+		HeapAllocatedMap<ref<const ConcreteFun>, uint, ref<const ConcreteFun>::hash> ids;
 		uint next_id = 1;
 
 	public:
@@ -80,8 +80,8 @@ namespace {
 	}
 
 	class DuplicateNamesGetter {
-		Set<Identifier, Identifier::hash> seen;
-		Set<Identifier, Identifier::hash> duplicates;
+		MaxSizeSet<64, Identifier, Identifier::hash> seen;
+		MaxSizeSet<64, Identifier, Identifier::hash> duplicates;
 
 	public:
 		void add(const Identifier& i) {
@@ -96,7 +96,7 @@ namespace {
 }
 
 Names get_names(const Arr<Module>& modules, const FunInstantiations& fun_instantiations, Arena& arena) {
-	Set<Identifier, Identifier::hash> all_module_names;
+	MaxSizeSet<64, Identifier, Identifier::hash> all_module_names;
 	DuplicateNamesGetter all_struct_names;
 	DuplicateNamesGetter all_fun_names;
 
@@ -120,7 +120,7 @@ Names get_names(const Arr<Module>& modules, const FunInstantiations& fun_instant
 		}
 
 		for (const FunDeclaration& f : module.funs_declaration_order) {
-			const Set<ConcreteFun, ConcreteFun::hash>& instances = fun_instantiations.must_get(&f);
+			const HeapAllocatedSet<ConcreteFun, ConcreteFun::hash>& instances = fun_instantiations.must_get(&f);
 			bool is_overloaded = all_fun_names.has_duplicate(f.name());
 			bool is_instantiated = instances.size() != 1;
 			for (const ConcreteFun& cf : instances)

@@ -69,17 +69,16 @@ public:
 		return { to_ushort(to_unsigned(inner._begin - _begin)), to_ushort(to_unsigned(inner._end - _begin)) };
 	}
 
-	friend bool operator==(StringSlice a, StringSlice b);
+	friend bool operator==(const StringSlice& a, const StringSlice& b);
 
 	struct hash {
 		size_t operator()(StringSlice slice) const {
-			// Just use the first 8 characters as the hash.
-			static_assert(sizeof(size_t) == 8, "!");
-			auto at = [slice](size_t i) {
-				return i >= slice.size() ? 0 : uint64_t(slice[i]) << (8 * i);
-			};
-			return at(0) | at(1) | at(2) | at(3) | at(4) | at(5) | at(6) | at(7);
+			size_t h = 0;
+			for (char c : slice)
+				h = 31 * h + size_t(c + 128);
+			return h;
 		}
 	};
 };
 
+inline bool operator!=(const StringSlice& a, const StringSlice& b) { return !(a == b); }

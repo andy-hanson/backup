@@ -1,7 +1,6 @@
 #include "./Path.h"
 
-#include "../util/Map.h"
-#include "../util/Set.h"
+#include "../util/MaxSizeMap.h"
 
 struct Path::Impl {
 	Option<Path> parent;
@@ -47,14 +46,16 @@ namespace {
 		}
 	}
 
-	ArenaString get_name(Map<StringSlice, ArenaString, StringSlice::hash>& m, Arena& arena, const StringSlice& name) {
-		Option<const ArenaString&> already = m.get(name);
+	using Slices = MaxSizeMap<64, StringSlice, ArenaString, StringSlice::hash>;
+
+	ArenaString get_name(Slices& slices, Arena& arena, const StringSlice& name) {
+		Option<const ArenaString&> already = slices.get(name);
 		if (already.has()) {
 			return already.get();
 		} else {
 			ArenaString a = arena.str(name);
-			m.must_insert(a, a);
-			return m.get(name).get(); //TODO:PERF
+			slices.must_insert(a, a);
+			return slices.get(name).get(); //TODO:PERF
 		}
 	}
 }
@@ -83,8 +84,8 @@ ArenaString Path::to_cstring(const StringSlice& root, Arena& out, const StringSl
 }
 
 struct PathCache::Impl {
-	Set<Path::Impl, Path::Impl::hash> paths;
-	Map<StringSlice, ArenaString, StringSlice::hash> slices;
+	MaxSizeSet<64, Path::Impl, Path::Impl::hash> paths;
+	Slices slices;
 	Arena arena;
 };
 

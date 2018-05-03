@@ -5,7 +5,8 @@
 
 #include "../util/collection_util.h"
 #include "../util/ptr.h"
-#include "../util/Set.h"
+#include "../util/HeapAllocatedMap.h"
+#include "../util/HeapAllocatedSet.h"
 
 struct ConcreteFun {
 	const ref<const FunDeclaration> fun_declaration;
@@ -34,8 +35,8 @@ struct ConcreteFunAndCalled {
 };
 bool operator==(const ConcreteFunAndCalled& a, const ConcreteFunAndCalled& b);
 
-using FunInstantiations = Map<ref<const FunDeclaration>, Set<ConcreteFun, ConcreteFun::hash>, ref<const FunDeclaration>::hash>;
-using ResolvedCalls = Map<ConcreteFunAndCalled, ref<const ConcreteFun>, ConcreteFunAndCalled::hash>;
+using FunInstantiations = HeapAllocatedMap<ref<const FunDeclaration>, HeapAllocatedSet<ConcreteFun, ConcreteFun::hash>, ref<const FunDeclaration>::hash>;
+using ResolvedCalls = HeapAllocatedMap<ConcreteFunAndCalled, ref<const ConcreteFun>, ConcreteFunAndCalled::hash>;
 struct EveryConcreteFun {
 	FunInstantiations fun_instantiations;
 	ResolvedCalls resolved_calls;

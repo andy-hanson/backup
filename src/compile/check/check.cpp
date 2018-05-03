@@ -116,24 +116,29 @@ namespace {
 		module->specs_declaration_order = ctx.arena.map<SpecDeclaration>()(file_ast.specs, [&](const SpecDeclarationAst& ast) {
 			return SpecDeclaration { module, ast.range, ctx.copy_str(ast.comment), ast.is_public, check_type_parameters(ast.type_parameters, ctx, {}), id(ctx, ast.name) };
 		});
-		//TODO: do this in the loop somehow -- but make sure you have the address to the spec *in the array*
-		for (const SpecDeclaration& spec : module->specs_declaration_order)
-			if (!module->specs_table.try_insert(spec.name, &spec))
-				ctx.diag(spec.name, Diag::Kind::DuplicateDeclaration);
+		module->specs_table = build_map<StringSlice, SpecDeclaration, StringSlice::hash>(ctx.arena)(
+			module->specs_declaration_order,
+			[](const SpecDeclaration& spec) { return spec.name; },
+			[&](const SpecDeclaration& a __attribute__((unused)), const SpecDeclaration& b) {
+				ctx.diag(b.name, Diag::Kind::DuplicateDeclaration);
+			});
 
 		module->structs_declaration_order = ctx.arena.map<StructDeclaration>()(file_ast.structs, [&](const StructDeclarationAst& ast) {
 			return StructDeclaration { module, ast.range, ast.is_public, check_type_parameters(ast.type_parameters, ctx, {}), id(ctx, ast.name), ast.copy };
 		});
-		for (const StructDeclaration& strukt : module->structs_declaration_order)
-			if (!module->structs_table.try_insert(strukt.name, &strukt))
-				ctx.diag(strukt.range, Diag::Kind::DuplicateDeclaration);
+		module->structs_table = build_map<StringSlice, StructDeclaration, StringSlice::hash>(ctx.arena)(
+			module->structs_declaration_order,
+			[](const StructDeclaration& spec) { return spec.name; },
+			[&](const StructDeclaration& a __attribute__((unused)), const StructDeclaration& b) {
+				ctx.diag(b.range, Diag::Kind::DuplicateDeclaration);
+			});
 
 		module->funs_declaration_order = ctx.arena.map<FunDeclaration>()(file_ast.funs, [&](const FunDeclarationAst& ast) {
 			return FunDeclaration { module, ast.is_public, { id(ctx, ast.signature.name) }, {} };
 		});
-		for (const FunDeclaration& fun : module->funs_declaration_order)
-			// Unlike structs and specs, functions can overload.
-			module->funs_table.add(fun.name(), &fun);
+		module->funs_table = build_multi_map<StringSlice, FunDeclaration, StringSlice::hash>(ctx.arena)(
+			module->funs_declaration_order,
+			[](const FunDeclaration& f) { return f.name(); });
 	}
 
 	template <typename T, typename U, typename /*const T&, U& => void*/ Cb>
