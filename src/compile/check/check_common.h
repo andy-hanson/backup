@@ -18,7 +18,7 @@ struct CheckCtx {
 		return source.range_from_inner_slice(slice);
 	}
 	inline void diag(SourceRange range, Diag diag) {
-		diags.push({ path, range, diag });
+		diags.emplace(path, range, diag);
 	}
 	inline void diag(StringSlice slice, Diag d) {
 		diag(range(slice), d);

@@ -1,13 +1,13 @@
 #pragma once
 
-#include <cassert>
+#include "./assert.h"
 #include "./int.h"
 #include "./unique_ptr.h"
 #include "./MaxSizeVector.h"
 
 template <typename T>
 class Grow {
-	static const uint elements_per_node = 8;
+	static const uint elements_per_node = 64;
 	struct Node {
 		union Storage {
 			bool _dummy;
@@ -19,11 +19,23 @@ class Grow {
 		Node* next;
 
 		Node() : next(nullptr) {}
-
-		void reverse() {
-			throw "todo";
-		}
 	};
+
+	T* get_next_ptr() {
+		if (empty()) {
+			head = new Node();
+			tail = head;
+		} else if (next_index_in_node == elements_per_node) {
+			Node* new_node = new Node();
+			tail->next = new_node;
+			tail = new_node;
+			next_index_in_node = 0;
+		}
+
+		T* ptr = &tail->storage.values[next_index_in_node];
+		++next_index_in_node;
+		return ptr;
+	}
 
 	Node* head;
 	Node* tail;
@@ -33,6 +45,9 @@ public:
 	Grow() : head(nullptr), tail(nullptr), next_index_in_node(0) {}
 	Grow(T first) : Grow() {
 		push(first);
+	}
+	Grow(const Grow& other __attribute__((unused))) {
+		throw "should be optimized away";
 	}
 	~Grow() {
 		Node* n = head;
@@ -63,24 +78,20 @@ public:
 
 	template <typename... Arguments>
 	T& emplace(Arguments&& ...arguments) {
-		if (empty()) {
-			head = new Node();
-			tail = head;
-		} else if (next_index_in_node == elements_per_node) {
-			Node* new_node = new Node();
-			tail->next = new_node;
-			tail = new_node;
-			next_index_in_node = 0;
-		}
-
-		T* ptr = &tail->storage.values[next_index_in_node];
+		T* ptr = get_next_ptr();
 		new (ptr) T(arguments...);
-		++next_index_in_node;
 		return *ptr;
+	}
+
+	void push_copy(T value) {
+		T* ptr = get_next_ptr();
+		*ptr = value;
 	}
 
 	void push(T value) {
 		emplace(value);
+		//T* ptr = get_next_ptr();
+		//*ptr = value;
 	}
 
 	class const_iterator {
@@ -116,6 +127,33 @@ public:
 	}
 	const_iterator end() const {
 		return next_index_in_node == elements_per_node ? const_iterator { nullptr, 0 } : const_iterator { tail, next_index_in_node };
+	}
+
+	friend bool operator==(const Grow<T>& a, const Grow<T>& b) {
+		if (a.size() != b.size()) return false;
+
+		Node* aNode = a.head;
+		Node* bNode = b.head;
+
+		while (aNode->next != nullptr) {
+			assert(bNode->next != nullptr);
+
+			for (uint i = 0; i != elements_per_node; ++i)
+				if (aNode->storage.values[i] != bNode->storage.values[i]) return false;
+
+			aNode = aNode->next;
+			bNode = bNode->next;
+		}
+
+		assert(aNode->next == nullptr && bNode->next == nullptr);
+		assert(a.next_index_in_node == b.next_index_in_node);
+		for (uint i = 0; i != a.next_index_in_node; ++i)
+			if (aNode->storage.values[i] != bNode->storage.values[i]) return false;
+
+		return true;
+	}
+	friend bool operator!=(const Grow<T>& a, const Grow<T>& b) {
+		return !(a == b);
 	}
 
 	template <typename Cb>

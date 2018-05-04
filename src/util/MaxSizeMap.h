@@ -80,7 +80,7 @@ public:
 		if (already.has())
 			return ref<const T> { &already.get() };
 		else
-			return must_insert(std::forward<T>(value));
+			return must_insert(value);
 	}
 
 	InsertResult insert(const T& value) {

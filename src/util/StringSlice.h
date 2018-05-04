@@ -1,7 +1,6 @@
 #pragma once
 
-#include <cassert>
-
+#include "./assert.h"
 #include "./int.h"
 
 struct SourceRange {
@@ -38,8 +37,9 @@ public:
 		return { slice.begin() + range.begin, slice.begin() + range.end };
 	}
 
-	inline const char* begin() const { return _begin; }
-	inline const char* end() const { return _end; }
+	using const_iterator = const char*;
+	inline const_iterator begin() const { return _begin; }
+	inline const_iterator end() const { return _end; }
 
 	inline const char* cstr() const {
 		assert(!empty() && *(_end - 1) == '\0');
@@ -82,3 +82,42 @@ public:
 };
 
 inline bool operator!=(const StringSlice& a, const StringSlice& b) { return !(a == b); }
+
+
+
+
+//TODO:MOVE
+struct MutableStringSlice {
+	char* begin;
+	char* end;
+
+	size_t size() const { return to_unsigned(end - begin); }
+
+	MutableStringSlice& operator<<(char c) {
+		assert(size() > 0);
+		*begin = c;
+		++begin;
+		return *this;
+	}
+	MutableStringSlice& operator<<(const StringSlice& s) {
+		assert(size() >= s.size());
+		for (char c : s) {
+			*begin = c;
+			++begin;
+		}
+		return *this;
+	}
+
+	operator StringSlice() const {
+		return { begin, end };
+	}
+};
+
+template<uint size = 128>
+class MaxSizeString {
+	char values[size];
+public:
+	MutableStringSlice slice() {
+		return { values, values + size };
+	}
+};

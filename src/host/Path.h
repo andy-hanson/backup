@@ -15,14 +15,8 @@ class Path {
 	Path(ref<const Impl> _impl) : impl(_impl) {}
 
 public:
-	// Only use this is you are std::hash<Path>
-	inline size_t get_hash_code() const {
-		// Hash by referenced
-		return ref<const Impl>::hash{}(impl);
-	}
-
 	friend Writer& operator<<(Writer& out, const Path& path);
-	ArenaString to_cstring(const StringSlice& root, Arena& out, const StringSlice& extension) const;
+	void write(const StringSlice& root, const StringSlice& extension, MutableStringSlice& out) const;
 
 	const Option<Path>& parent() const;
 	const ArenaString& base_name() const;

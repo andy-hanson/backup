@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cassert>
+#include "./assert.h"
 #include "./ptr.h"
 
 template <typename T>
@@ -17,7 +17,10 @@ class Option {
 
 public:
 	Option() : is_present(false) {}
-	Option(const Option<T>& other) : is_present(other.is_present) { new(&storage.value) T(other.storage.value); }
+	Option(const Option<T>& other) : is_present(other.is_present) {
+		//TODO: new(&storage.value) T(other.storage.value);
+		storage.value = other.storage.value;
+	}
 	void operator=(Option<T> other) {
 		bool was_present = is_present;
 		is_present = other.is_present;
@@ -28,11 +31,13 @@ public:
 				storage.value.~T();
 		} else {
 			if (is_present)
-				new (&storage.value) T(other.storage.value);
+				//TODO: new (&storage.value) T(other.storage.value);
+				storage.value = other.storage.value;
 		}
 	}
 	explicit Option(T _value) : is_present(true) {
-		new(&storage.value) T(_value);
+		//TODO: new(&storage.value) T(_value);
+		storage.value = _value;
 	}
 	~Option() {
 		if (is_present) {

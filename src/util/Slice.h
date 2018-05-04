@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cassert>
+#include "./assert.h"
 #include "./int.h"
 #include "./ptr.h"
 

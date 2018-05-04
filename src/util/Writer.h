@@ -1,47 +1,37 @@
 #pragma once
 
-#include <string>
+#include "./Grow.h"
 #include "./Option.h"
 #include "./StringSlice.h"
 
 class Writer {
-	std::string out;
+	Grow<char>& out;
 	uint _indent = 0;
 
 public:
-	Writer() = default;
+	Writer(Grow<char>& _out) : out(_out) {}
 	Writer(const Writer& other) = delete;
 	void operator=(const Writer& other) = delete;
 
-	std::string finish() {
-		return std::move(out);
-	}
-
-	inline Writer& operator<<(char s) {
-		out += s;
+	inline Writer& operator<<(char c) {
+		out.push_copy(c);
 		return *this;
 	}
 	inline Writer& operator<<(const char* s) {
-		out += s;
+		while (*s != '\0') {
+			out.push_copy(*s);
+			++s;
+		}
 		return *this;
 	}
 	inline Writer& operator<<(const StringSlice& s) {
 		for (char c : s)
-			out += c;
+			out.push_copy(c);
 		return *this;
 	}
-	inline Writer& operator<<(size_t u) {
-		out += std::to_string(u);
-		return *this;
-	}
-	inline Writer& operator<<(uint u) {
-		out += std::to_string(u);
-		return *this;
-	}
-	inline Writer& operator<<(ushort u) {
-		out += std::to_string(u);
-		return *this;
-	}
+	Writer& operator<<(size_t u);
+	Writer& operator<<(uint u);
+	Writer& operator<<(ushort u);
 	static const struct indent_t {} indent;
 	static const struct dedent_t {} dedent;
 	static const struct nl_t {} nl;

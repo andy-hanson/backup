@@ -1,4 +1,3 @@
-#include <cassert>
 #include <iostream> // cout
 #include <unistd.h> // getcwd
 
@@ -8,31 +7,29 @@
 #include "./util/rlimit.h"
 
 namespace {
-	void strip_last_part(std::string& path) {
-		//size_t slash_index = path.rfind('/');
-		//if (slash_index == std::string::npos)
-		//	return;
-		assert(!path.empty());
-		while (path.back() != '/') {
-			path.pop_back();
-			assert(!path.empty());
-		}
-		path.pop_back();
+	char* strip_last_part(char* begin, char* end) {
+		while (end != begin && *end != '/')
+			--end;
+		return end;
 	}
 
-	std::string test_directory() {
-		char cwdbuf[FILENAME_MAX];
-		if (!getcwd(cwdbuf, sizeof(cwdbuf))) throw "todo";
-
-		std::string cwd(cwdbuf);
-		strip_last_part(cwd);
-		cwd += "/test";
-		return cwd;
+	template <uint size>
+	StringSlice get_test_directory(MaxSizeString<size>& buf) {
+		char* begin = buf.slice().begin;
+		if (!getcwd(begin, buf.slice().size())) throw "todo";
+		//find the end
+		char* c = begin;
+		while (*c != '\0')
+			++c;
+		c = strip_last_part(buf.slice().begin, c);
+		MutableStringSlice m { c, buf.slice().end };
+		m << "/test";
+		return { begin, m.begin };
 	}
 
 	void go() {
-		std::string test_dir = test_directory();
-		test(StringSlice { test_dir.begin().base(), test_dir.end().base() }, "simple", TestMode::Test); //"module/circular-dependency"
+		MaxSizeString<128> test_dir;
+		test(get_test_directory(test_dir), "simple", TestMode::Test); //"module/circular-dependency"
 		std::cout << "done" << std::endl;
 	}
 }

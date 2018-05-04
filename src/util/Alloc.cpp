@@ -1,6 +1,6 @@
 #include "./Alloc.h"
 
-#include <algorithm> // std::copy
+#include "./assert.h"
 
 void* Arena::allocate(size_t n_bytes) {
 	void* res = alloc_next;
@@ -59,8 +59,12 @@ ArenaString Arena::allocate_slice(size_t size) {
 
 ArenaString Arena::str(const StringSlice& slice) {
 	size_t size = slice.size();
-	char* begin = static_cast<char*>(allocate(size));
-	char* end = std::copy(slice.begin(), slice.end(), begin);
+	char* const begin = static_cast<char*>(allocate(size));
+	char* end = begin;
+	for (char c : slice) {
+		*end = c;
+		++end;
+	}
 	assert(size_t(end - begin) == size);
 	assert(alloc_next == end);
 	return { begin, end };

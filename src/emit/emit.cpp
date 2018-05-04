@@ -120,9 +120,10 @@ namespace {
 	}
 }
 
-std::string emit(const Arr<Module>& modules) {
+Grow<char> emit(const Arr<Module>& modules) {
 	assert(!modules.empty());
-	Writer out;
+	Grow<char> grow;
+	Writer out { grow };
 	out << "#include <assert.h>\n\n";
 
 	Arena scratch_arena;
@@ -141,5 +142,5 @@ std::string emit(const Arr<Module>& modules) {
 
 	out << "int main() { run(); }\n";
 
-	return out.finish();
+	return grow;
 }

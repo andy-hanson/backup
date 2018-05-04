@@ -53,39 +53,9 @@ private:
 
 public:
 	Diag(const Diag& other);
-
-	Diag(ParseDiag p) : _kind(Kind::Parse) { data.parse_diag = p; }
-	Diag(Kind kind) : _kind(kind) {
-		switch (_kind) {
-			case Kind::Parse:
-			case Kind::WrongNumberTypeArguments:
-			case Kind::WrongNumberNewStructArguments:
-				assert(false);
-
-			case Kind::CircularImport:
-			case Kind::SpecNameNotFound:
-			case Kind::StructNameNotFound:
-			case Kind::TypeParameterNameNotFound:
-			case Kind::DuplicateDeclaration:
-			case Kind::SpecialTypeShouldNotHaveTypeParameters:
-			case Kind::CantCreateNonStruct:
-			case Kind::UnnecessaryTypeAnnotate:
-			case Kind::TypeParameterShadowsSpecTypeParameter:
-			case Kind::TypeParameterShadowsPrevious:
-			case Kind::LocalShadowsFun:
-			case Kind::LocalShadowsSpecSig:
-			case Kind::LocalShadowsParameter:
-			case Kind::LocalShadowsLocal:
-			case Kind::MissingBoolType:
-			case Kind::MissingVoidType:
-			case Kind::MissingStringType:
-				break;
-		}
-	}
-	Diag(Kind kind, WrongNumber wrong_number) {
-		assert(kind == Kind::WrongNumberTypeArguments || kind == Kind::WrongNumberNewStructArguments);
-		data.wrong_number = wrong_number;
-	}
+	Diag(ParseDiag p);
+	Diag(Kind kind);
+	Diag(Kind kind, WrongNumber wrong_number);
 
 	void write(Writer& out, const StringSlice& slice) const;
 };

@@ -2,35 +2,6 @@
 
 #include "../util/MaxSizeMap.h"
 
-struct Path::Impl {
-	Option<Path> parent;
-	ArenaString name;
-
-	size_t str_len() const {
-		return (parent.has() ? parent.get().impl->str_len() : 0) + name.slice().size();
-	}
-
-	inline friend bool operator==(const Path::Impl& a, const Path::Impl& b) {
-		return a.parent == b.parent && a.name == b.name;
-	}
-
-	template <typename WriterLike>
-	static void to_string_worker(WriterLike& b, const Path::Impl& p) {
-		if (p.parent.has()) {
-			Path::Impl::to_string_worker(b, p.parent.get().impl);
-			b << '/';
-		}
-		b << p.name;
-	}
-
-	struct hash {
-		size_t operator()(const Path::Impl& p) const {
-			//TODO:PERF
-			return StringSlice::hash{}(p.name);
-		}
-	};
-};
-
 namespace {
 	template <typename /*StringSlice => void*/ Cb>
 	void split_string(const StringSlice& s, Cb cb) {
@@ -60,6 +31,35 @@ namespace {
 	}
 }
 
+struct Path::Impl {
+	Option<Path> parent;
+	ArenaString name;
+
+	size_t str_len() const {
+		return (parent.has() ? parent.get().impl->str_len() : 0) + name.slice().size();
+	}
+
+	inline friend bool operator==(const Path::Impl& a, const Path::Impl& b) {
+		return a.parent == b.parent && a.name == b.name;
+	}
+
+	template <typename WriterLike>
+	static void to_string_worker(WriterLike& b, const Path::Impl& p) {
+		if (p.parent.has()) {
+			Path::Impl::to_string_worker(b, p.parent.get().impl);
+			b << '/';
+		}
+		b << p.name;
+	}
+
+	struct hash {
+		size_t operator()(const Path::Impl& p) const {
+			//TODO:PERF
+			return StringSlice::hash{}(p.name);
+		}
+	};
+};
+
 const Option<Path>& Path::parent() const {
 	return impl->parent;
 }
@@ -72,15 +72,12 @@ Writer& operator<<(Writer& out, const Path& path) {
 	return out;
 }
 
-ArenaString Path::to_cstring(const StringSlice& root, Arena& out, const StringSlice& extension) const {
-	Arena::StringBuilder b = out.string_builder(root.size() + impl->str_len() + extension.size() + 3); // + 1 for slash, + 1 for '.', + 1 for \0
-	b << root;
-	b << '/';
-	Path::Impl::to_string_worker(b, impl);
-	b << '.';
-	b << extension;
-	b << '\0';
-	return b.finish();
+void Path::write(const StringSlice& root, const StringSlice& extension, MutableStringSlice& out) const {
+	out << root;
+	out << '/';
+	Path::Impl::to_string_worker(out, impl);
+	out << '.';
+	out << extension;
 }
 
 struct PathCache::Impl {

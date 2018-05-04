@@ -1,7 +1,7 @@
 #include "./int.h"
 
-#include <cassert>
 #include <limits>
+#include "./assert.h"
 
 size_t to_unsigned(std::ptrdiff_t s) {
 	assert(s >= 0);

@@ -18,7 +18,11 @@ namespace {
 	}
 
 
-	std::pair<Arr<TypeParameterAst>, Arr<SpecUseAst>> parse_type_parameter_and_spec_use_asts(Lexer& lexer, Arena& arena) {
+	struct TypeParametersAndSpecs {
+		Arr<TypeParameterAst> type_parameters;
+		Arr<SpecUseAst> specs;
+	};
+	TypeParametersAndSpecs parse_type_parameter_and_spec_use_asts(Lexer& lexer, Arena& arena) {
 		Arena::SmallArrayBuilder<TypeParameterAst> type_parameters = arena.small_array_builder<TypeParameterAst>();
 		Arena::SmallArrayBuilder<SpecUseAst> spec_uses = arena.small_array_builder<SpecUseAst>();
 		uint index = 0;
@@ -66,8 +70,8 @@ namespace {
 		Option<Effect> effect = lexer.try_take_effect();
 		TypeAst return_type = parse_type_ast(lexer, arena);
 		Arr<ParameterAst> parameters = parse_parameter_asts(lexer, arena);
-		std::pair<Arr<TypeParameterAst>, Arr<SpecUseAst>> tp = parse_type_parameter_and_spec_use_asts(lexer, arena);
-		return { comment, name, effect, return_type, parameters, tp.first, tp.second };
+		TypeParametersAndSpecs tp = parse_type_parameter_and_spec_use_asts(lexer, arena);
+		return { comment, name, effect, return_type, parameters, tp.type_parameters, tp.specs };
 	}
 
 	Arr<StructFieldAst> parse_struct_field_asts(Lexer& lexer, Arena& arena) {

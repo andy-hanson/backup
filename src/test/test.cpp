@@ -8,24 +8,45 @@
 #include "../clang.h"
 
 namespace {
-	std::string diagnostics_baseline(const Grow<Diagnostic>& diags, DocumentProvider& document_provider) {
-		Writer w;
+	//TODO:MOVE
+	template <typename A, typename B>
+	bool collection_equal(const A& a, const B& b) {
+		if (a.size() != b.size()) return false;
+
+		typename A::const_iterator a_it = a.begin();
+		typename B::const_iterator b_it = b.begin();
+		typename A::const_iterator a_end = a.end();
+		typename B::const_iterator b_end = b.end();
+		while (true) {
+			if (*a_it != *b_it) return false;
+			++a_it;
+			++b_it;
+			if (a_it == a_end) {
+				assert(b_it == b_end);
+				return true;
+			}
+		}
+	};
+
+	Grow<char> diagnostics_baseline(const Grow<Diagnostic>& diags, DocumentProvider& document_provider) {
+		Grow<char> out;
+		Writer w { out };
 		Arena temp;
 		for (const Diagnostic& d : diags) {
-			StringSlice document = document_provider.try_get_document(d.path, temp, NZ_EXTENSION).get();
+			StringSlice document = document_provider.try_get_document(d.path, NZ_EXTENSION, temp).get();
 			d.write(w, document, LineAndColumnGetter::for_text(document, temp));
 			w << Writer::nl;
 		}
-		return w.finish();
+		return out;
 	}
 
-	void no_baseline(const std::string& file_path, TestMode mode) {
-		if (file_exists(file_path)) {
+	void no_baseline(const FileLocator& loc, TestMode mode) {
+		if (file_exists(loc)) {
 			switch (mode) {
 				case TestMode::Test:
 					throw "todo";
 				case TestMode::Accept:
-					delete_file(file_path);
+					delete_file(loc);
 					break;
 			}
 		}
@@ -33,27 +54,53 @@ namespace {
 
 	struct TestFailure {};
 
+	std::ostream& operator<<(std::ostream& out, const StringSlice& slice) {
+		for (char c : slice)
+			out << c;
+		return out;
+	}
+
+	std::ostream& operator<<(std::ostream& out, const Path& path) {
+		const Option<Path>& parent = path.parent();
+		if (parent.has()) {
+			out << parent.get();
+			out << '/';
+		}
+		return out << path.base_name();
+	}
+
+	std::ostream& operator<<(std::ostream& out, const FileLocator& loc) {
+		return out << loc.root << '/' << loc.path << '.' << loc.extension;
+	}
+
+	std::ostream& operator<<(std::ostream& out, const Grow<char>& g) {
+		for (char c : g)
+			out << c;
+		return out;
+	}
+
 	// Returns true on success. Always succeeds with TestMode::Accept
-	void baseline(const std::string& file_path, const std::string& actual, TestMode mode) {
-		Option<std::string> expected = try_read_file(file_path);
+	void baseline(const FileLocator& loc, const Grow<char>& actual, TestMode mode) {
+		Arena expected_arena;
+		Option<ArenaString> expected = try_read_file(loc, expected_arena, /*null_terminated*/ false);
 		if (expected.has()) {
-			if (actual != expected.get()) {
+			if (!collection_equal(actual, expected.get().slice())) {
 				switch (mode) {
 					case TestMode::Test:
-						std::cerr << "Unexpected result for baseline " << file_path << ". Actual: \n" << actual << std::endl;
+						std::cerr << "Unexpected result for baseline " << loc << ". Actual: \n" << actual << std::endl;
 						throw TestFailure {};
 					case TestMode::Accept:
-						write_file(file_path, actual);
+						write_file(loc, actual);
 				}
 			}
 		} else {
 			switch (mode) {
 				case TestMode::Test:
-					std::cerr << "There is now a baseline for " << file_path << ": " << std::endl
+					std::cerr << "There is now a baseline for " << loc << ": " << std::endl
 						<< ">>>" << std::endl << actual << std::endl << "<<<" << std::endl;
 					throw TestFailure {};
 				case TestMode::Accept:
-					write_file(file_path, actual);
+					write_file(loc, actual);
 			}
 		}
 	}
@@ -62,19 +109,18 @@ namespace {
 		unique_ptr<DocumentProvider> document_provider = file_system_document_provider(root);
 
 		CompiledProgram out;
-		Path first_path = out.paths.from_part_slice("main");
-		compile(out, *document_provider, first_path);
+		Path main_path = out.paths.from_part_slice("main");
+		compile(out, *document_provider, main_path);
 
-		std::string root_s { root.begin(), root.end() };
-		std::string diags_path = root_s + "/diagnostics-baseline.txt";
-		std::string cpp_path = root_s + "/main.cpp";
-		std::string exe_path = root_s + "/main.exe";
+		FileLocator diags_path = { root, out.paths.from_part_slice("diagnostics-baseline"), "txt" };
+		FileLocator cpp_path = { root, main_path, "cpp" };
+		FileLocator exe_path { root, main_path, "exe" };
 
 		if (out.diagnostics.empty()) {
 			no_baseline(diags_path, mode);
-			baseline(cpp_path, emit(out.modules), mode);
+			baseline({ root, main_path, "cpp" }, emit(out.modules), mode);
 			compile_cpp_file(cpp_path, exe_path);
-			int res = execute_file(exe_path.c_str());
+			int res = execute_file(exe_path);
 			if (res != 0) {
 				std::cerr << exe_path << " exit code: " << res << std::endl;
 				throw TestFailure {};

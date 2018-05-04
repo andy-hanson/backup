@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include "./util/io.h"
 
-int execute_file(const std::string& file_path);
-void compile_cpp_file(const std::string& cpp_file_name, const std::string& exe_file_name);
+int execute_file(const FileLocator& file_path);
+void compile_cpp_file(const FileLocator& cpp_file_name, const FileLocator& exe_file_name);

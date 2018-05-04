@@ -1,5 +1,16 @@
 #include "Writer.h"
 
+Writer& Writer::operator<<(size_t u) {
+	*this << char('0' + char(u % 10));
+	throw "todo";
+}
+Writer& Writer::operator<<(uint u) {
+	return *this << size_t(u);
+}
+Writer& Writer::operator<<(ushort u) {
+	return *this << size_t(u);
+}
+
 Writer& operator<<(Writer& out, indented i)  {
 	for (char c : i.s) {
 		out << c;
@@ -10,8 +21,8 @@ Writer& operator<<(Writer& out, indented i)  {
 }
 
 Writer& Writer::operator<<(nl_t) {
-	out += '\n';
+	*this << '\n';
 	for (uint i = 0; i != _indent; ++i)
-		out += '\t';
+		*this << '\t';
 	return *this;
 }

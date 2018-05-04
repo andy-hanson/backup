@@ -20,7 +20,7 @@ namespace {
 
 		do {
 			Path path = to_parse.pop_and_return();
-			Option<ArenaString> document = document_provider.try_get_document(path, ast_arena, NZ_EXTENSION);
+			Option<ArenaString> document = document_provider.try_get_document(path, NZ_EXTENSION, ast_arena);
 			if (!document.has()) throw "todo: no such file";
 
 			try {

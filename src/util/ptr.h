@@ -1,7 +1,6 @@
 #pragma once
 
-#include <cassert>
-
+#include "./assert.h"
 #include "./int.h" // size_t
 
 /** Type of non-null references. */

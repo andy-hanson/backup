@@ -1,8 +1,7 @@
 #pragma once
 
-#include <cassert>
-
 #include "../../util/Alloc.h"
+#include "../../util/assert.h"
 #include "../../util/Map.h"
 #include "../../util/MultiMap.h"
 

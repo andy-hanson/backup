@@ -1,17 +1,14 @@
-#include <iostream>
 #include "./clang.h"
-#include "./util/io.h"
+
+#include <cstdlib> // std::system
+#include "./util/io.h" // delete_file, file_exists
 #include "./util/rlimit.h"
 
 namespace {
-	const char* clang =
+	const StringSlice CLANG =
 	// /home/andy/bin/clang+llvm-6.0.0-x86_64-linux-gnu-ubuntu-14.04/bin/clang++
 	"clang++ -pedantic -Weverything -Werror -Wno-missing-prototypes "; //-std=c++17-Wno-c++98-compat -Wno-c++98-compat-pedantic
 	//"g++ -pedantic -Werror -Wextra -Wall ";
-
-	bool is_relative(const std::string& path) {
-		return path[0] == '.';
-	}
 
 	/*
 	void exec_file() {
@@ -33,25 +30,24 @@ namespace {
 	}
 	*/
 
-	int exec_command(const std::string& command) {
-		return std::system(command.c_str());
+	int exec_command(const char* command) {
+		return std::system(command);
 	}
 }
 
-int execute_file(const std::string& file_path) {
-	return exec_command(file_path);
+int execute_file(const FileLocator& file_path) {
+	MaxSizeString<128> temp;
+	return exec_command(file_path.get_cstring(temp));
 }
 
-void compile_cpp_file(const std::string& cpp_file_name, const std::string& exe_file_name) {
-	assert(!is_relative(cpp_file_name) && !is_relative(exe_file_name));
+void compile_cpp_file(const FileLocator& cpp_file_name, const FileLocator& exe_file_name) {
 	delete_file(exe_file_name);
-	std::string to_exec = std::string(clang);
-	to_exec += cpp_file_name;
-	to_exec += " -o ";
-	to_exec += exe_file_name;
-	std::cout << "Running: " << to_exec << std::endl;
-	without_limits([&]() { exec_command(to_exec.c_str()); });
-	if (!file_exists(exe_file_name)) {
+	Arena temp;
+	MaxSizeString<1024> to_exec;
+	MutableStringSlice m = to_exec.slice();
+	m << CLANG << cpp_file_name << " -o " << exe_file_name << '\0';
+	// std::cout << "Running: " << to_exec.slice().begin << std::endl;
+	without_limits([&]() { exec_command(to_exec.slice().begin); });
+	if (!file_exists(exe_file_name))
 		throw "There was a clang error";
-	}
 }

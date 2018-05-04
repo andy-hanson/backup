@@ -3,7 +3,7 @@
 #include <iostream>
 #include <signal.h>
 #include <sys/resource.h>
-#include <cassert>
+#include "./assert.h"
 
 namespace {
 	void on_signal(int sig) {

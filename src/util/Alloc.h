@@ -1,7 +1,6 @@
 #pragma once
 
-#include <cassert>
-
+#include <new> // new ()
 #include "./MaxSizeVector.h"
 #include "./StringSlice.h"
 #include "./ptr.h"
@@ -17,8 +16,11 @@ class ArenaString {
 	// Keep this private to avoid using a non-arena slice.
 	ArenaString(char* begin, char* end) : _begin(begin), _end(end) {}
 public:
+	ArenaString(const ArenaString& other) = default;
+	ArenaString& operator=(const ArenaString& other) = default;
 	ArenaString() : _begin(nullptr), _end(nullptr) {}
 	char* begin() { return _begin; }
+	char* end() { return _end; }
 	inline operator StringSlice() const { return slice(); }
 	inline StringSlice slice() const { return { _begin, _end }; }
 	inline char& operator[](size_t index) {
