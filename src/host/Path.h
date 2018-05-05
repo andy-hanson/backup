@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../util/Alloc.h"
+#include "../util/Arena.h"
 #include "../util/Option.h"
 #include "../util/StringSlice.h"
 #include "../util/unique_ptr.h"

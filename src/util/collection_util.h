@@ -1,6 +1,7 @@
 #pragma once
 
-#include "./Alloc.h"
+#include "Arena.h"
+#include "./MaxSizeVector.h"
 #include "./Option.h"
 
 template <typename T, typename Pred>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../compile/model/model.h"
-#include "../util/Alloc.h"
+#include "../util/Arena.h"
 #include "../util/MaxSizeMap.h"
 #include "../util/StringSlice.h"
 

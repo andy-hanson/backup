@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./Alloc.h"
+#include "Arena.h"
 #include "./StringSlice.h"
 
 // Wrapper around StringSlice that ensures it's in an arena.

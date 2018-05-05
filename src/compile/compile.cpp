@@ -47,7 +47,7 @@ namespace {
 	Option<Arr<ref<const Module>>> get_imports(
 		const Arr<ImportAst>& imports, Path cur_path, const Compiled& compiled, PathCache& paths, Arena& arena, Grow<Diagnostic>& diagnostics
 	) {
-		return arena.map_or_fail<ref<const Module>>()(imports, [&](const ImportAst& ast) {
+		return map_or_fail<ref<const Module>>()(arena, imports, [&](const ImportAst& ast) {
 			Path p = resolve_import(cur_path, ast, paths).get(); // Should succeed because we already did this in parse_everything
 			Option<const ref<const Module>&> m = compiled.get(p);
 			if (!m.has()) {
@@ -70,7 +70,7 @@ void compile(CompiledProgram& out, DocumentProvider& document_provider, Path fir
 
 	// Go in reverse order -- if we ever see some dependency that's not compiled yet, it indicates a circular dependency.
 	Compiled compiled;
-	Option<Arr<Module>> modules = out.arena.map_or_fail_reverse<Module>()(parsed, [&](const FileAst& ast, ref<Module> m) {
+	Option<Arr<Module>> modules = map_or_fail_reverse<Module>()(out.arena, parsed, [&](const FileAst& ast, ref<Module> m) {
 		Option<Arr<ref<const Module>>> imports = get_imports(ast.imports, ast.path, compiled, out.paths, out.arena, out.diagnostics);
 		m->path = ast.path;
 		m->imports = imports.get();

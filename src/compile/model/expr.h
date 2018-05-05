@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../util/Alloc.h"
+#include "../../util/Arena.h"
 #include "./model.h"
 
 class Expression;

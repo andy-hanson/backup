@@ -7,7 +7,7 @@
 
 namespace {
 	Arr<TypeParameter> check_type_parameters(const Arr<TypeParameterAst> asts, CheckCtx& al, const Arr<TypeParameter>& spec_type_parameters) {
-		return al.arena.map_with_prevs<TypeParameter>()(asts, [&](const TypeParameterAst& ast, const Arr<TypeParameter>& prevs, uint index) {
+		return map_with_prevs<TypeParameter>()(al.arena, asts, [&](const TypeParameterAst& ast, const Arr<TypeParameter>& prevs, uint index) {
 			if (some(spec_type_parameters, [&](const TypeParameter& s) { return s.name == ast.name; }))
 				al.diag(ast.name, Diag::Kind::TypeParameterShadowsSpecTypeParameter);
 			for (const TypeParameter& prev : prevs)
@@ -59,7 +59,7 @@ namespace {
 	Arr<Parameter> check_parameters(
 		const Arr<ParameterAst>& asts, CheckCtx& al,
 		const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope, const FunsTable& funs_table, const Arr<SpecUse>& current_specs) {
-		return al.arena.map_with_prevs<Parameter>()(asts, [&](const ParameterAst& ast, const Arr<Parameter>& prevs, uint index) -> Parameter {
+		return map_with_prevs<Parameter>()(al.arena, asts, [&](const ParameterAst& ast, const Arr<Parameter>& prevs, uint index) -> Parameter {
 			check_param_or_local_shadows_fun(al, ast.name, funs_table, current_specs);
 			if (some(prevs, [&](const Parameter& prev) { return prev.name == ast.name; }))
 				throw "todo";
@@ -69,7 +69,7 @@ namespace {
 	}
 
 	Arr<SpecUse> check_spec_uses(const Arr<SpecUseAst>& asts, CheckCtx& ctx, const StructsTable& structs_table, const SpecsTable& specs_table, const TypeParametersScope& type_parameters_scope) {
-		return ctx.arena.map_op<SpecUse>()(asts, [&](const SpecUseAst& ast) -> Option<SpecUse> {
+		return map_op<SpecUse>()(ctx.arena, asts, [&](const SpecUseAst& ast) -> Option<SpecUse> {
 			Option<ref<const SpecDeclaration>> spec_op = find_spec(ast.spec, ctx, specs_table);
 			if (!spec_op.has()) {
 				ctx.diag(ast.spec, Diag::Kind::SpecNameNotFound);
@@ -182,7 +182,7 @@ namespace {
 	const StringSlice VOID = StringSlice { "Void" };
 
 	Option<Type> get_special_named_type(const StructsTable& structs_table, CheckCtx& al, StringSlice type_name) {
-		return map_op<Type>()(structs_table.get(type_name), [&](ref<const StructDeclaration> strukt) -> Type {
+		return map_option<Type>()(structs_table.get(type_name), [&](ref<const StructDeclaration> strukt) -> Type {
 			if (strukt->arity()) {
 				al.diag(strukt->range, Diag::Kind::SpecialTypeShouldNotHaveTypeParameters);
 				return {};

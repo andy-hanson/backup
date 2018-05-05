@@ -2,7 +2,7 @@
 
 #include "./Grow.h"
 #include "./Option.h"
-#include "./Alloc.h"
+#include "Arena.h"
 #include "../host/Path.h"
 
 struct FileLocator {

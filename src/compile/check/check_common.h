@@ -2,7 +2,7 @@
 
 #include "../diag/diag.h"
 #include "../model/model.h"
-#include "../../util/Alloc.h"
+#include "../../util/Arena.h"
 #include "../../util/Grow.h"
 #include "./type_utils.h"
 #include "./BuiltinTypes.h"

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "./Alloc.h"
+#include "Arena.h"
+#include "./ArenaArrayBuilders.h"
 #include "./Option.h"
 #include "./KeyValuePair.h"
 
@@ -35,8 +36,8 @@ struct BuildMap {
 		if (values.empty())
 			return {};
 
-		Arr<Option<KeyValuePair<K, ref<const V>>>> arr = arena.fill_array<Option<KeyValuePair<K, ref<const V>>>>()(
-			values.size() * 2, [](uint i __attribute__((unused))) { return Option<KeyValuePair<K, ref<const V>>> {}; });
+		Arr<Option<KeyValuePair<K, ref<const V>>>> arr = fill_array<Option<KeyValuePair<K, ref<const V>>>>()(
+			arena, values.size() * 2, [](uint i __attribute__((unused))) { return Option<KeyValuePair<K, ref<const V>>> {}; });
 
 		for (const V& value : values) {
 			const K& key = get_key(value);

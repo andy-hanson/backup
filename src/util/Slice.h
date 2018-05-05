@@ -9,13 +9,14 @@ class Arr {
 	T* _begin;
 	size_t _size;
 
-	friend class Arena;
-	template<typename> friend class Vec;
-
-	Arr(T* _data, size_t _len) : _begin(_data), _size(_len) {}
-
 public:
 	Arr() : _begin(nullptr), _size(0) {}
+	Arr(T* _data, size_t _len) : _begin(_data), _size(_len) {}
+
+	Arr slice(uint lo, uint hi) {
+		assert(lo < hi && hi < _size);
+		return { _begin + lo, hi - lo };
+	}
 
 	T& operator[](size_t index) {
 		assert(index < _size);

@@ -1,4 +1,5 @@
 #include "./LineAndColumnGetter.h"
+#include "../../util/ArenaArrayBuilders.h"
 
 namespace {
 	uint mid(uint a, uint b) {
@@ -7,12 +8,12 @@ namespace {
 }
 
 LineAndColumnGetter LineAndColumnGetter::for_text(const StringSlice& text, Arena& arena) {
-	Arena::SmallArrayBuilder<uint, 1024> lines = arena.small_array_builder<uint, 1024>();
+	SmallArrayBuilder<uint, 1024> lines;
 	lines.add(0); // Line 0 starts at text index 0
 	for (uint i = 0; i != text.size(); ++i)
 		if (text[i] == '\n')
 			lines.add(i + 1);
-	return LineAndColumnGetter { lines.finish() };
+	return LineAndColumnGetter { lines.finish(arena) };
 }
 
 LineAndColumn LineAndColumnGetter::line_and_column_at_pos(uint pos) const {

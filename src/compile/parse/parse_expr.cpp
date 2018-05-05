@@ -1,5 +1,6 @@
 #include "./parse_expr.h"
 
+#include "../../util/ArenaArrayBuilders.h"
 #include "./parse_type.h"
 
 namespace {
@@ -15,23 +16,22 @@ namespace {
 	Arr<ExprAst> parse_prefix_args(Lexer& lexer, Arena& arena) {
 		if (!lexer.try_take(' '))
 			return {};
-		auto args = arena.small_array_builder<ExprAst>();
-		while (true) {
+		SmallArrayBuilder<ExprAst> args;
+		do {
 			args.add(parse_expr_arg_ast(lexer, arena));
-			if (!lexer.try_take_comma_space())
-				return args.finish();
-		}
+		} while (lexer.try_take_comma_space());
+		return args.finish(arena);
 	}
 
 	WhenAst parse_when(Lexer& lexer, Arena& arena, const char* start) {
 		lexer.take_indent();
-		Arena::SmallArrayBuilder<CaseAst> cases = arena.small_array_builder<CaseAst>();
+		SmallArrayBuilder<CaseAst> cases;
 		while (true) {
 			if (lexer.try_take_else_keyword()) {
 				lexer.take_indent();
 				ref<ExprAst> elze = arena.put(parse_expr_ast(lexer, arena, ExprCtx::Statement));
 				lexer.reduce_indent_by_2();
-				return { lexer.range(start), cases.finish(), elze };
+				return { lexer.range(start), cases.finish(arena), elze };
 			}
 
 			ExprAst cond = parse_expr_ast(lexer, arena, ExprCtx::Case);
@@ -55,14 +55,13 @@ namespace {
 		// `a f b, c, d`
 		StringSlice fn_name = lexer.take_value_name();
 		Arr<TypeAst> type_arguments = parse_type_argument_asts(lexer, arena);
-		auto args = arena.small_array_builder<ExprAst>();
+		SmallArrayBuilder<ExprAst> args;
 		args.add(arg0);
-		if (lexer.try_take(' ')) {
+		if (lexer.try_take(' '))
 			do {
 				args.add(parse_expr_arg_ast(lexer, arena));
 			} while (lexer.try_take_comma_space());
-		}
-		return { fn_name, type_arguments, args.finish() };
+		return { fn_name, type_arguments, args.finish(arena) };
 	}
 
 	ExprAst parse_expr_ast(Lexer& lexer, Arena& arena, ExprCtx where) {
@@ -146,7 +145,7 @@ namespace {
 
 	ExprAst parse_dots(ExprAst initial, Lexer& lexer, Arena& arena) {
 		return lexer.try_take('.')
-			? parse_dots(ExprAst { CallAst { lexer.take_value_name(), {}, arena.single_element_array(initial) } }, lexer, arena)
+			? parse_dots(ExprAst { CallAst { lexer.take_value_name(), {}, single_element_array(arena, initial) } }, lexer, arena)
 			: initial;
 	}
 

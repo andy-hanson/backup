@@ -1,6 +1,7 @@
 #pragma once
 
-#include "./Alloc.h"
+#include "Arena.h"
+#include "./ArenaArrayBuilders.h"
 #include "./Option.h"
 
 //Key=None means this is a non-first entry
@@ -61,8 +62,8 @@ struct BuildMultiMap {
 			return {};
 
 		size_t arr_size = values.size() * 2;
-		Arr<Option<MultiMapPair<K, ref<const V>>>> arr = arena.fill_array<Option<MultiMapPair<K, ref<const V>>>>()(
-			arr_size, [](uint i __attribute__((unused))) { return Option<MultiMapPair<K, ref<const V>>> {}; });
+		Arr<Option<MultiMapPair<K, ref<const V>>>> arr = fill_array<Option<MultiMapPair<K, ref<const V>>>>()(
+			arena, arr_size, [](uint i __attribute__((unused))) { return Option<MultiMapPair<K, ref<const V>>> {}; });
 
 		for (const V& value : values) {
 			const K& key = get_key(value);

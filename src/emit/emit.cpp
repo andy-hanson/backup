@@ -1,7 +1,7 @@
 #include "emit.h"
 
 #include "../compile/model/expr.h"
-#include "../util/Alloc.h"
+#include "../util/Arena.h"
 #include "../util/Writer.h"
 #include "./concrete_fun.h"
 #include "./emit_body.h"

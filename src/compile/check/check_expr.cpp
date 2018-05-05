@@ -1,5 +1,6 @@
 #include "./check_expr.h"
 
+#include "../../util/ArenaArrayBuilders.h"
 #include "./check_call.h"
 #include "./convert_type.h"
 
@@ -44,7 +45,7 @@ namespace {
 			return Expression::bogus();
 		}
 
-		Arr<Expression> arguments = ctx.check_ctx.arena.fill_array<Expression>()(size, [&](uint i) {
+		Arr<Expression> arguments = fill_array<Expression>()(ctx.check_ctx.arena, size, [&](uint i) {
 			return check_and_expect(create.arguments[i], ctx, struct_field_type(inst_struct, i));
 		});
 
@@ -155,11 +156,11 @@ namespace {
 		if (literal.type_arguments.size() == 0 && literal.arguments.size() == 0 && (!current_expectation.has() || current_expectation.get() == string_type)) {
 			return check_no_call_literal_inner(literal.literal, ctx, expected);
 		} else {
-			Arena::SmallArrayBuilder<ExprAst> b = ctx.scratch_arena.small_array_builder<ExprAst>();
+			SmallArrayBuilder<ExprAst> b;
 			b.add(ExprAst { str(ctx.check_ctx.arena, literal.literal) }); // This is a NoCallLiteral
 			for (const ExprAst &arg : literal.arguments)
 				b.add(arg);
-			return check_call(LITERAL, b.finish(), literal.type_arguments, ctx, expected);
+			return check_call(LITERAL, b.finish(ctx.scratch_arena), literal.type_arguments, ctx, expected);
 		}
 	}
 

@@ -48,7 +48,7 @@ namespace {
 		each_initial_candidate(ctx, fun_name, [&](CalledDeclaration called) {
 			const FunSignature& sig = called.sig();
 			if (sig.arity() == arity && (explicit_type_arguments.empty() || sig.type_parameters.size() == explicit_type_arguments.size())) {
-				Arr<Option<Type>> inferring_type_arguments = ctx.scratch_arena.fill_array<Option<Type>>()(sig.type_parameters.size(), [&](uint i) {
+				Arr<Option<Type>> inferring_type_arguments = fill_array<Option<Type>>()(ctx.scratch_arena, sig.type_parameters.size(), [&](uint i) {
 					return explicit_type_arguments.empty() ? Option<Type> {} : Option { explicit_type_arguments[i] };
 				});
 				candidates.push({ called, &sig, inferring_type_arguments });
@@ -235,7 +235,7 @@ Expression check_call(const StringSlice& fun_name, const Arr<ExprAst>& argument_
 		if (candidates.empty()) throw "todo: no overload returns what you wanted";
 	}
 
-	Arr<Expression> arguments = ctx.check_ctx.arena.fill_array<Expression>()(arity, [&](uint arg_idx) {
+	Arr<Expression> arguments = fill_array<Expression>()(ctx.check_ctx.arena, arity, [&](uint arg_idx) {
 		if (arg_idx == 0 && first_arg_and_type.has()) {
 			const ExpressionAndType& f = first_arg_and_type.get();
 			remove_overloads_given_argument_type(candidates, f.type, arg_idx);

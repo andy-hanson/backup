@@ -2,7 +2,7 @@
 
 #include "../diag/parse_diag.h"
 #include "../model/effect.h"
-#include "../../util/Alloc.h"
+#include "../../util/Arena.h"
 #include "../../util/ArenaString.h"
 #include "../../util/StringSlice.h"
 

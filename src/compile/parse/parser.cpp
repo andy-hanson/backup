@@ -1,5 +1,6 @@
 #include "./parser.h"
 
+#include "../../util/ArenaArrayBuilders.h"
 #include "./Lexer.h"
 #include "./parse_expr.h"
 #include "./parse_type.h"
@@ -7,14 +8,14 @@
 namespace {
 	// Assumes we've already taken a ' ' to indicate we want to parse at least one type parameter.
 	Arr<TypeParameterAst> parse_type_parameter_asts(Lexer& lexer, Arena& arena) {
-		Arena::SmallArrayBuilder<TypeParameterAst> type_parameters = arena.small_array_builder<TypeParameterAst>();
+		SmallArrayBuilder<TypeParameterAst> type_parameters;
 		uint index = 0;
 		do {
 			lexer.take('?');
 			type_parameters.add({ lexer.take_type_name(), index });
 			++index;
 		} while (lexer.try_take(' '));
-		return type_parameters.finish();
+		return type_parameters.finish(arena);
 	}
 
 
@@ -23,8 +24,8 @@ namespace {
 		Arr<SpecUseAst> specs;
 	};
 	TypeParametersAndSpecs parse_type_parameter_and_spec_use_asts(Lexer& lexer, Arena& arena) {
-		Arena::SmallArrayBuilder<TypeParameterAst> type_parameters = arena.small_array_builder<TypeParameterAst>();
-		Arena::SmallArrayBuilder<SpecUseAst> spec_uses = arena.small_array_builder<SpecUseAst>();
+		SmallArrayBuilder<TypeParameterAst> type_parameters;
+		SmallArrayBuilder<SpecUseAst> spec_uses;
 		uint index = 0;
 		while (true) {
 			if (!lexer.try_take(' ')) break;
@@ -38,14 +39,14 @@ namespace {
 			type_parameters.add({ lexer.take_type_name(), index });
 			++index;
 		}
-		return { type_parameters.finish(), spec_uses.finish() };
+		return { type_parameters.finish(arena), spec_uses.finish(arena) };
 	}
 
 	Arr<ParameterAst> parse_parameter_asts(Lexer& lexer, Arena& arena) {
 		if (!lexer.try_take('(')) {
 			return {};
 		}
-		Arena::SmallArrayBuilder<ParameterAst> parameters = arena.small_array_builder<ParameterAst>();
+		SmallArrayBuilder<ParameterAst> parameters;
 		lexer.take('(');
 		while (true) {
 			if (lexer.try_take(')')) throw "todo"; //error: Don't write `()`
@@ -63,7 +64,7 @@ namespace {
 			lexer.take(',');
 			lexer.take(' ');
 		}
-		return parameters.finish();
+		return parameters.finish(arena);
 	}
 
 	FunSignatureAst parse_signature_ast(Lexer& lexer, Arena& arena, StringSlice name, Option<ArenaString> comment) {
@@ -76,14 +77,14 @@ namespace {
 
 	Arr<StructFieldAst> parse_struct_field_asts(Lexer& lexer, Arena& arena) {
 		lexer.take_indent();
-		Arena::SmallArrayBuilder<StructFieldAst> b = arena.small_array_builder<StructFieldAst>();
+		SmallArrayBuilder<StructFieldAst> b;
 		do {
 			Option<ArenaString> comment = lexer.try_take_comment(arena);
 			TypeAst type = parse_type_ast(lexer, arena);
 			lexer.take(' ');
 			b.add({ comment, type, lexer.take_value_name() });
 		} while (lexer.take_newline_or_dedent() == NewlineOrDedent::Newline);
-		return b.finish();
+		return b.finish(arena);
 	}
 
 	StringSlice parse_cpp_struct_body(Lexer& lexer) {
@@ -100,14 +101,14 @@ namespace {
 		StringSlice name = lexer.take_type_name();
 		Arr<TypeParameterAst> type_parameters = lexer.try_take(' ') ? parse_type_parameter_asts(lexer, arena) : Arr<TypeParameterAst>{};
 		lexer.take_indent();
-		Arena::SmallArrayBuilder<FunSignatureAst> sigs = arena.small_array_builder<FunSignatureAst>();
+		SmallArrayBuilder<FunSignatureAst> sigs;
 		do {
 			Option<ArenaString> sig_comment = lexer.try_take_comment(arena);
 			StringSlice sig_name = lexer.take_value_name();
 			lexer.take(' ');
 			sigs.add(parse_signature_ast(lexer, arena, sig_name, sig_comment));
 		} while (lexer.take_newline_or_dedent() == NewlineOrDedent::Newline);
-		return SpecDeclarationAst { comment, lexer.range(start), is_public, name, type_parameters, sigs.finish() };
+		return SpecDeclarationAst { comment, lexer.range(start), is_public, name, type_parameters, sigs.finish(arena) };
 	}
 
 	void parse_struct_or_fun(Lexer& lexer, Arena& arena, bool is_public, const char* start, Option<ArenaString> comment,
@@ -152,11 +153,11 @@ namespace {
 	}
 
 	Arr<ImportAst> parse_imports(Lexer& lexer, Arena& arena, PathCache& path_cache) {
-		Arena::SmallArrayBuilder<ImportAst> b = arena.small_array_builder<ImportAst>();
+		SmallArrayBuilder<ImportAst> b;
 		do {
 			b.add(parse_single_import(lexer, path_cache));
 		} while (lexer.try_take(' '));
-		return b.finish();
+		return b.finish(arena);
 	}
 }
 

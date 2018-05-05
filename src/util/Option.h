@@ -97,14 +97,14 @@ Option<ref<T>> un_ref(const Option<const ref<T>&> in) {
 }
 
 template <typename Out>
-struct MapOp {
+struct MapOption {
 	template <typename In, typename /*Option<In> => Option<Out>*/ Cb>
 	Option<Out> operator()(const Option<In>& in, Cb cb) const {
 		return in.has() ? Option { cb(in.get()) } : Option<Out>{};
 	}
 };
 template <typename Out>
-MapOp<Out> map_op() { return {}; };
+MapOption<Out> map_option() { return {}; };
 
 template <typename T, typename /*() => Option<T>*/ Cb>
 Option<T> or_option(const Option<T>& op, Cb cb) {

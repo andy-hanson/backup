@@ -1,7 +1,8 @@
 #pragma once
 
 #include "../../util/int.h"
-#include "../../util/Alloc.h"
+#include "../../util/Arena.h"
+#include "../../util/StringSlice.h"
 
 struct LineAndColumn { uint line; uint column; };
 
