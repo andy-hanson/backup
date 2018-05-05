@@ -4,6 +4,7 @@
 #include "../compile/compile.h"
 #include "../emit/emit.h"
 #include "../host/DocumentProvider.h"
+#include "../util/ArenaString.h"
 #include "../util/io.h"
 #include "../clang.h"
 
@@ -82,9 +83,9 @@ namespace {
 	// Returns true on success. Always succeeds with TestMode::Accept
 	void baseline(const FileLocator& loc, const Grow<char>& actual, TestMode mode) {
 		Arena expected_arena;
-		Option<ArenaString> expected = try_read_file(loc, expected_arena, /*null_terminated*/ false);
+		Option<StringSlice> expected = try_read_file(loc, expected_arena, /*null_terminated*/ false);
 		if (expected.has()) {
-			if (!collection_equal(actual, expected.get().slice())) {
+			if (!collection_equal(actual, expected.get())) {
 				switch (mode) {
 					case TestMode::Test:
 						std::cerr << "Unexpected result for baseline " << loc << ". Actual: \n" << actual << std::endl;
@@ -135,7 +136,7 @@ namespace {
 
 void test(const StringSlice& test_dir, const StringSlice& test_name, TestMode mode) {
 	Arena a;
-	Arena::StringBuilder s = a.string_builder(test_dir.size() + 1 + test_name.size());
+	StringBuilder s { a, test_dir.size() + 1 + test_name.size() };
 	s << test_dir << '/' << test_name;
 	try {
 		do_test(s.finish(), mode);

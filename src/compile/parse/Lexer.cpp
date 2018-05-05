@@ -33,7 +33,7 @@ namespace {
 		return is_upper_case_letter(c) || is_lower_case_letter(c);
 	}
 
-	ArenaString take_string_literal(const char* &ptr, Arena::StringBuilder b) {
+	ArenaString take_string_literal(const char* &ptr, StringBuilder b) {
 		++ptr;
 		while (*ptr != '"' && *ptr != '\0') {
 			//TODO:ESCAPING
@@ -48,7 +48,7 @@ namespace {
 	ArenaString take_numeric_literal(const char* &ptr, Arena& arena) {
 		const char* begin = ptr;
 		while (is_digit(*ptr) || *ptr == '.') ++ptr;
-		return arena.str({ begin, ptr });
+		return str(arena, { begin, ptr });
 	}
 
 	// Assumes the first char is validated already.
@@ -76,8 +76,8 @@ ParseDiagnostic Lexer::diag_at_char(ParseDiag diag) {
 	return { source.range_from_inner_slice({ ptr, ptr + 1 }), diag };
 }
 
-Arena::StringBuilder Lexer::string_builder(Arena& arena) {
-	return arena.string_builder(to_unsigned(source.end() - ptr));
+StringBuilder Lexer::string_builder(Arena& arena) {
+	return StringBuilder { arena, to_unsigned(source.end() - ptr) };
 }
 
 void Lexer::expect(const char* expected) {
@@ -199,7 +199,7 @@ ArenaString Lexer::take_indented_string(Arena& arena) {
 
 	assert(*ptr != '\n');
 
-	Arena::StringBuilder b = string_builder(arena);
+	StringBuilder b = string_builder(arena);
 	// Keep eating until we see a line that begins in something other than '\n'.
 	while (true) {
 		char c = next();
@@ -233,7 +233,7 @@ namespace {
 
 Option<ArenaString> Lexer::try_take_comment(Arena& arena) {
 	if (*ptr != '|') return {};
-	Arena::StringBuilder b = string_builder(arena);
+	StringBuilder b = string_builder(arena);
 	do {
 		++ptr;
 		take(' ');

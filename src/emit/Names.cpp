@@ -3,12 +3,12 @@
 #include "./mangle.h"
 
 namespace {
-	void write_type_for_fun_name(Arena::StringBuilder& sb, const InstStruct& i) {
+	void write_type_for_fun_name(StringBuilder& sb, const InstStruct& i) {
 		sb << mangle { i.strukt->name };
 		if (!i.type_arguments.empty()) throw "todo";
 	}
 
-	void write_type_for_fun_name(Arena::StringBuilder& sb, const Type& type) {
+	void write_type_for_fun_name(StringBuilder& sb, const Type& type) {
 		switch (type.kind()) {
 			case Type::Kind::Nil:
 			case Type::Kind::Bogus:
@@ -21,8 +21,8 @@ namespace {
 		}
 	}
 
-	ArenaString escape_struct_name(const Identifier& module_name, const Identifier& struct_name, Arena& arena, bool is_multiple_with_same_name) {
-		Arena::StringBuilder sb = arena.string_builder(100);
+	ArenaString escape_struct_name(const StringSlice& module_name, const Identifier& struct_name, Arena& arena, bool is_multiple_with_same_name) {
+		StringBuilder sb { arena, 100 };
 		sb << mangle{struct_name};
 		if (is_multiple_with_same_name)
 			sb << '_' << mangle{module_name};
@@ -30,7 +30,7 @@ namespace {
 	}
 
 	ArenaString escape_field_name(const Identifier& field_name, Arena& arena) {
-		Arena::StringBuilder sb = arena.string_builder(100);
+		StringBuilder sb { arena, 100 };
 		sb << mangle{field_name};
 		return sb.finish();
 	}
@@ -55,11 +55,11 @@ namespace {
 	const StringSlice INST = "_inst";
 
 	ArenaString escape_fun_name(const ConcreteFun& f, bool is_overloaded, bool is_instantiated, FunIds& ids, Arena& arena) {
-		Arena::StringBuilder sb = arena.string_builder(100);
+		StringBuilder sb { arena, 100 };
 		const FunSignature& sig = f.fun_declaration->signature;
 		sb << mangle{sig.name};
 		if (is_overloaded) {
-			sb << OVERLOAD << mangle {f.fun_declaration->containing_module->name()};
+			sb << OVERLOAD << mangle { f.fun_declaration->containing_module->name() };
 			write_type_for_fun_name(sb, sig.return_type);
 			for (const Parameter& p : sig.parameters) {
 				sb << '_';
@@ -96,7 +96,7 @@ namespace {
 }
 
 Names get_names(const Arr<Module>& modules, const FunInstantiations& fun_instantiations, Arena& arena) {
-	MaxSizeSet<64, Identifier, Identifier::hash> all_module_names;
+	MaxSizeSet<64, StringSlice, StringSlice::hash> all_module_names;
 	DuplicateNamesGetter all_struct_names;
 	DuplicateNamesGetter all_fun_names;
 

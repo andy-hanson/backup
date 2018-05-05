@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../util/StringSlice.h"
-#include "../../util/Grow.h"
+#include "../../util/List.h"
 #include "../../host/Path.h"
 #include "../model/effect.h"
 #include "./expr_ast.h"
@@ -130,10 +130,10 @@ struct FileAst {
 	StringSlice source;
 	Option<ArenaString> comment;
 	Arr<ImportAst> imports;
-	Grow<StringSlice> includes;
-	Grow<SpecDeclarationAst> specs;
-	Grow<StructDeclarationAst> structs;
-	Grow<FunDeclarationAst> funs;
+	List<StringSlice> includes;
+	List<SpecDeclarationAst> specs;
+	List<StructDeclarationAst> structs;
+	List<FunDeclarationAst> funs;
 
 	FileAst(Path _path, StringSlice _source) : path(_path), source(_source) {}
 };

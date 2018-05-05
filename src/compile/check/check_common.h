@@ -18,18 +18,18 @@ struct CheckCtx {
 		return source.range_from_inner_slice(slice);
 	}
 	inline void diag(SourceRange range, Diag diag) {
-		diags.emplace(path, range, diag);
+		diags.push({ path, range, diag });
 	}
 	inline void diag(StringSlice slice, Diag d) {
 		diag(range(slice), d);
 	}
-	inline Option<ArenaString> copy_str(Option<ArenaString> str) {
-		return str.has() ? Option { arena.str(str.get()) } : Option<ArenaString> {};
+	inline Option<ArenaString> copy_str(Option<ArenaString> s) {
+		return s.has() ? Option { str(arena, s.get()) } : Option<ArenaString> {};
 	}
 };
 
 inline Identifier id(CheckCtx& al, StringSlice s) {
-	return Identifier { al.arena.str(s) };
+	return Identifier { str(al.arena, s) };
 }
 
 // current_specs: the specs from the current function.

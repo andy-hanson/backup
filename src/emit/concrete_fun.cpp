@@ -20,7 +20,7 @@ namespace {
 			case Type::Kind::InstStruct: {
 				const InstStruct& i = t.inst_struct();
 				return some(i.type_arguments, [](const Type& ta) { return ta.is_parameter(); })
-					? InstStruct { i.strukt, arena.map<Type>()(i.type_arguments, [&](const Type& ta) { return Type{substitute_type_arguments(ta, params, args, arena)}; }) }
+					? InstStruct { i.strukt, map<Type>()(arena, i.type_arguments, [&](const Type& ta) { return Type{substitute_type_arguments(ta, params, args, arena)}; }) }
 					: i;
 			}
 		}
@@ -89,14 +89,14 @@ namespace {
 	}
 
 	ConcreteFun get_concrete_called(const ConcreteFun& calling_fun, const Called& called, const EveryConcreteFun& res, Arena& scratch_arena) {
-		Arr<InstStruct> called_type_arguments = scratch_arena.map<InstStruct>()(called.type_arguments, [&](const Type& type_argument) {
+		Arr<InstStruct> called_type_arguments = map<InstStruct>()(scratch_arena, called.type_arguments, [&](const Type& type_argument) {
 			return substitute_type_arguments(type_argument, calling_fun, scratch_arena);
 		});
 
 		//NOTE: currently, the function that matches a spec must be an exact match, not an instantiation of some generic function. So no recursive instantiations to worry about.
 		Arr<Arr<ref<const ConcreteFun>>> concrete_spec_impls =
-		scratch_arena.map<Arr<ref<const ConcreteFun>>>()(called.spec_impls, [&](const Arr<CalledDeclaration>& called_specs) {
-			return scratch_arena.map<ref<const ConcreteFun>>()(called_specs, [&](const CalledDeclaration& called_spec) {
+		map<Arr<ref<const ConcreteFun>>>()(scratch_arena, called.spec_impls, [&](const Arr<CalledDeclaration>& called_specs) {
+			return map<ref<const ConcreteFun>>()(scratch_arena, called_specs, [&](const CalledDeclaration& called_spec) {
 				switch (called_spec.kind()) {
 					case CalledDeclaration::Kind::Spec:
 						throw "todo";

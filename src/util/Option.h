@@ -91,17 +91,6 @@ Option<ref<T>> copy_inner(const Option<const ref<T>&> o) {
 	if (o.has()) return Option<ref<T>> { o.get() }; else return {};
 }
 
-template <typename Out>
-struct OptionMap {
-	template <typename In, typename /*In => Out*/ Cb>
-	Option<Out> operator()(const Option<In>& in, Cb cb) const {
-		return in.has() ? Option<Out>{cb(in.get())} : Option<Out>{};
-	}
-};
-
-template <typename Out>
-OptionMap<Out> map() { return {}; }
-
 template <typename T>
 Option<ref<T>> un_ref(const Option<const ref<T>&> in) {
 	return in.has() ? Option { in.get() } : Option<ref<T>>{};

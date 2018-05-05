@@ -47,7 +47,7 @@ Writer& operator<<(Writer& out, mangle man) {
 	write_mangled(out, man.name);
 	return out;
 }
-Arena::StringBuilder& operator<<(Arena::StringBuilder& out, mangle man) {
+StringBuilder& operator<<(StringBuilder& out, mangle man) {
 	write_mangled(out, man.name);
 	return out;
 }

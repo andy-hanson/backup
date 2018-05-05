@@ -1,5 +1,6 @@
 #include "./Path.h"
 
+#include "../util/ArenaString.h"
 #include "../util/MaxSizeMap.h"
 
 namespace {
@@ -24,7 +25,7 @@ namespace {
 		if (already.has()) {
 			return already.get();
 		} else {
-			ArenaString a = arena.str(name);
+			ArenaString a = str(arena, name);
 			slices.must_insert(a, a);
 			return slices.get(name).get(); //TODO:PERF
 		}
@@ -63,7 +64,7 @@ struct Path::Impl {
 const Option<Path>& Path::parent() const {
 	return impl->parent;
 }
-const ArenaString& Path::base_name() const {
+StringSlice Path::base_name() const {
 	return impl->name;
 }
 

@@ -24,7 +24,7 @@ struct FileLocator {
 	}
 };
 
-Option<ArenaString> try_read_file(const FileLocator& loc, Arena& out, bool null_terminated);
+Option<StringSlice> try_read_file(const FileLocator& loc, Arena& out, bool null_terminated);
 void write_file(const FileLocator& loc, const Grow<char>& contents);
 void delete_file(const FileLocator& loc);
 bool file_exists(const FileLocator& loc);

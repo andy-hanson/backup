@@ -110,7 +110,8 @@ namespace {
 		return SpecDeclarationAst { comment, lexer.range(start), is_public, name, type_parameters, sigs.finish() };
 	}
 
-	void parse_struct_or_fun(FileAst& ast, Lexer& lexer, Arena& arena, bool is_public, const char* start, Option<ArenaString> comment) {
+	void parse_struct_or_fun(Lexer& lexer, Arena& arena, bool is_public, const char* start, Option<ArenaString> comment,
+		List<StringSlice>::Builder& includes, List<StructDeclarationAst>::Builder& structs, List<FunDeclarationAst>::Builder& funs) {
 		bool c = lexer.try_take('c');
 		if (c) lexer.take(' ');
 
@@ -119,11 +120,11 @@ namespace {
 			lexer.take(' ');
 			if (name.name == INCLUDE) {
 				// is_public is irrelevant for these
-				ast.includes.push(lexer.take_cpp_include());
+				includes.add(lexer.take_cpp_include(), arena);
 			} else {
 				FunSignatureAst signature = parse_signature_ast(lexer, arena, name.name, comment);
 				FunBodyAst body = c ? FunBodyAst { lexer.take_indented_string(arena) } : FunBodyAst { parse_body_ast(lexer, arena) };
-				ast.funs.push({ is_public, signature, body });
+				funs.add({ is_public, signature, body }, arena);
 			}
 		} else {
 			bool copy = false;
@@ -134,7 +135,7 @@ namespace {
 					type_parameters = parse_type_parameter_asts(lexer, arena);
 			}
 			StructBodyAst body = c ? StructBodyAst { parse_cpp_struct_body(lexer) } : StructBodyAst { parse_struct_field_asts(lexer, arena) };
-			ast.structs.push({ comment, lexer.range(start), is_public, name.name, type_parameters, copy, body });
+			structs.add({ comment, lexer.range(start), is_public, name.name, type_parameters, copy, body }, arena);
 		}
 	}
 
@@ -170,6 +171,11 @@ void parse_file(FileAst& ast, PathCache& path_cache, Arena& arena) {
 		lexer.take('\n');
 	}
 
+	List<StringSlice>::Builder includes;
+	List<SpecDeclarationAst>::Builder specs;
+	List<StructDeclarationAst>::Builder structs;
+	List<FunDeclarationAst>::Builder funs;
+
 	bool is_public = true;
 	while (true) {
 		lexer.skip_blank_lines();
@@ -184,8 +190,13 @@ void parse_file(FileAst& ast, PathCache& path_cache, Arena& arena) {
 		Option<ArenaString> comment = lexer.try_take_comment(arena);
 		const char* start = lexer.at();
 		if (lexer.try_take('$'))
-			ast.specs.push(parse_spec(lexer, arena, is_public, comment));
+			specs.add(parse_spec(lexer, arena, is_public, comment), arena);
 		else
-			parse_struct_or_fun(ast, lexer, arena, is_public, start, comment);
+			parse_struct_or_fun(lexer, arena, is_public, start, comment, includes, structs, funs);
 	}
+
+	ast.includes = includes.finish();
+	ast.specs = specs.finish();
+	ast.structs = structs.finish();
+	ast.funs = funs.finish();
 }

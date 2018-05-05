@@ -6,7 +6,7 @@ namespace {
 	struct FileDocumentProvider final : public DocumentProvider {
 		const StringSlice root;
 		FileDocumentProvider(StringSlice _root) : root(_root) {}
-		Option<ArenaString> try_get_document(const Path& path, const StringSlice& extension, Arena& out) override {
+		Option<StringSlice> try_get_document(const Path& path, const StringSlice& extension, Arena& out) override {
 			return try_read_file({ root, path, extension }, out, /*null_terminated*/ true);
 		}
 	};

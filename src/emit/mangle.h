@@ -3,6 +3,6 @@
 #include "../compile/model/model.h"
 #include "../util/Writer.h"
 
-struct mangle { const Identifier& name; };
+struct mangle { const StringSlice& name; };
 Writer& operator<<(Writer& out, mangle man);
-Arena::StringBuilder& operator<<(Arena::StringBuilder& out, mangle man);
+StringBuilder& operator<<(StringBuilder& out, mangle man);

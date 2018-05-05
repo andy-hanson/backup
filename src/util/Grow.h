@@ -76,22 +76,15 @@ public:
 		return tail->storage.values[next_index_in_node - 1];
 	}
 
-	template <typename... Arguments>
-	T& emplace(Arguments&& ...arguments) {
-		T* ptr = get_next_ptr();
-		new (ptr) T(arguments...);
-		return *ptr;
-	}
-
 	void push_copy(T value) {
 		T* ptr = get_next_ptr();
 		*ptr = value;
 	}
 
-	void push(T value) {
-		emplace(value);
-		//T* ptr = get_next_ptr();
-		//*ptr = value;
+	T& push(T&& value) {
+		T* ptr = get_next_ptr();
+		*ptr = value;
+		return *ptr;
 	}
 
 	class const_iterator {

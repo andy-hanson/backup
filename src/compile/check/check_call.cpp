@@ -174,9 +174,9 @@ namespace {
 			return { called, type_arguments, {} };
 		}
 
-		Arr<Arr<CalledDeclaration>> spec_impls = ctx.check_ctx.arena.map<Arr<CalledDeclaration>>()(called.sig().specs, [&](const SpecUse& spec_use) {
+		Arr<Arr<CalledDeclaration>> spec_impls = map<Arr<CalledDeclaration>>()(ctx.check_ctx.arena, called.sig().specs, [&](const SpecUse& spec_use) {
 			TypeArgumentsScope type_arguments_scope { { spec_use.spec->type_parameters, spec_use.type_arguments }, { called.sig().type_parameters, type_arguments } };
-			return ctx.check_ctx.arena.map<CalledDeclaration>()(spec_use.spec->signatures, [&](const FunSignature& sig) {
+			return map<CalledDeclaration>()(ctx.check_ctx.arena, spec_use.spec->signatures, [&](const FunSignature& sig) {
 				return find_spec_signature_implementation(ctx, sig, type_arguments_scope);
 			});
 		});
@@ -252,7 +252,7 @@ Expression check_call(const StringSlice& fun_name, const Arr<ExprAst>& argument_
 	if (candidates.size() > 1) throw "todo: two identical candidates?";
 	const Candidate& candidate = candidates[0];
 
-	Arr<Type> candidate_type_arguments = ctx.check_ctx.arena.map<Type>()(candidate.inferring_type_arguments, [](const Option<Type>& t){
+	Arr<Type> candidate_type_arguments = map<Type>()(ctx.check_ctx.arena, candidate.inferring_type_arguments, [](const Option<Type>& t){
 		if (!t.has()) throw "todo: didn't infer all type arguments";
 		return t.get();
 	});

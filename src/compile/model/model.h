@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../util/Alloc.h"
+#include "../../util/ArenaString.h"
 #include "../../util/assert.h"
 #include "../../util/Map.h"
 #include "../../util/MultiMap.h"
@@ -271,7 +272,5 @@ struct Module {
 	SpecsTable specs_table;
 	FunsTable funs_table;
 
-	inline Module(Path _path, Arr<ref<const Module>> _imports, Option<ArenaString> _comment) : path(_path), imports(_imports), comment(_comment) {}
-
-	inline Identifier name() const { return path.base_name(); }
+	inline StringSlice name() const { return path.base_name(); }
 };

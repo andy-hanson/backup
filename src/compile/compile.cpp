@@ -20,11 +20,11 @@ namespace {
 
 		do {
 			Path path = to_parse.pop_and_return();
-			Option<ArenaString> document = document_provider.try_get_document(path, NZ_EXTENSION, ast_arena);
+			Option<StringSlice> document = document_provider.try_get_document(path, NZ_EXTENSION, ast_arena);
 			if (!document.has()) throw "todo: no such file";
 
 			try {
-				FileAst& f = out.emplace(path, document.get());
+				FileAst& f = out.push({ path, document.get() });
 				parse_file(f, path_cache, ast_arena);
 			} catch (ParseDiagnostic diag) {
 				diagnostics.push({ path, diag });
@@ -72,7 +72,9 @@ void compile(CompiledProgram& out, DocumentProvider& document_provider, Path fir
 	Compiled compiled;
 	Option<Arr<Module>> modules = out.arena.map_or_fail_reverse<Module>()(parsed, [&](const FileAst& ast, ref<Module> m) {
 		Option<Arr<ref<const Module>>> imports = get_imports(ast.imports, ast.path, compiled, out.paths, out.arena, out.diagnostics);
-		new (m.ptr()) Module { ast.path, imports.get(), ast.comment.has() ? Option { out.arena.str(ast.comment.get()) } : Option<ArenaString> {} };
+		m->path = ast.path;
+		m->imports = imports.get();
+		m->comment = ast.comment.has() ? Option { str(out.arena, ast.comment.get()) } : Option<ArenaString> {};
 		if (!imports.has()) {
 			assert(!out.diagnostics.empty());
 			return false;

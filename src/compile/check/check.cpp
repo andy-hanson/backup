@@ -101,7 +101,7 @@ namespace {
 
 	Arr<StructField> check_struct_fields(const Arr<StructFieldAst>& asts, CheckCtx& ctx, const StructsTable& structs_table, const Arr<TypeParameter>& struct_type_parameters) {
 		TypeParametersScope type_parameters_scope { {}, struct_type_parameters };
-		return ctx.arena.map<StructField>()(asts, [&](const StructFieldAst& field) {
+		return map<StructField>()(ctx.arena, asts, [&](const StructFieldAst& field) {
 			return StructField { ctx.copy_str(field.comment), type_from_ast(field.type, ctx, structs_table, type_parameters_scope), id(ctx, field.name) };
 		});
 	}
@@ -113,7 +113,7 @@ namespace {
 		//	throw "todo";
 		//}
 
-		module->specs_declaration_order = ctx.arena.map<SpecDeclaration>()(file_ast.specs, [&](const SpecDeclarationAst& ast) {
+		module->specs_declaration_order = map<SpecDeclaration>()(ctx.arena, file_ast.specs, [&](const SpecDeclarationAst& ast) {
 			return SpecDeclaration { module, ast.range, ctx.copy_str(ast.comment), ast.is_public, check_type_parameters(ast.type_parameters, ctx, {}), id(ctx, ast.name) };
 		});
 		module->specs_table = build_map<StringSlice, SpecDeclaration, StringSlice::hash>(ctx.arena)(
@@ -123,7 +123,7 @@ namespace {
 				ctx.diag(b.name, Diag::Kind::DuplicateDeclaration);
 			});
 
-		module->structs_declaration_order = ctx.arena.map<StructDeclaration>()(file_ast.structs, [&](const StructDeclarationAst& ast) {
+		module->structs_declaration_order = map<StructDeclaration>()(ctx.arena, file_ast.structs, [&](const StructDeclarationAst& ast) {
 			return StructDeclaration { module, ast.range, ast.is_public, check_type_parameters(ast.type_parameters, ctx, {}), id(ctx, ast.name), ast.copy };
 		});
 		module->structs_table = build_map<StringSlice, StructDeclaration, StringSlice::hash>(ctx.arena)(
@@ -133,7 +133,7 @@ namespace {
 				ctx.diag(b.range, Diag::Kind::DuplicateDeclaration);
 			});
 
-		module->funs_declaration_order = ctx.arena.map<FunDeclaration>()(file_ast.funs, [&](const FunDeclarationAst& ast) {
+		module->funs_declaration_order = map<FunDeclaration>()(ctx.arena, file_ast.funs, [&](const FunDeclarationAst& ast) {
 			return FunDeclaration { module, ast.is_public, { id(ctx, ast.signature.name) }, {} };
 		});
 		module->funs_table = build_multi_map<StringSlice, FunDeclaration, StringSlice::hash>(ctx.arena)(
@@ -142,10 +142,10 @@ namespace {
 	}
 
 	template <typename T, typename U, typename /*const T&, U& => void*/ Cb>
-	void zipp(const Grow<T>& grow, Arr<U>& v, Cb cb) {
-		assert(grow.size() == v.size());
+	void zipp(const List<T>& a, Arr<U>& v, Cb cb) {
+		assert(a.size() == v.size());
 		uint i = 0;
-		for (const T& t : grow) {
+		for (const T& t : a) {
 			cb(t, v[i]);
 			++i;
 		}
@@ -159,7 +159,7 @@ namespace {
 		const StructsTable& structs_table, const SpecsTable& specs_table, FunsTable& funs_table
 	) {
 		zipp(file_ast.specs, specs, [&](const SpecDeclarationAst& spec_ast, SpecDeclaration& spec) {
-			spec.signatures = al.arena.map<FunSignature>()(spec_ast.signatures, [&](const FunSignatureAst& ast) {
+			spec.signatures = map<FunSignature>()(al.arena, spec_ast.signatures, [&](const FunSignatureAst& ast) {
 				return check_signature(ast, al, structs_table, specs_table, funs_table, spec.type_parameters, id(al, ast.name));
 			});
 		});
@@ -167,7 +167,7 @@ namespace {
 		zipp(file_ast.structs, structs, [&](const StructDeclarationAst& struct_ast, StructDeclaration& strukt) {
 			const StructBodyAst& body_ast = struct_ast.body;
 			strukt.body = body_ast.kind() == StructBodyAst::Kind::CppName
-						   ? StructBody{al.arena.str(body_ast.cpp_name())}
+						   ? StructBody{str(al.arena, body_ast.cpp_name())}
 						   : StructBody{check_struct_fields(body_ast.fields(), al, structs_table, strukt.type_parameters)};
 		});
 
@@ -203,7 +203,7 @@ namespace {
 		BuiltinTypes builtin_types { get_special_named_type(structs_table, al, BOOL), get_special_named_type(structs_table, al, STRING), get_special_named_type(structs_table, al, VOID) };
 		zipp(file_ast.funs, funs, [&](const FunDeclarationAst& ast, FunDeclaration& fun) {
 			if (ast.body.kind() == FunBodyAst::Kind::CppSource)
-				fun.body = AnyBody{ al.arena.str(ast.body.cpp_source())};
+				fun.body = AnyBody { str(al.arena, ast.body.cpp_source()) };
 			else {
 				fun.body = AnyBody { al.arena.put(check_function_body(ast.body.expression(), al, funs_table, structs_table, fun, builtin_types)) };
 				check_effects(fun);

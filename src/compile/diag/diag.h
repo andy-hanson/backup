@@ -53,6 +53,7 @@ private:
 
 public:
 	Diag(const Diag& other);
+	void operator=(const Diag& other);
 	Diag(ParseDiag p);
 	Diag(Kind kind);
 	Diag(Kind kind, WrongNumber wrong_number);

@@ -71,7 +71,7 @@ namespace {
 			ctx.check_ctx.diag(name, Diag::Kind::LocalShadowsLocal);
 
 		ExpressionAndType init = check_and_infer(*ast.init, ctx);
-		ref<Let> l = ctx.check_ctx.arena.put(Let { init.type, Identifier { ctx.check_ctx.arena.str(name) }, init.expression, {}, {} });
+		ref<Let> l = ctx.check_ctx.arena.put(Let { init.type, Identifier { str(ctx.check_ctx.arena, name) }, init.expression, {}, {} });
 		ctx.locals.push(l);
 		l->then = check(*ast.then, ctx, expected);
 		assert(ctx.locals.peek() == l);
@@ -95,7 +95,7 @@ namespace {
 			return Expression::bogus();
 		}
 
-		Arr<Case> cases = ctx.check_ctx.arena.map<Case>()(ast.cases, [&](const CaseAst& c) {
+		Arr<Case> cases = map<Case>()(ctx.check_ctx.arena, ast.cases, [&](const CaseAst& c) {
 			Expression cond = check_and_expect(c.condition, ctx, ctx.builtin_types.bool_type.get());
 			Expression then = check(c.then, ctx, expected);
 			return Case { cond, then };
@@ -132,7 +132,7 @@ namespace {
 
 	Expression check_no_call_literal_inner(const StringSlice& literal, ExprContext& ctx, Expected& expected) {
 		if (expected.has_expectation_or_inferred_type()) expected.as_if_checked(); else expected.set_inferred(ctx.builtin_types.string_type.get());
-		return Expression{ctx.check_ctx.arena.str(literal)};
+		return Expression { str(ctx.check_ctx.arena, literal) };
 	}
 
 	Expression check_no_call_literal(const StringSlice& literal, ExprContext& ctx, Expected& expected) {
@@ -156,7 +156,7 @@ namespace {
 			return check_no_call_literal_inner(literal.literal, ctx, expected);
 		} else {
 			Arena::SmallArrayBuilder<ExprAst> b = ctx.scratch_arena.small_array_builder<ExprAst>();
-			b.add(ExprAst { ctx.check_ctx.arena.str(literal.literal) }); // This is a NoCallLiteral
+			b.add(ExprAst { str(ctx.check_ctx.arena, literal.literal) }); // This is a NoCallLiteral
 			for (const ExprAst &arg : literal.arguments)
 				b.add(arg);
 			return check_call(LITERAL, b.finish(), literal.type_arguments, ctx, expected);

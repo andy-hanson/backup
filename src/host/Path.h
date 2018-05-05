@@ -19,7 +19,7 @@ public:
 	void write(const StringSlice& root, const StringSlice& extension, MutableStringSlice& out) const;
 
 	const Option<Path>& parent() const;
-	const ArenaString& base_name() const;
+	StringSlice base_name() const;
 
 	inline friend bool operator==(const Path& a, const Path& b) {
 		// Paths are memoized, so we can just compare references.

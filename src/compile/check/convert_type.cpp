@@ -35,5 +35,5 @@ Type type_from_ast(const TypeAst& ast, CheckCtx& ctx, const StructsTable& struct
 }
 
 Arr<Type> type_arguments_from_asts(const Arr<TypeAst>& type_arguments, CheckCtx& al, const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope) {
-	return al.arena.map<Type>()(type_arguments, [&](const TypeAst& t) { return type_from_ast(t, al, structs_table, type_parameters_scope); });
+	return map<Type>()(al.arena, type_arguments, [&](const TypeAst& t) { return type_from_ast(t, al, structs_table, type_parameters_scope); });
 }

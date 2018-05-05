@@ -3,6 +3,7 @@
 #include "../diag/parse_diag.h"
 #include "../model/effect.h"
 #include "../../util/Alloc.h"
+#include "../../util/ArenaString.h"
 #include "../../util/StringSlice.h"
 
 struct ExpressionToken {
@@ -34,7 +35,7 @@ class Lexer {
 	void expect(const char* expected);
 	uint take_tabs();
 
-	Arena::StringBuilder string_builder(Arena& arena);
+	StringBuilder string_builder(Arena& arena);
 
 public:
 	// May throw a ParseDiagnostic.

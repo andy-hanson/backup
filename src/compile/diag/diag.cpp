@@ -10,7 +10,9 @@ Diag::Diag(ParseDiag p) : _kind(Kind::Parse) {
 	data.parse_diag = p;
 }
 
-Diag::Diag(const Diag& other) : _kind(other._kind) {
+Diag::Diag(const Diag& other) { *this = other; }
+void Diag::operator=(const Diag& other) {
+	_kind = other._kind;
 	switch (_kind) {
 		case Kind::Parse:
 			data.parse_diag = other.data.parse_diag;
@@ -38,7 +40,9 @@ Diag::Diag(const Diag& other) : _kind(other._kind) {
 		case Kind::MissingStringType:
 			break;
 	}
+
 }
+
 
 Diag::Diag(Kind kind) : _kind(kind) {
 	switch (_kind) {
