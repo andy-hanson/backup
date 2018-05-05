@@ -12,7 +12,7 @@ namespace {
 		switch (type.kind()) {
 			case Type::Kind::Nil:
 			case Type::Kind::Bogus:
-				assert(false);
+				unreachable();
 			case Type::Kind::Param:
 				sb << mangle { type.param()->name };
 				break;
@@ -37,11 +37,11 @@ namespace {
 
 	class FunIds {
 		// Filled lazily, because we won't need ids for most funs.
-		MaxSizeMap<32, ref<const ConcreteFun>, uint, ref<const ConcreteFun>::hash> ids;
+		MaxSizeMap<32, Ref<const ConcreteFun>, uint, Ref<const ConcreteFun>::hash> ids;
 		uint next_id = 1;
 
 	public:
-		uint get_id(ref<const ConcreteFun> f) {
+		uint get_id(Ref<const ConcreteFun> f) {
 			uint& i = ids.get_or_insert_default(f);
 			if (i == 0) {
 				i = next_id;
@@ -72,8 +72,8 @@ namespace {
 				sb << '_';
 				write_type_for_fun_name(sb, i);
 			}
-			for (const Arr<ref<const ConcreteFun>>& spec_impl : f.spec_impls)
-				for (ref<const ConcreteFun> c : spec_impl)
+			for (const Slice<Ref<const ConcreteFun>>& spec_impl : f.spec_impls)
+				for (Ref<const ConcreteFun> c : spec_impl)
 					sb << '_' << ids.get_id(c);
 		}
 		return sb.finish();
@@ -100,7 +100,7 @@ namespace {
 	};
 }
 
-Names get_names(const Arr<Module>& modules, const FunInstantiations& fun_instantiations, Arena& arena) {
+Names get_names(const Slice<Module>& modules, const FunInstantiations& fun_instantiations, Arena& arena) {
 	MaxSizeSet<64, StringSlice, StringSlice::hash> all_module_names;
 	DuplicateNamesGetter all_struct_names;
 	DuplicateNamesGetter all_fun_names;

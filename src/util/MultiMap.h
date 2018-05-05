@@ -13,9 +13,9 @@ struct MultiMapPair {
 template <typename K, typename V, typename Hash>
 class MultiMap {
 	template <typename, typename, typename> friend struct BuildMultiMap;
-	Arr<Option<MultiMapPair<K, V>>> arr;
+	Slice<Option<MultiMapPair<K, V>>> arr;
 
-	MultiMap(Arr<Option<MultiMapPair<K, V>>> _arr) : arr(_arr) {}
+	MultiMap(Slice<Option<MultiMapPair<K, V>>> _arr) : arr(_arr) {}
 
 public:
 	MultiMap() : arr() {}
@@ -57,20 +57,20 @@ struct BuildMultiMap {
 	Arena& arena;
 
 	template <typename /*const V& => K*/ CbGetKey>
-	MultiMap<K, ref<const V>, Hash> operator()(const Arr<V>& values, CbGetKey get_key) {
+	MultiMap<K, Ref<const V>, Hash> operator()(const Slice<V>& values, CbGetKey get_key) {
 		if (values.empty())
 			return {};
 
 		uint arr_size = values.size() * 2;
-		Arr<Option<MultiMapPair<K, ref<const V>>>> arr = fill_array<Option<MultiMapPair<K, ref<const V>>>>()(
-			arena, arr_size, [](uint i __attribute__((unused))) { return Option<MultiMapPair<K, ref<const V>>> {}; });
+		Slice<Option<MultiMapPair<K, Ref<const V>>>> arr = fill_array<Option<MultiMapPair<K, Ref<const V>>>>()(
+			arena, arr_size, [](uint i __attribute__((unused))) { return Option<MultiMapPair<K, Ref<const V>>> {}; });
 
 		for (const V& value : values) {
 			const K& key = get_key(value);
 			hash_t hash = Hash{}(key);
-			Option<MultiMapPair<K, ref<const V>>>& op_entry = arr[hash % arr.size()];
+			Option<MultiMapPair<K, Ref<const V>>>& op_entry = arr[hash % arr.size()];
 			if (op_entry.has()) {
-				const MultiMapPair<K, ref<const V>>& entry = op_entry.get();
+				const MultiMapPair<K, Ref<const V>>& entry = op_entry.get();
 				if (entry.key.has() && entry.key.get() == key) {
 					//Add this to the end of the group
 					throw "tod!o";
@@ -78,7 +78,7 @@ struct BuildMultiMap {
 					throw "todo"; // false conflict, must re-hash
 				}
 			} else {
-				op_entry = MultiMapPair<K, ref<const V>> { Option<K> { key }, ref<const V>(&value) };
+				op_entry = MultiMapPair<K, Ref<const V>> { Option<K> { key }, Ref<const V>(&value) };
 			}
 		}
 

@@ -1,7 +1,6 @@
 #pragma once
 
-#include "./ptr.h"
-#include "./Slice.h"
+#include "./Ref.h"
 
 class Arena {
 	friend class StringBuilder; // TODO
@@ -18,13 +17,13 @@ public:
 	void* allocate(uint n_bytes);
 
 	template <typename T>
-	ref<T> allocate_uninitialized() {
+	Ref<T> allocate_uninitialized() {
 		return static_cast<T*>(allocate(sizeof(T)));
 	}
 
 	template <typename T>
-	ref<T> put(T value) {
-		ref<T> ptr = allocate_uninitialized<T>();
+	Ref<T> put(T value) {
+		Ref<T> ptr = allocate_uninitialized<T>();
 		*ptr.ptr() = value;
 		return ptr;
 	}

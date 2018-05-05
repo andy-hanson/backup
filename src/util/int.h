@@ -7,6 +7,10 @@ using uint = unsigned int;
 using ushort = unsigned short;
 using ulong = unsigned long;
 
+inline constexpr int to_signed(uint u) {
+	assert(u < 1042); //todo: higher limit
+	return int(u);
+}
 inline constexpr uint to_unsigned(long l) {
 	assert(l >= 0);
 	return uint(l);

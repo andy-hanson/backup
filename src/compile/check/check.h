@@ -5,4 +5,4 @@
 #include "../model/model.h"
 #include "../parse/ast.h"
 
-void check(ref<Module> m, const FileAst& ast, Arena& arena, List<Diagnostic>::Builder& diags);
+void check(Ref<Module> m, const FileAst& ast, Arena& arena, List<Diagnostic>::Builder& diags);

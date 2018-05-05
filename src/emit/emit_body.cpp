@@ -6,7 +6,7 @@
 namespace {
 	struct BodyCtx {
 		Writer& out;
-		ref<const ConcreteFun> current_concrete_fun;
+		Ref<const ConcreteFun> current_concrete_fun;
 		Arena& scratch_arena;
 		const Names& names;
 		const ResolvedCalls& resolved_calls;
@@ -29,7 +29,7 @@ namespace {
 			case Expression::Kind::Assert:
 			case Expression::Kind::Nil:
 			case Expression::Kind::Bogus:
-				assert(false);
+				unreachable();
 		}
 	}
 
@@ -77,7 +77,7 @@ namespace {
 			case Expression::Kind::Call: {
 				const Call& c = e.call();
 				// The function we're calling depends on the current ConcreteFun being emitted.
-				ref<const ConcreteFun> called_concrete = ctx.resolved_calls.must_get({ ctx.current_concrete_fun, &c.called });
+				Ref<const ConcreteFun> called_concrete = ctx.resolved_calls.must_get({ ctx.current_concrete_fun, &c.called });
 				out << ctx.names.get_name(called_concrete) << "(";
 				for (uint i = 0; i != c.arguments.size(); ++i) {
 					ctx << c.arguments[i];
@@ -104,7 +104,7 @@ namespace {
 				throw "todo";
 			case Expression::Kind::Nil:
 			case Expression::Kind::Bogus:
-				assert(false);
+				unreachable();
 		}
 		return ctx;
 	}
@@ -177,13 +177,13 @@ namespace {
 				break;
 			case Expression::Kind::Nil:
 			case Expression::Kind::Bogus:
-				assert(false);
+				unreachable();
 		}
 		return ctx;
 	}
 }
 
-void emit_body(Writer& out, ref<const ConcreteFun> f, const Names& names, const ResolvedCalls& resolved_calls, Arena& scratch_arena) {
+void emit_body(Writer& out, Ref<const ConcreteFun> f, const Names& names, const ResolvedCalls& resolved_calls, Arena& scratch_arena) {
 	const AnyBody& body = f->fun_declaration->body;
 	switch (body.kind()) {
 		case AnyBody::Kind::Expr: {
@@ -197,6 +197,6 @@ void emit_body(Writer& out, ref<const ConcreteFun> f, const Names& names, const 
 			out << indented{body.cpp_source()};
 			break;
 		case AnyBody::Kind::Nil:
-			assert(false);
+			unreachable();
 	}
 }

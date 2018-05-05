@@ -4,10 +4,8 @@ project(oohoo)
 set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_CXX_COMPILER "/home/andy/bin/clang+llvm-6.0.0-x86_64-linux-gnu-ubuntu-14.04/bin/clang++")
-# Must have -Wno-used-but-marked-unused because of https://youtrack.jetbrains.com/issue/CPP-2151
-# -Wno-missing-no-return because I often write `f() { throw "todo"; }`
 # -stdlib=libstdc++ supposedly improves debugging (https://blog.jetbrains.com/clion/2015/05/debug-clion/)
-set(CMAKE_CXX_FLAGS "-pedantic -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-used-but-marked-unused -Wno-missing-noreturn -Werror -stdlib=libstdc++")
+set(CMAKE_CXX_FLAGS "-pedantic -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Werror -stdlib=libstdc++")
 
 add_executable(oohoo
 	src/main.cpp
@@ -85,8 +83,8 @@ add_executable(oohoo
 	src/util/collection_util.h
 	src/util/MaxSizeVector.h
 	src/util/Option.h
-	src/util/ptr.h
-	src/util/Grow.h
+	src/util/Ref.h
+	src/util/BlockedList.h
 	src/util/hash_util.h
 	src/util/io.cpp
 	src/util/io.h
@@ -103,4 +101,4 @@ add_executable(oohoo
 	src/util/Writer.h
 
 	src/clang.cpp
-	src/clang.h src/util/unique_ptr.h src/util/Map.h src/util/MultiMap.h src/util/MaxSizeMap.h src/util/KeyValuePair.h src/util/assert.h src/util/List.h src/util/ArenaString.h src/util/ArenaString.cpp src/util/ArenaArrayBuilders.h src/util/SmallMap.h)
+	src/clang.h src/util/unique_ptr.h src/util/Map.h src/util/MultiMap.h src/util/MaxSizeMap.h src/util/KeyValuePair.h src/util/assert.h src/util/List.h src/util/ArenaString.h src/util/ArenaString.cpp src/util/ArenaArrayBuilders.h src/util/SmallMap.h src/test/test_single.h src/test/test_single.cpp src/test/TestMode.h src/test/TestFailure.h)

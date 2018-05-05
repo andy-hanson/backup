@@ -6,26 +6,26 @@
 
 struct Candidate {
 	CalledDeclaration called;
-	ref<const FunSignature> signature;
+	Ref<const FunSignature> signature;
 	// DynArray in a scratch arena.
 	// Note: if explicit type arguments are provided, these will already be filled.
 	// These will be None if not yet inferred.
-	Arr<Option<Type>> inferring_type_arguments;
+	Slice<Option<Type>> inferring_type_arguments;
 
-	Candidate(CalledDeclaration _called, ref<const FunSignature> _signature, Arr<Option<Type>> _inferring_type_arguments)
+	Candidate(CalledDeclaration _called, Ref<const FunSignature> _signature, Slice<Option<Type>> _inferring_type_arguments)
 		: called(_called), signature(_signature), inferring_type_arguments(_inferring_type_arguments) {
 		assert(signature->type_parameters.size() == inferring_type_arguments.size());
 	}
 };
 
 template <typename T>
-const T& get_type_argument(const Arr<TypeParameter>& type_parameters, const Arr<T>& type_arguments, ref<const TypeParameter> type_parameter) {
+const T& get_type_argument(const Slice<TypeParameter>& type_parameters, const Slice<T>& type_arguments, Ref<const TypeParameter> type_parameter) {
 	assert(type_parameters.size() == type_arguments.size());
 	return type_arguments[try_get_index(type_parameters, type_parameter).get()];
 }
 
 // Recursively replaces every type parameter with a corresponding type argument.
-InstStruct substitute_type_arguments(const TypeParameter& t, const Arr<TypeParameter>& type_parameters, const Arr<InstStruct>& type_arguments);
+InstStruct substitute_type_arguments(const TypeParameter& t, const Slice<TypeParameter>& type_parameters, const Slice<InstStruct>& type_arguments);
 
 /**
 Either: try_match_types(expected return type, candidate return type)

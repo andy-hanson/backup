@@ -1,32 +1,33 @@
 #pragma once
 
-#include "./Grow.h"
+#include "BlockedList.h"
 #include "./Option.h"
 #include "./StringSlice.h"
 
 class Writer {
-	Grow<char>& out;
+	BlockedList<char>& out;
+	Arena& arena;
 	uint _indent = 0;
 
 public:
-	Writer(Grow<char>& _out) : out(_out) {}
+	Writer(BlockedList<char>& _out, Arena& _arena) : out{_out}, arena{_arena} {}
 	Writer(const Writer& other) = delete;
 	void operator=(const Writer& other) = delete;
 
 	inline Writer& operator<<(char c) {
-		out.push_copy(c);
+		out.push(c, arena);
 		return *this;
 	}
 	inline Writer& operator<<(const char* s) {
 		while (*s != '\0') {
-			out.push_copy(*s);
+			out.push(*s, arena);
 			++s;
 		}
 		return *this;
 	}
 	inline Writer& operator<<(const StringSlice& s) {
 		for (char c : s)
-			out.push_copy(c);
+			out.push(c, arena);
 		return *this;
 	}
 	Writer& operator<<(uint u);

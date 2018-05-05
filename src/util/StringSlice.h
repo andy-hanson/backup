@@ -46,6 +46,11 @@ public:
 		return _begin;
 	}
 
+	inline StringSlice slice(uint begin, uint end) const {
+		assert(begin < end && end < size());
+		return { _begin + begin, _begin + end };
+	}
+
 	inline StringSlice slice(uint begin) const {
 		assert(begin < size());
 		return { _begin + begin, _end };
@@ -73,9 +78,10 @@ public:
 
 	struct hash {
 		hash_t operator()(StringSlice slice) const {
+			// https://stackoverflow.com/questions/98153/whats-the-best-hashing-algorithm-to-use-on-a-stl-string-when-using-hash-map
 			hash_t h = 0;
 			for (char c : slice)
-				h = 31 * h + hash_t(c + 128);
+				h = 101 * h + hash_t(c);
 			return h;
 		}
 	};

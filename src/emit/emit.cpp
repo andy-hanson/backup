@@ -11,7 +11,7 @@
 #include "./Names.h"
 
 namespace {
-	void write_type_parameters(Writer& out, const Arr<TypeParameter>& type_parameters) {
+	void write_type_parameters(Writer& out, const Slice<TypeParameter>& type_parameters) {
 		if (type_parameters.empty()) return;
 		out << "template <";
 		for (uint i = 0; i != type_parameters.size(); ++i) {
@@ -26,7 +26,7 @@ namespace {
 		write_type_parameters(out, s.type_parameters);
 		const StringSlice& name = names.get_name(&s);
 		switch (s.body.kind()) {
-			case StructBody::Kind::Nil: assert(false);
+			case StructBody::Kind::Nil: unreachable();
 			case StructBody::Kind::Fields:
 				out << "struct " << name << " {" << Writer::indent << Writer::nl;
 				for (const StructField& field : s.body.fields()) {
@@ -69,14 +69,14 @@ namespace {
 	}
 
 	void emit_structs(Writer& out, const StructsDeclarationOrder& structs, const Names& names) {
-		MaxSizeMap<32, ref<const StructDeclaration>, EmitStructState, ref<const StructDeclaration>::hash> map;
-		MaxSizeVector<16, ref<const StructDeclaration>> stack;
+		MaxSizeMap<32, Ref<const StructDeclaration>, EmitStructState, Ref<const StructDeclaration>::hash> map;
+		MaxSizeVector<16, Ref<const StructDeclaration>> stack;
 
 		for (const StructDeclaration& struct_in_order : structs) {
 			stack.push(&struct_in_order);
 			do {
 				// At each step, we either pop, or mark a struct as emitting (which will be popped next time). So should terminate eventually.
-				ref<const StructDeclaration> s = stack.peek();
+				Ref<const StructDeclaration> s = stack.peek();
 				EmitStructState& state = map.get_or_insert_default(s);
 				switch (state) {
 					case EmitStructState::Emitted:
@@ -89,7 +89,7 @@ namespace {
 						break;
 					case EmitStructState::Nil:
 						state = EmitStructState::Emitting;
-						each_struct_field(*s, [&](ref<const StructDeclaration> referenced) { stack.push(referenced); });
+						each_struct_field(*s, [&](Ref<const StructDeclaration> referenced) { stack.push(referenced); });
 						break;
 				}
 			} while (!stack.empty());
@@ -101,7 +101,7 @@ namespace {
 		out << ";\n\n";
 	}
 
-	void emit_fun_with_body(Writer& out, ref<const ConcreteFun> f, const Names& names, const ResolvedCalls& resolved_calls, Arena& scratch_arena) {
+	void emit_fun_with_body(Writer& out, Ref<const ConcreteFun> f, const Names& names, const ResolvedCalls& resolved_calls, Arena& scratch_arena) {
 		write_fun_header(out, f, names, scratch_arena);
 		out << " {\n\t";
 		// Writing the body will be slightly different each time because we map each Called in the body to a different ConcreteFun depending on 'f'.
@@ -109,7 +109,7 @@ namespace {
 		out << "\n}\n\n";
 	}
 
-	template <typename /*ref<constConcreteFun>> => void>*/ Cb>
+	template <typename /*Ref<constConcreteFun>> => void>*/ Cb>
 	void each_concrete_fun(const Module& module, const FunInstantiations& fun_instantiations, Cb cb) {
 		for (const FunDeclaration& f : module.funs_declaration_order) {
 			Option<const NonEmptyList<ConcreteFun>&> instantiations = fun_instantiations.get(&f);
@@ -120,10 +120,10 @@ namespace {
 	}
 }
 
-Grow<char> emit(const Arr<Module>& modules) {
+BlockedList<char> emit(const Slice<Module>& modules, Arena& out_arena) {
 	assert(!modules.empty());
-	Grow<char> grow;
-	Writer out { grow };
+	BlockedList<char> list;
+	Writer out { list, out_arena };
 	out << "#include <assert.h>\n\n";
 
 	Arena scratch_arena;
@@ -134,13 +134,13 @@ Grow<char> emit(const Arr<Module>& modules) {
 	for (const Module& module : modules) {
 		emit_comment(out, module.comment);
 		emit_structs(out, module.structs_declaration_order, names);
-		each_concrete_fun(module, every_concrete_fun.fun_instantiations, [&](ref<const ConcreteFun> cf) { emit_fun_header(out, cf, names, scratch_arena); });
+		each_concrete_fun(module, every_concrete_fun.fun_instantiations, [&](Ref<const ConcreteFun> cf) { emit_fun_header(out, cf, names, scratch_arena); });
 	}
 
 	for (const Module& module : modules)
-		each_concrete_fun(module, every_concrete_fun.fun_instantiations, [&](ref<const ConcreteFun> cf) { emit_fun_with_body(out, cf, names, every_concrete_fun.resolved_calls, scratch_arena); });
+		each_concrete_fun(module, every_concrete_fun.fun_instantiations, [&](Ref<const ConcreteFun> cf) { emit_fun_with_body(out, cf, names, every_concrete_fun.resolved_calls, scratch_arena); });
 
 	out << "int main() { run(); }\n";
 
-	return grow;
+	return list;
 }

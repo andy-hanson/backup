@@ -49,7 +49,7 @@ Diag::Diag(Kind kind) : _kind(kind) {
 		case Kind::Parse:
 		case Kind::WrongNumberTypeArguments:
 		case Kind::WrongNumberNewStructArguments:
-			assert(false);
+			unreachable();
 
 		case Kind::CircularImport:
 		case Kind::SpecNameNotFound:

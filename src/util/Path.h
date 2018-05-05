@@ -9,15 +9,14 @@
 // Can only be constructed through a PathCache.
 class Path {
 	struct Impl;
-	static hash_t impl_size();
 	friend class PathCache;
-	ref<const Impl> impl;
+	Ref<const Impl> impl;
 
-	Path(ref<const Impl> _impl) : impl(_impl) {}
+	Path(Ref<const Impl> _impl) : impl(_impl) {}
 
 public:
 	friend Writer& operator<<(Writer& out, const Path& path);
-	void write(const StringSlice& root, const StringSlice& extension, MutableStringSlice& out) const;
+	void write(MutableStringSlice& out, const StringSlice& root, Option<const StringSlice&> extension) const;
 
 	const Option<Path>& parent() const;
 	StringSlice base_name() const;
@@ -28,9 +27,7 @@ public:
 	}
 
 	struct hash {
-		inline hash_t operator()(const Path& p) const {
-			return hash_t(p.impl.ptr()) >> impl_size();
-		}
+		hash_t operator()(const Path& p) const;
 	};
 };
 inline bool operator!=(const Path& a, const Path& b) { return !(a == b); }

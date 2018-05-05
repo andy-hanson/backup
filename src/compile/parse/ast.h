@@ -23,7 +23,7 @@ public:
 private:
 	union Data {
 		StringSlice cpp_name;
-		Arr<StructFieldAst> fields;
+		Slice<StructFieldAst> fields;
 		Data() {}
 	};
 	Kind _kind;
@@ -33,13 +33,13 @@ public:
 	inline explicit StructBodyAst(StringSlice cpp_name) : _kind(Kind::CppName) {
 		_data.cpp_name = cpp_name;
 	}
-	inline explicit StructBodyAst(Arr<StructFieldAst> fields) : _kind(Kind::Fields) {
+	inline explicit StructBodyAst(Slice<StructFieldAst> fields) : _kind(Kind::Fields) {
 		_data.fields = fields;
 	}
 
 	Kind kind() const { return _kind; }
 	const StringSlice& cpp_name() const { assert(_kind == Kind::CppName); return _data.cpp_name; }
-	const Arr<StructFieldAst>& fields() const { assert(_kind == Kind::Fields); return _data.fields; }
+	const Slice<StructFieldAst>& fields() const { assert(_kind == Kind::Fields); return _data.fields; }
 };
 
 
@@ -52,7 +52,7 @@ struct ParameterAst {
 
 struct SpecUseAst {
 	StringSlice spec;
-	Arr<TypeAst> type_arguments;
+	Slice<TypeAst> type_arguments;
 };
 
 struct FunSignatureAst {
@@ -60,9 +60,9 @@ struct FunSignatureAst {
 	StringSlice name;
 	Option<Effect> effect;
 	TypeAst return_type;
-	Arr<ParameterAst> parameters;
-	Arr<TypeParameterAst> type_parameters;
-	Arr<SpecUseAst> spec_uses;
+	Slice<ParameterAst> parameters;
+	Slice<TypeParameterAst> type_parameters;
+	Slice<SpecUseAst> spec_uses;
 };
 
 struct StructDeclarationAst {
@@ -70,7 +70,7 @@ struct StructDeclarationAst {
 	SourceRange range;
 	bool is_public;
 	StringSlice name;
-	Arr<TypeParameterAst> type_parameters;
+	Slice<TypeParameterAst> type_parameters;
 	bool copy;
 	StructBodyAst body;
 };
@@ -80,8 +80,8 @@ struct SpecDeclarationAst {
 	SourceRange range;
 	bool is_public;
 	StringSlice name;
-	Arr<TypeParameterAst> type_parameters;
-	Arr<FunSignatureAst> signatures;
+	Slice<TypeParameterAst> type_parameters;
+	Slice<FunSignatureAst> signatures;
 };
 
 class FunBodyAst {
@@ -129,7 +129,7 @@ struct FileAst {
 	Path path;
 	StringSlice source;
 	Option<ArenaString> comment;
-	Arr<ImportAst> imports;
+	Slice<ImportAst> imports;
 	List<StringSlice> includes;
 	List<SpecDeclarationAst> specs;
 	List<StructDeclarationAst> structs;

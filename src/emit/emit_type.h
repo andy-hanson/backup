@@ -6,7 +6,7 @@
 
 void write_type(Writer& out, const Type& t, const Names& names);
 
-inline void write_type_arguments(Writer& out, const Arr<Type>& type_arguments, const Names& names) {
+inline void write_type_arguments(Writer& out, const Slice<Type>& type_arguments, const Names& names) {
 	if (type_arguments.empty()) return;
 	out << '<';
 	for (uint i = 0; i != type_arguments.size(); ++i) {

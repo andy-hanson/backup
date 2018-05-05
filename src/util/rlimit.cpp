@@ -1,11 +1,13 @@
 #include "./rlimit.h"
 
-#include <iostream>
-#include <signal.h>
-#include <sys/resource.h>
+#include <iostream> // std::cerr, std::cout
+#include <signal.h> // signal
+#include <sys/resource.h> // rlimit
+
 #include "./assert.h"
 
 namespace {
+	__attribute__((noreturn))
 	void on_signal(int sig) {
 		if (sig == SIGXCPU) std::cerr << "Hit CPU time limit -- probably an infinite loop somewhere" << std::endl;
 		exit(sig);

@@ -28,7 +28,7 @@ public:
 	enum class Kind { Nil, Fields, CppName };
 private:
 	union Data {
-		Arr<StructField> fields;
+		Slice<StructField> fields;
 		ArenaString cpp_name;
 
 		Data() {} //uninitialized
@@ -41,7 +41,7 @@ public:
 	StructBody() : _kind(Kind::Nil) {}
 	inline StructBody(const StructBody& other) { *this = other; }
 	void operator=(const StructBody& other);
-	inline StructBody(Arr<StructField> fields) : _kind(Kind::Fields) {
+	inline StructBody(Slice<StructField> fields) : _kind(Kind::Fields) {
 		data.fields = fields;
 	}
 	inline StructBody(ArenaString cpp_name) : _kind(Kind::CppName) {
@@ -50,11 +50,11 @@ public:
 
 	Kind kind() const { return _kind; }
 	inline bool is_fields() const { return _kind == StructBody::Kind::Fields; }
-	inline Arr<StructField>& fields() {
+	inline Slice<StructField>& fields() {
 		assert(_kind == Kind::Fields);
 		return data.fields;
 	}
-	inline const Arr<StructField>& fields() const {
+	inline const Slice<StructField>& fields() const {
 		assert(_kind == Kind::Fields);
 		return data.fields;
 	}
@@ -65,16 +65,16 @@ public:
 };
 
 struct StructDeclaration {
-	ref<const Module> containing_module;
+	Ref<const Module> containing_module;
 	Option<ArenaString> comment;
 	SourceRange range;
 	bool is_public;
-	Arr<TypeParameter> type_parameters;
+	Slice<TypeParameter> type_parameters;
 	Identifier name;
 	bool copy;
 	StructBody body;
 
-	inline StructDeclaration(ref<const Module> _containing_module, SourceRange _range, bool _is_public, Arr<TypeParameter> _type_parameters, Identifier _name, bool _copy)
+	inline StructDeclaration(Ref<const Module> _containing_module, SourceRange _range, bool _is_public, Slice<TypeParameter> _type_parameters, Identifier _name, bool _copy)
 		: containing_module(_containing_module), range(_range), is_public(_is_public), type_parameters(_type_parameters), name(_name), copy(_copy) {}
 
 	inline uint arity() const { return type_parameters.size(); }
@@ -83,10 +83,10 @@ struct StructDeclaration {
 class Type;
 
 struct InstStruct {
-	ref<const StructDeclaration> strukt;
-	Arr<Type> type_arguments;
+	Ref<const StructDeclaration> strukt;
+	Slice<Type> type_arguments;
 
-	inline InstStruct(ref<const StructDeclaration> _strukt, Arr<Type> _type_arguments) : strukt(_strukt), type_arguments(_type_arguments) {
+	inline InstStruct(Ref<const StructDeclaration> _strukt, Slice<Type> _type_arguments) : strukt(_strukt), type_arguments(_type_arguments) {
 		assert(type_arguments.size() == strukt->type_parameters.size());
 	}
 	bool is_deeply_concrete() const;
@@ -103,7 +103,7 @@ public:
 private:
 	union Data {
 		InstStruct inst_struct;
-		ref<const TypeParameter> param;
+		Ref<const TypeParameter> param;
 		Data() {} // uninitialized
 		~Data() {}
 	};
@@ -123,7 +123,7 @@ public:
 	inline explicit Type(InstStruct i) : _kind(Kind::InstStruct) {
 		data.inst_struct = i;
 	}
-	inline explicit Type(ref<const TypeParameter> param) : _kind(Kind::Param) {
+	inline explicit Type(Ref<const TypeParameter> param) : _kind(Kind::Param) {
 		data.param = param;
 	}
 
@@ -135,7 +135,7 @@ public:
 		return data.inst_struct;
 	}
 
-	inline ref<const TypeParameter> param() const {
+	inline Ref<const TypeParameter> param() const {
 		assert(_kind == Kind::Param);
 		return data.param;
 	}
@@ -166,21 +166,21 @@ struct FunSignature;
 struct SpecDeclaration;
 
 struct SpecUse {
-	ref<const SpecDeclaration> spec;
-	Arr<Type> type_arguments;
-	SpecUse(ref<const SpecDeclaration> _spec, Arr<Type> _type_arguments);
+	Ref<const SpecDeclaration> spec;
+	Slice<Type> type_arguments;
+	SpecUse(Ref<const SpecDeclaration> _spec, Slice<Type> _type_arguments);
 };
 
 struct FunSignature {
 	Option<ArenaString> comment;
-	Arr<TypeParameter> type_parameters;
+	Slice<TypeParameter> type_parameters;
 	Effect effect; // Return effect will be the worst of this, and the effects of all 'from' parameters
 	Type return_type;
 	Identifier name;
-	Arr<Parameter> parameters;
-	Arr<SpecUse> specs;
+	Slice<Parameter> parameters;
+	Slice<SpecUse> specs;
 
-	inline FunSignature(Option<ArenaString> _comment, Arr<TypeParameter> _type_parameters, Effect _effect, Type _return_type, Identifier _name, Arr<Parameter> _parameters, Arr<SpecUse> _specs)
+	inline FunSignature(Option<ArenaString> _comment, Slice<TypeParameter> _type_parameters, Effect _effect, Type _return_type, Identifier _name, Slice<Parameter> _parameters, Slice<SpecUse> _specs)
 		: comment(_comment), type_parameters(_type_parameters), effect(_effect), return_type(_return_type), name(_name), parameters(_parameters), specs(_specs) {}
 	inline FunSignature(Identifier _name) : name(_name) {}
 
@@ -199,7 +199,7 @@ private:
 	Kind _kind;
 
 	union Data {
-		ref<Expression> expression; // Ref so we don't have to depend on the definition of Expression here.
+		Ref<Expression> expression; // Ref so we don't have to depend on the definition of Expression here.
 		ArenaString cpp_source;
 		Data() {} // uninitialized
 		~Data() {} // string freed by ~AnyBody
@@ -210,7 +210,7 @@ public:
 	inline AnyBody() : _kind(Kind::Nil) {}
 	inline AnyBody(const AnyBody& other) { *this = other; }
 	void operator=(const AnyBody& other);
-	inline AnyBody(ref<Expression> expression) : _kind(Kind::Expr) { data.expression = expression; }
+	inline AnyBody(Ref<Expression> expression) : _kind(Kind::Expr) { data.expression = expression; }
 	inline AnyBody(ArenaString cpp_source) : _kind(Kind::CppSource) { data.cpp_source = cpp_source; }
 
 	inline Kind kind() const { return _kind; }
@@ -229,7 +229,7 @@ public:
 };
 
 struct FunDeclaration {
-	ref<const Module> containing_module;
+	Ref<const Module> containing_module;
 	bool is_public;
 	FunSignature signature;
 	AnyBody body;
@@ -238,32 +238,32 @@ struct FunDeclaration {
 };
 
 struct SpecDeclaration {
-	ref<const Module> containing_module;
+	Ref<const Module> containing_module;
 	SourceRange range;
 	Option<ArenaString> comment;
 	bool is_public;
-	Arr<TypeParameter> type_parameters;
+	Slice<TypeParameter> type_parameters;
 	Identifier name;
-	Arr<FunSignature> signatures;
+	Slice<FunSignature> signatures;
 
-	inline SpecDeclaration(ref<const Module> _containing_module, SourceRange _range, Option<ArenaString> _comment, bool _is_public, Arr<TypeParameter> _type_parameters, Identifier _name)
+	inline SpecDeclaration(Ref<const Module> _containing_module, SourceRange _range, Option<ArenaString> _comment, bool _is_public, Slice<TypeParameter> _type_parameters, Identifier _name)
 		: containing_module(_containing_module), range(_range), comment(_comment), is_public(_is_public), type_parameters(_type_parameters), name(_name) {}
 };
 
 // Within a single module, maps a struct name to declaration.
-using StructsTable = Map<StringSlice, ref<const StructDeclaration>, StringSlice::hash>;
+using StructsTable = Map<StringSlice, Ref<const StructDeclaration>, StringSlice::hash>;
 // Within a single module, maps a spec name to declaration.
-using SpecsTable = Map<StringSlice, ref<const SpecDeclaration>, StringSlice::hash>;
+using SpecsTable = Map<StringSlice, Ref<const SpecDeclaration>, StringSlice::hash>;
 // Within a single module, maps a fun name to the list of functions *in that module* with that name.
-using FunsTable = MultiMap<StringSlice, ref<const FunDeclaration>, StringSlice::hash>;
-using StructsDeclarationOrder = Arr<StructDeclaration>;
-using SpecsDeclarationOrder = Arr<SpecDeclaration>;
-using FunsDeclarationOrder = Arr<FunDeclaration>;
+using FunsTable = MultiMap<StringSlice, Ref<const FunDeclaration>, StringSlice::hash>;
+using StructsDeclarationOrder = Slice<StructDeclaration>;
+using SpecsDeclarationOrder = Slice<SpecDeclaration>;
+using FunsDeclarationOrder = Slice<FunDeclaration>;
 
 // Note: if there is a parse error, this will just be empty.
 struct Module {
 	Path path;
-	Arr<ref<const Module>> imports;
+	Slice<Ref<const Module>> imports;
 	Option<ArenaString> comment;
 	StructsDeclarationOrder structs_declaration_order;
 	SpecsDeclarationOrder specs_declaration_order;

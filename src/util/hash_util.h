@@ -8,7 +8,7 @@ inline hash_t hash_combine(hash_t a, hash_t b) {
 }
 
 template <typename T, typename Hash>
-hash_t hash_arr(const Arr<T>& d, Hash hash) {
+hash_t hash_arr(const Slice<T>& d, Hash hash) {
 	hash_t h = 0;
 	for (const T& t : d)
 		h = hash_combine(h, hash(t));

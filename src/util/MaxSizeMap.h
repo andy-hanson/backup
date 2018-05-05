@@ -65,12 +65,12 @@ public:
 		}
 	}
 
-	ref<KeyValuePair<K, V>> must_insert(K key, V value) {
+	Ref<KeyValuePair<K, V>> must_insert(K key, V value) {
 		Option<KeyValuePair<K, V>>& op_entry = get_raw_entry(key);
 		if (op_entry.has()) {
 			KeyValuePair<K, V>& entry = op_entry.get();
 			if (entry.key == key) throw "todo"; // false conflict
-			assert(false); // true conflict
+			unreachable(); // true conflict
 		} else {
 			op_entry = KeyValuePair<K, V> { key, value };
 			return &op_entry.get();
@@ -105,7 +105,7 @@ public:
 		return inner.has(value);
 	}
 
-	ref<const T> must_insert(T value) {
+	Ref<const T> must_insert(T value) {
 		return &inner.must_insert(value, {})->key;
 	}
 
@@ -114,10 +114,10 @@ public:
 		return inner.get_key_in_map(value);
 	}
 
-	ref<const T> get_in_set_or_insert(T&& value) {
+	Ref<const T> get_in_set_or_insert(T&& value) {
 		Option<const T&> already = get_in_set(value);
 		if (already.has())
-			return ref<const T> { &already.get() };
+			return Ref<const T> { &already.get() };
 		else
 			return must_insert(value);
 	}

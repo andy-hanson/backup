@@ -1,8 +1,15 @@
 #include "Writer.h"
 
 Writer& Writer::operator<<(uint u) {
-	*this << char('0' + char(u % 10));
-	throw "todo";
+	//TODO: duplicate code in ArenaString.cpp
+	if (u < 10) {
+		*this << char('0' + char(u));
+	} else if (u < 100) {
+		*this << char('0' + char(u / 10));
+		*this << char('0' + char(u % 10));
+	} else
+		throw "todo";
+	return *this;
 }
 Writer& Writer::operator<<(ushort u) {
 	return *this << uint(u);

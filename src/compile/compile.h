@@ -7,7 +7,7 @@
 struct CompiledProgram {
 	Arena arena;
 	PathCache paths;
-	Arr<Module> modules;
+	Slice<Module> modules;
 	List<Diagnostic> diagnostics;
 };
 

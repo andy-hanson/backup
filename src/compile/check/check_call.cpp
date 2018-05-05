@@ -12,7 +12,7 @@ namespace {
 		Option <Type> expected;
 		for (const Candidate& candidate : candidates) {
 			// If we get a generic candidate and haven't inferred this parameter type yet, no expected type.
-			ref<const Type> parameter_type = &candidate.signature->parameters[arg_index].type;
+			Ref<const Type> parameter_type = &candidate.signature->parameters[arg_index].type;
 			if (parameter_type->is_parameter()) {
 				Option<const Type&> inferred = get_type_argument(candidate.signature->type_parameters, candidate.inferring_type_arguments, parameter_type->param()).as_ref();
 				if (!inferred.has()) return {}; // If there's at least one uninferred generic parameter here, can't have an expected type.
@@ -44,11 +44,11 @@ namespace {
 		each_fun_with_name(ctx, fun_name, cb);
 	}
 
-	void get_initial_candidates(Candidates& candidates, ExprContext& ctx, const StringSlice& fun_name, const Arr<Type>& explicit_type_arguments, uint arity) {
+	void get_initial_candidates(Candidates& candidates, ExprContext& ctx, const StringSlice& fun_name, const Slice<Type>& explicit_type_arguments, uint arity) {
 		each_initial_candidate(ctx, fun_name, [&](CalledDeclaration called) {
 			const FunSignature& sig = called.sig();
 			if (sig.arity() == arity && (explicit_type_arguments.empty() || sig.type_parameters.size() == explicit_type_arguments.size())) {
-				Arr<Option<Type>> inferring_type_arguments = fill_array<Option<Type>>()(ctx.scratch_arena, sig.type_parameters.size(), [&](uint i) {
+				Slice<Option<Type>> inferring_type_arguments = fill_array<Option<Type>>()(ctx.scratch_arena, sig.type_parameters.size(), [&](uint i) {
 					return explicit_type_arguments.empty() ? Option<Type> {} : Option { explicit_type_arguments[i] };
 				});
 				candidates.push({ called, &sig, inferring_type_arguments });
@@ -57,9 +57,9 @@ namespace {
 	}
 
 	struct TypeParametersAndArguments {
-		Arr<TypeParameter> type_parameters;
-		Arr<Type> type_arguments;
-		TypeParametersAndArguments(Arr<TypeParameter> _type_parameters, Arr<Type> _type_arguments) : type_parameters(_type_parameters), type_arguments(_type_arguments) {
+		Slice<TypeParameter> type_parameters;
+		Slice<Type> type_arguments;
+		TypeParametersAndArguments(Slice<TypeParameter> _type_parameters, Slice<Type> _type_arguments) : type_parameters(_type_parameters), type_arguments(_type_arguments) {
 			assert(type_parameters.size() == type_arguments.size());
 		}
 
@@ -87,7 +87,7 @@ namespace {
 		switch (a.kind()) {
 			case Type::Kind::Nil:
 			case Type::Kind::Param:
-				assert(false);
+				unreachable();
 			case Type::Kind::Bogus:
 				return false;
 			case Type::Kind::InstStruct:
@@ -100,7 +100,7 @@ namespace {
 	bool signature_types_equal_one_sub(const Type& substituted_from_spec, const Type& actual, const TypeParametersAndArguments& candidate_type_args) {
 		switch (substituted_from_spec.kind()) {
 			case Type::Kind::Nil:
-				assert(false);
+				unreachable();
 			case Type::Kind::Bogus:
 				return false;
 			case Type::Kind::Param:
@@ -120,7 +120,7 @@ namespace {
 	) {
 		switch (type_from_spec.kind()) {
 			case Type::Kind::Nil:
-				assert(false);
+				unreachable();
 			case Type::Kind::Bogus:
 				return false; // Don't use a signature if we didn't resolve its types.
 			case Type::Kind::Param: {
@@ -168,13 +168,13 @@ namespace {
 	}
 
 	// If the candidate we resolved has specs, fill them in.
-	Called check_specs(ExprContext& ctx, CalledDeclaration called, Arr<Type> type_arguments) {
+	Called check_specs(ExprContext& ctx, CalledDeclaration called, Slice<Type> type_arguments) {
 		if (called.kind() == CalledDeclaration::Kind::Spec) {
 			if (called.sig().specs.size() != 0) throw "Todo: specs that have specs";
 			return { called, type_arguments, {} };
 		}
 
-		Arr<Arr<CalledDeclaration>> spec_impls = map<Arr<CalledDeclaration>>()(ctx.check_ctx.arena, called.sig().specs, [&](const SpecUse& spec_use) {
+		Slice<Slice<CalledDeclaration>> spec_impls = map<Slice<CalledDeclaration>>()(ctx.check_ctx.arena, called.sig().specs, [&](const SpecUse& spec_use) {
 			TypeArgumentsScope type_arguments_scope { { spec_use.spec->type_parameters, spec_use.type_arguments }, { called.sig().type_parameters, type_arguments } };
 			return map<CalledDeclaration>()(ctx.check_ctx.arena, spec_use.spec->signatures, [&](const FunSignature& sig) {
 				return find_spec_signature_implementation(ctx, sig, type_arguments_scope);
@@ -196,7 +196,7 @@ namespace {
 			if (strukt.body.is_fields()) {
 				if (!inst.type_arguments.empty()) throw "todo";
 				//TODO: substitute type arguments here!
-				Option<ref<const StructField>> field = find(strukt.body.fields(), [fun_name](const StructField& f) { return f.name == fun_name; });
+				Option<Ref<const StructField>> field = find(strukt.body.fields(), [fun_name](const StructField& f) { return f.name == fun_name; });
 				if (field.has()) {
 					// TODO: also check plain.effect to narrow the field type
 					expected.check_no_infer(field.get()->type);
@@ -208,8 +208,8 @@ namespace {
 	}
 }
 
-Expression check_call(const StringSlice& fun_name, const Arr<ExprAst>& argument_asts, const Arr<TypeAst>& type_argument_asts, ExprContext& ctx, Expected& expected) {
-	Arr<Type> explicit_type_arguments = type_arguments_from_asts(type_argument_asts, ctx.check_ctx, ctx.structs_table, ctx.current_fun->signature.type_parameters);
+Expression check_call(const StringSlice& fun_name, const Slice<ExprAst>& argument_asts, const Slice<TypeAst>& type_argument_asts, ExprContext& ctx, Expected& expected) {
+	Slice<Type> explicit_type_arguments = type_arguments_from_asts(type_argument_asts, ctx.check_ctx, ctx.structs_table, ctx.current_fun->signature.type_parameters);
 	uint arity = argument_asts.size();
 
 	// Can never use an expected type in a unary call, because it might be a struct field access.
@@ -235,7 +235,7 @@ Expression check_call(const StringSlice& fun_name, const Arr<ExprAst>& argument_
 		if (candidates.empty()) throw "todo: no overload returns what you wanted";
 	}
 
-	Arr<Expression> arguments = fill_array<Expression>()(ctx.check_ctx.arena, arity, [&](uint arg_idx) {
+	Slice<Expression> arguments = fill_array<Expression>()(ctx.check_ctx.arena, arity, [&](uint arg_idx) {
 		if (arg_idx == 0 && first_arg_and_type.has()) {
 			const ExpressionAndType& f = first_arg_and_type.get();
 			remove_overloads_given_argument_type(candidates, f.type, arg_idx);
@@ -252,7 +252,7 @@ Expression check_call(const StringSlice& fun_name, const Arr<ExprAst>& argument_
 	if (candidates.size() > 1) throw "todo: two identical candidates?";
 	const Candidate& candidate = candidates[0];
 
-	Arr<Type> candidate_type_arguments = map<Type>()(ctx.check_ctx.arena, candidate.inferring_type_arguments, [](const Option<Type>& t){
+	Slice<Type> candidate_type_arguments = map<Type>()(ctx.check_ctx.arena, candidate.inferring_type_arguments, [](const Option<Type>& t){
 		if (!t.has()) throw "todo: didn't infer all type arguments";
 		return t.get();
 	});

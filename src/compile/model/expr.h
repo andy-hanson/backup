@@ -5,15 +5,15 @@
 
 class Expression;
 struct StructFieldAccess {
-	ref<Expression> target;
-	ref<const StructField> field;
+	Ref<Expression> target;
+	Ref<const StructField> field;
 };
 
 struct SpecUseSig {
-	ref<const SpecUse> spec_use;
-	ref<const FunSignature> signature;
+	Ref<const SpecUse> spec_use;
+	Ref<const FunSignature> signature;
 
-	inline SpecUseSig(ref<const SpecUse> _spec_use, ref<const FunSignature> _signature) : spec_use(_spec_use), signature(_signature) {
+	inline SpecUseSig(Ref<const SpecUse> _spec_use, Ref<const FunSignature> _signature) : spec_use(_spec_use), signature(_signature) {
 		assert(spec_use->spec->signatures.contains_ref(signature));
 	}
 };
@@ -28,7 +28,7 @@ public:
 	enum class Kind { Fun, Spec };
 private:
 	union Data {
-		ref<const FunDeclaration> fun_decl;
+		Ref<const FunDeclaration> fun_decl;
 		SpecUseSig spec_use_sig;
 
 		Data() {}
@@ -38,7 +38,7 @@ private:
 	Data data;
 
 public:
-	explicit CalledDeclaration(ref<const FunDeclaration> fun_decl) : _kind(Kind::Fun) {
+	explicit CalledDeclaration(Ref<const FunDeclaration> fun_decl) : _kind(Kind::Fun) {
 		data.fun_decl = fun_decl;
 	}
 	explicit CalledDeclaration(SpecUseSig spec) : _kind(Kind::Spec) {
@@ -50,7 +50,7 @@ public:
 	const FunSignature& sig() const;
 
 	inline Kind kind() const { return _kind; }
-	inline ref<const FunDeclaration> fun() const {
+	inline Ref<const FunDeclaration> fun() const {
 		assert(_kind == Kind::Fun);
 		return data.fun_decl;
 	}
@@ -62,22 +62,22 @@ public:
 
 struct Called {
 	CalledDeclaration called_declaration;
-	Arr<Type> type_arguments;
+	Slice<Type> type_arguments;
 	// These will be in order of the signatures from the specs of the function we're calling.
 	// For each spec, there is an array of a Called matching each signature in that spec.
 	// Note: if there is a generic spec signature, it should be matched by a generic function. And a non-generic spec signature can't be matched by a generic function.
 	// So this uses CalledDeclaration and not Called.
-	Arr<Arr<CalledDeclaration>> spec_impls;
+	Slice<Slice<CalledDeclaration>> spec_impls;
 };
 
 struct Call {
 	Called called;
-	Arr<Expression> arguments;
+	Slice<Expression> arguments;
 };
 
 struct StructCreate {
 	InstStruct inst_struct; // Effect is Io
-	Arr<Expression> arguments;
+	Slice<Expression> arguments;
 };
 
 struct Let;
@@ -85,10 +85,10 @@ struct Seq;
 
 struct Case;
 struct When {
-	Arr<Case> cases;
-	ref<Expression> elze;
+	Slice<Case> cases;
+	Ref<Expression> elze;
 
-	inline When(Arr<Case> _cases, ref<Expression> _elze) : cases(_cases), elze(_elze) {
+	inline When(Slice<Case> _cases, Ref<Expression> _elze) : cases(_cases), elze(_elze) {
 		assert(cases.size() != 0);
 	}
 };
@@ -115,16 +115,16 @@ public:
 private:
 	// Note: we are trying to keep this to 2 words. ref is one word.
 	union Data {
-		ref<const Parameter> parameter_reference;
-		ref<const Let> local_reference;
+		Ref<const Parameter> parameter_reference;
+		Ref<const Let> local_reference;
 		StructFieldAccess struct_field_access;
-		ref<Let> let;
-		ref<Seq> seq;
+		Ref<Let> let;
+		Ref<Seq> seq;
 		Call call;
 		StructCreate struct_create;
 		ArenaString string_literal;
 		When when;
-		ref<Expression> asserted;
+		Ref<Expression> asserted;
 
 		Data() {} // uninitialized
 		~Data() {} // Nothing in here should need to be deleted
@@ -147,21 +147,21 @@ public:
 		*this = e;
 	}
 
-	explicit Expression(ref<const Parameter> p) : _kind(Kind::ParameterReference) {
+	explicit Expression(Ref<const Parameter> p) : _kind(Kind::ParameterReference) {
 		data.parameter_reference = p;
 	}
 
-	inline Expression(ref<const Let> l, Kind kind) : _kind(kind) {
+	inline Expression(Ref<const Let> l, Kind kind) : _kind(kind) {
 		assert(kind == Kind::LocalReference);
 		data.local_reference = l;
 	}
 
-	inline Expression(ref<Let> l, Kind kind) : _kind(kind) {
+	inline Expression(Ref<Let> l, Kind kind) : _kind(kind) {
 		assert(kind == Kind::Let);
 		data.let = l;
 	}
 
-	inline explicit Expression(ref<Seq> seq) : _kind(Kind::Seq) {
+	inline explicit Expression(Ref<Seq> seq) : _kind(Kind::Seq) {
 		data.seq = seq;
 	}
 
@@ -185,7 +185,7 @@ public:
 		data.when = when;
 	}
 
-	Expression(ref<Expression> asserted, Kind kind) : _kind(kind) {
+	Expression(Ref<Expression> asserted, Kind kind) : _kind(kind) {
 		assert(kind == Kind::Assert);
 		data.asserted = asserted;
 	}
@@ -198,11 +198,11 @@ public:
 		// Nothing to do, none have destructors
 	}
 
-	inline ref<const Parameter> parameter() const {
+	inline Ref<const Parameter> parameter() const {
 		assert(_kind == Kind::ParameterReference);
 		return data.parameter_reference;
 	}
-	inline ref<const Let> local_reference() const {
+	inline Ref<const Let> local_reference() const {
 		assert(_kind == Kind::LocalReference);
 		return data.local_reference;
 	}

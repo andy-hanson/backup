@@ -27,19 +27,22 @@ namespace {
 		return { begin, m.begin };
 	}
 
-	void go() {
+	int go() {
 		MaxSizeString<128> test_dir;
-		test(get_test_directory(test_dir), "simple", TestMode::Test); //"module/circular-dependency"
+		int exit_code = test(get_test_directory(test_dir), TestMode::Test);
 		std::cout << "done" << std::endl;
+		return exit_code;
 	}
 }
 
 int main() {
 	set_limits();
+	int exit_code;
 	try {
-		go();
+		exit_code = go();
 	} catch (std::bad_alloc a) {
 		std::cerr << "Bad allocation -- probably due to memory limit" << std::endl;
 		throw a;
 	}
+	return exit_code;
 }

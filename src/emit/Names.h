@@ -8,19 +8,19 @@
 #include "./concrete_fun.h"
 
 struct Names {
-	MaxSizeMap<32, ref<const StructDeclaration>, ArenaString, ref<const StructDeclaration>::hash> struct_names;
-	MaxSizeMap<32, ref<const StructField>, ArenaString, ref<const StructField>::hash> field_names;
-	MaxSizeMap<32, ref<const ConcreteFun>, ArenaString, ref<const ConcreteFun>::hash> fun_names;
+	MaxSizeMap<32, Ref<const StructDeclaration>, ArenaString, Ref<const StructDeclaration>::hash> struct_names;
+	MaxSizeMap<32, Ref<const StructField>, ArenaString, Ref<const StructField>::hash> field_names;
+	MaxSizeMap<32, Ref<const ConcreteFun>, ArenaString, Ref<const ConcreteFun>::hash> fun_names;
 
-	inline StringSlice get_name(ref<const StructDeclaration> s) const {
+	inline StringSlice get_name(Ref<const StructDeclaration> s) const {
 		return struct_names.must_get(s);
 	}
-	inline StringSlice get_name(ref<const StructField> f) const {
+	inline StringSlice get_name(Ref<const StructField> f) const {
 		return field_names.must_get(f);
 	}
-	inline StringSlice get_name(ref<const ConcreteFun> f) const {
+	inline StringSlice get_name(Ref<const ConcreteFun> f) const {
 		return fun_names.must_get(f);
 	}
 };
 
-Names get_names(const Arr<Module>& modules, const FunInstantiations& fun_instantiations, Arena& arena);
+Names get_names(const Slice<Module>& modules, const FunInstantiations& fun_instantiations, Arena& arena);

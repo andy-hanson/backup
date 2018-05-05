@@ -1,7 +1,7 @@
 #pragma once
 
 #include "./assert.h"
-#include "./ptr.h"
+#include "./Ref.h"
 
 template <typename T>
 class Option {
@@ -91,13 +91,13 @@ public:
 };
 
 template <typename T>
-Option<ref<T>> copy_inner(const Option<const ref<T>&> o) {
-	if (o.has()) return Option<ref<T>> { o.get() }; else return {};
+Option<Ref<T>> copy_inner(const Option<const Ref<T>&> o) {
+	if (o.has()) return Option<Ref<T>> { o.get() }; else return {};
 }
 
 template <typename T>
-Option<ref<T>> un_ref(const Option<const ref<T>&> in) {
-	return in.has() ? Option { in.get() } : Option<ref<T>>{};
+Option<Ref<T>> un_ref(const Option<const Ref<T>&> in) {
+	return in.has() ? Option { in.get() } : Option<Ref<T>>{};
 }
 
 template <typename Out>

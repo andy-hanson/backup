@@ -8,8 +8,8 @@
 template <typename K, typename V, typename Hash>
 class Map {
 	template <typename, typename, typename> friend struct BuildMap;
-	Arr<Option<KeyValuePair<K, V>>> arr;
-	Map(Arr<Option<KeyValuePair<K, V>>> _arr) : arr(_arr) {}
+	Slice<Option<KeyValuePair<K, V>>> arr;
+	Map(Slice<Option<KeyValuePair<K, V>>> _arr) : arr(_arr) {}
 
 public:
 	Map() : arr() {}
@@ -32,19 +32,19 @@ struct BuildMap {
 	Arena& arena;
 
 	template <typename /*const V& => K*/ CbGetKey, typename /*(const V&, const V&) => void*/ CbConflict>
-	Map<K, ref<const V>, Hash> operator()(const Arr<V>& values, CbGetKey get_key, CbConflict on_conflict) {
+	Map<K, Ref<const V>, Hash> operator()(const Slice<V>& values, CbGetKey get_key, CbConflict on_conflict) {
 		if (values.empty())
 			return {};
 
-		Arr<Option<KeyValuePair<K, ref<const V>>>> arr = fill_array<Option<KeyValuePair<K, ref<const V>>>>()(
-			arena, values.size() * 2, [](uint i __attribute__((unused))) { return Option<KeyValuePair<K, ref<const V>>> {}; });
+		Slice<Option<KeyValuePair<K, Ref<const V>>>> arr = fill_array<Option<KeyValuePair<K, Ref<const V>>>>()(
+			arena, values.size() * 2, [](uint i __attribute__((unused))) { return Option<KeyValuePair<K, Ref<const V>>> {}; });
 
 		for (const V& value : values) {
 			const K& key = get_key(value);
 			hash_t hash = Hash{}(key);
-			Option<KeyValuePair<K, ref<const V>>>& op_entry = arr[hash % arr.size()];
+			Option<KeyValuePair<K, Ref<const V>>>& op_entry = arr[hash % arr.size()];
 			if (op_entry.has()) {
-				const KeyValuePair<K, ref<const V>>& entry = op_entry.get();
+				const KeyValuePair<K, Ref<const V>>& entry = op_entry.get();
 				if (entry.key == key) {
 					// True conflict
 					on_conflict(entry.value, value);
@@ -52,7 +52,7 @@ struct BuildMap {
 					throw "todo"; // false conflict, must re-hash
 				}
 			} else {
-				op_entry = KeyValuePair<K, ref<const V>> { key, ref<const V>(&value) };
+				op_entry = KeyValuePair<K, Ref<const V>> { key, Ref<const V>(&value) };
 			}
 		}
 

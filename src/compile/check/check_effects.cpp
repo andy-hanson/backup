@@ -7,9 +7,9 @@
 
 namespace {
 	// Sorted by parameter index.
-	using Params = MaxSizeVector<4, ref<const Parameter>>;
+	using Params = MaxSizeVector<4, Ref<const Parameter>>;
 	// Unordered.
-	using Locals = MaxSizeVector<4, ref<const Let>>;
+	using Locals = MaxSizeVector<4, Ref<const Let>>;
 
 	// NOTE: this is more complicated than combine_locals because we need to preserve the order.
 	void combine_parameters(Params& a, const Params& b) {
@@ -28,7 +28,7 @@ namespace {
 				break;
 
 			const Parameter& pa = a[ai];
-			ref<const Parameter> pb = *bi;
+			Ref<const Parameter> pb = *bi;
 			if (pa.index < pb->index) {
 				// Something in a is not in b.
 				++ai;
@@ -45,7 +45,7 @@ namespace {
 	}
 
 	void combine_locals(Locals& a, const Locals& b) {
-		for (ref<const Let> rb : b)
+		for (Ref<const Let> rb : b)
 			if (!contains(a, rb))
 				a.push(rb);
 	}
@@ -64,9 +64,9 @@ namespace {
 		ExprEffect(Effect e) : _declared(e) { assert(e == Effect::EOwn); }
 	public:
 		static ExprEffect own() { return ExprEffect{Effect::EOwn}; }
-		ExprEffect(ref<const Parameter> p) : _params(p) {}
+		ExprEffect(Ref<const Parameter> p) : _params(p) {}
 		// Construct from an *own* local.
-		ExprEffect(ref<const Let> local) : _locals(local) {}
+		ExprEffect(Ref<const Let> local) : _locals(local) {}
 		void operator=(const ExprEffect& other) {
 			_declared = other._declared;
 			_params = other._params;
@@ -86,7 +86,7 @@ namespace {
 				case Effect::EIo:
 					if (_declared.has() && _declared.get() < expected)
 						return false;
-					return every(_params, [&](ref<const Parameter> p) { return p->effect < expected; });
+					return every(_params, [&](Ref<const Parameter> p) { return p->effect < expected; });
 					// Don't bother with _locals -- that is only for own locals, so we can do anything with those.
 				case Effect::EOwn:
 					return is_own();
@@ -116,7 +116,7 @@ namespace {
 	};
 
 	struct Ctx {
-		SmallMap<16, ref<const Let>, ExprEffect> local_effects;
+		SmallMap<16, Ref<const Let>, ExprEffect> local_effects;
 	};
 
 	ExprEffect infer_effect(Expression& e, Ctx& ctx);
@@ -160,7 +160,7 @@ namespace {
 
 	ExprEffect infer_effect(Expression& e, Ctx& ctx) {
 		switch (e.kind()) {
-			case Expression::Kind::Nil: assert(false);
+			case Expression::Kind::Nil: unreachable();
 			case Expression::Kind::Bogus:
 			case Expression::Kind::StringLiteral: // 'String' type is a slice, and the memory is in the executable so no need to worry about lifetime.
 			case Expression::Kind::Pass:
@@ -168,7 +168,7 @@ namespace {
 			case Expression::Kind::ParameterReference:
 				return ExprEffect { e.parameter() };
 			case Expression::Kind::LocalReference: {
-				ref<const Let> l = e.local_reference();
+				Ref<const Let> l = e.local_reference();
 				const ExprEffect& local_effect = ctx.local_effects.must_get(l);
 				// If we own a local, can borrow it for any purpose.
 				return local_effect.is_own() ? ExprEffect { l } : local_effect;
@@ -207,13 +207,13 @@ namespace {
 	//TODO:SHARE
 
 	// assumes v is sorted.
-	void check_params_from(const Arr<Parameter>& params, const Params& actual_from_params) {
+	void check_params_from(const Slice<Parameter>& params, const Params& actual_from_params) {
 		//TODO:PERF
 		for (const Parameter& p : actual_from_params)
 			if (!p.from)
 				throw "todo"; //parameter should be marked 'from'
 		for (const Parameter& p : params)
-			if (!contains(actual_from_params, ref<const Parameter>(&p)))
+			if (!contains(actual_from_params, Ref<const Parameter>(&p)))
 				throw "todo"; // Unnecessary 'from'
 	}
 
@@ -231,9 +231,6 @@ namespace {
 			// A return effect inherits the effects of all parameters marked 'from'.
 			if (actual_effect.is_own())
 				throw "todo"; //return should be marked 'own'.
-			//for (const ref<const Let>& l __attribute__((unused)) : actual_effect.locals()) {
-			//	throw "Todo"; // borrowing from a local variable, very no-no
-			//}
 			if (!actual_effect.locals().empty()) throw "todo";
 			check_params_from(sig.parameters, actual_effect.params());
 		}
@@ -242,7 +239,7 @@ namespace {
 
 void check_effects(FunDeclaration& fun) {
 	switch (fun.body.kind()) {
-		case AnyBody::Kind::Nil: assert(false);
+		case AnyBody::Kind::Nil: unreachable();
 		case AnyBody::Kind::CppSource:
 			break;
 		case AnyBody::Kind::Expr: {

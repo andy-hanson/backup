@@ -64,8 +64,6 @@ struct Path::Impl {
 	};
 };
 
-hash_t Path::impl_size() { return sizeof(Path::Impl); }
-
 const Option<Path>& Path::parent() const {
 	return impl->parent;
 }
@@ -78,12 +76,18 @@ Writer& operator<<(Writer& out, const Path& path) {
 	return out;
 }
 
-void Path::write(const StringSlice& root, const StringSlice& extension, MutableStringSlice& out) const {
+void Path::write(MutableStringSlice& out, const StringSlice& root, Option<const StringSlice&> extension) const {
 	out << root;
 	out << '/';
 	Path::Impl::to_string_worker(out, impl);
-	out << '.';
-	out << extension;
+	if (extension.has()) {
+		out << '.';
+		out << extension.get();
+	}
+}
+
+hash_t Path::hash::operator()(const Path& p) const {
+	return Ref<const Impl>::hash{}(p.impl);
 }
 
 struct PathCache::Impl {

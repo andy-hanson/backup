@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../util/StringSlice.h"
+#include "./TestMode.h"
 
-enum TestMode { Test, Accept };
-
-void test(const StringSlice& test_dir, const StringSlice& test_name, TestMode mode);
+// Returns exit code
+int test(const StringSlice& test_dir, TestMode mode);

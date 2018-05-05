@@ -1,6 +1,7 @@
 #include "./StringSlice.h"
 
 bool operator==(const StringSlice& a, const StringSlice& b) {
+	if (a.size() != b.size()) return false;
 	assert(!a.empty() && !b.empty()); // Empty StringSlice uses nullptr, and std::equal segfaults on that
 	const char* ca = a._begin;
 	const char* cb = b._begin;

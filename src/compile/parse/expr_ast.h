@@ -10,44 +10,44 @@ class ExprAst;
 
 struct CallAst {
 	StringSlice fun_name;
-	Arr<TypeAst> type_arguments;
-	Arr<ExprAst> arguments;
+	Slice<TypeAst> type_arguments;
+	Slice<ExprAst> arguments;
 };
 
 struct LiteralAst {
 	StringSlice literal;
-	Arr<TypeAst> type_arguments;
-	Arr<ExprAst> arguments;
+	Slice<TypeAst> type_arguments;
+	Slice<ExprAst> arguments;
 };
 
 struct StructCreateAst {
 	StringSlice struct_name;
-	Arr<TypeAst> type_arguments;
-	Arr<ExprAst> arguments;
+	Slice<TypeAst> type_arguments;
+	Slice<ExprAst> arguments;
 };
 
 struct TypeAnnotateAst;
 
 struct LetAst {
 	StringSlice name;
-	ref<ExprAst> init;
-	ref<ExprAst> then;
+	Ref<ExprAst> init;
+	Ref<ExprAst> then;
 };
 struct SeqAst {
 	SourceRange range;
-	ref<ExprAst> first;
-	ref<ExprAst> then;
+	Ref<ExprAst> first;
+	Ref<ExprAst> then;
 };
 struct CaseAst;
 struct WhenAst {
 	SourceRange range;
-	Arr<CaseAst> cases;
-	ref<ExprAst> elze;
+	Slice<CaseAst> cases;
+	Ref<ExprAst> elze;
 };
 
 struct AssertAst {
 	SourceRange range;
-	ref<ExprAst> asserted;
+	Ref<ExprAst> asserted;
 };
 
 class ExprAst {
@@ -73,7 +73,7 @@ private:
 		ArenaString no_call_literal;
 		CallAst call;
 		StructCreateAst struct_create;
-		ref<TypeAnnotateAst> type_annotate;
+		Ref<TypeAnnotateAst> type_annotate;
 		LetAst let;
 		SeqAst seq;
 		WhenAst when;
@@ -108,7 +108,7 @@ public:
 	inline explicit ExprAst(StructCreateAst struct_create) : _kind(Kind::StructCreate) {
 		data.struct_create = struct_create;
 	}
-	inline explicit ExprAst(ref<TypeAnnotateAst> type_annotate) : _kind(Kind::TypeAnnotate) {
+	inline explicit ExprAst(Ref<TypeAnnotateAst> type_annotate) : _kind(Kind::TypeAnnotate) {
 		data.type_annotate = type_annotate;
 	}
 	inline explicit ExprAst(LetAst let) : _kind(Kind::Let) {

@@ -21,6 +21,6 @@ public:
 		for (const KeyValuePair<K, V>& pair : pairs)
 			if (pair.key == key)
 				return pair.value;
-		assert(false);
+		unreachable();
 	}
 };

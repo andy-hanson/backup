@@ -3,7 +3,7 @@
 #include "../diag/diag.h"
 #include "../model/model.h"
 #include "../../util/Arena.h"
-#include "../../util/Grow.h"
+#include "../../util/BlockedList.h"
 #include "./type_utils.h"
 #include "./BuiltinTypes.h"
 
@@ -11,7 +11,7 @@ struct CheckCtx {
 	Arena& arena;
 	const StringSlice& source;
 	Path path; // Path of current module
-	const Arr<ref<const Module>>& imports;
+	const Slice<Ref<const Module>>& imports;
 	List<Diagnostic>::Builder& diags;
 
 	inline SourceRange range(StringSlice slice) {
@@ -33,7 +33,7 @@ inline Identifier id(CheckCtx& al, StringSlice s) {
 }
 
 // current_specs: the specs from the current function.
-inline void check_param_or_local_shadows_fun(CheckCtx& al, const StringSlice& name, const FunsTable& funs_table, const Arr<SpecUse>& current_specs) {
+inline void check_param_or_local_shadows_fun(CheckCtx& al, const StringSlice& name, const FunsTable& funs_table, const Slice<SpecUse>& current_specs) {
 	if (funs_table.has(name))
 		al.diag(name, Diag::Kind::LocalShadowsFun);
 	for (const SpecUse& spec_use : current_specs)
@@ -47,9 +47,9 @@ struct ExprContext {
 	Arena& scratch_arena; // cleared after every convert call.
 	const FunsTable& funs_table;
 	const StructsTable& structs_table;
-	ref<const FunDeclaration> current_fun;
+	Ref<const FunDeclaration> current_fun;
 	// This is pushed and popped as we add locals and go out of scope.
-	MaxSizeVector<8, ref<const Let>> locals;
+	MaxSizeVector<8, Ref<const Let>> locals;
 	const BuiltinTypes& builtin_types;
 
 	ExprContext(const ExprContext& other) = delete;
@@ -63,7 +63,6 @@ class Expected {
 
 public:
 	Expected() : _had_expectation(false) {}
-	__attribute__((unused)) // https://youtrack.jetbrains.com/issue/CPP-12376
 	Expected(Type t) : _had_expectation(true), type(t) {}
 
 	~Expected() {

@@ -2,7 +2,7 @@
 
 #include "../../util/ArenaArrayBuilders.h"
 
-Arr<TypeAst> parse_type_argument_asts(Lexer& lexer, Arena& arena) {
+Slice<TypeAst> parse_type_argument_asts(Lexer& lexer, Arena& arena) {
 	if (!lexer.try_take('<'))
 		return {};
 	SmallArrayBuilder<TypeAst> args;

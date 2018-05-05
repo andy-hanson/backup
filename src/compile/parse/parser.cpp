@@ -7,7 +7,7 @@
 
 namespace {
 	// Assumes we've already taken a ' ' to indicate we want to parse at least one type parameter.
-	Arr<TypeParameterAst> parse_type_parameter_asts(Lexer& lexer, Arena& arena) {
+	Slice<TypeParameterAst> parse_type_parameter_asts(Lexer& lexer, Arena& arena) {
 		SmallArrayBuilder<TypeParameterAst> type_parameters;
 		uint index = 0;
 		do {
@@ -20,8 +20,8 @@ namespace {
 
 
 	struct TypeParametersAndSpecs {
-		Arr<TypeParameterAst> type_parameters;
-		Arr<SpecUseAst> specs;
+		Slice<TypeParameterAst> type_parameters;
+		Slice<SpecUseAst> specs;
 	};
 	TypeParametersAndSpecs parse_type_parameter_and_spec_use_asts(Lexer& lexer, Arena& arena) {
 		SmallArrayBuilder<TypeParameterAst> type_parameters;
@@ -42,7 +42,7 @@ namespace {
 		return { type_parameters.finish(arena), spec_uses.finish(arena) };
 	}
 
-	Arr<ParameterAst> parse_parameter_asts(Lexer& lexer, Arena& arena) {
+	Slice<ParameterAst> parse_parameter_asts(Lexer& lexer, Arena& arena) {
 		if (!lexer.try_take('(')) {
 			return {};
 		}
@@ -70,12 +70,12 @@ namespace {
 	FunSignatureAst parse_signature_ast(Lexer& lexer, Arena& arena, StringSlice name, Option<ArenaString> comment) {
 		Option<Effect> effect = lexer.try_take_effect();
 		TypeAst return_type = parse_type_ast(lexer, arena);
-		Arr<ParameterAst> parameters = parse_parameter_asts(lexer, arena);
+		Slice<ParameterAst> parameters = parse_parameter_asts(lexer, arena);
 		TypeParametersAndSpecs tp = parse_type_parameter_and_spec_use_asts(lexer, arena);
 		return { comment, name, effect, return_type, parameters, tp.type_parameters, tp.specs };
 	}
 
-	Arr<StructFieldAst> parse_struct_field_asts(Lexer& lexer, Arena& arena) {
+	Slice<StructFieldAst> parse_struct_field_asts(Lexer& lexer, Arena& arena) {
 		lexer.take_indent();
 		SmallArrayBuilder<StructFieldAst> b;
 		do {
@@ -99,7 +99,7 @@ namespace {
 	SpecDeclarationAst parse_spec(Lexer& lexer, Arena& arena, bool is_public, Option<ArenaString> comment) {
 		const char* start = lexer.at();
 		StringSlice name = lexer.take_type_name();
-		Arr<TypeParameterAst> type_parameters = lexer.try_take(' ') ? parse_type_parameter_asts(lexer, arena) : Arr<TypeParameterAst>{};
+		Slice<TypeParameterAst> type_parameters = lexer.try_take(' ') ? parse_type_parameter_asts(lexer, arena) : Slice<TypeParameterAst>{};
 		lexer.take_indent();
 		SmallArrayBuilder<FunSignatureAst> sigs;
 		do {
@@ -129,7 +129,7 @@ namespace {
 			}
 		} else {
 			bool copy = false;
-			Arr<TypeParameterAst> type_parameters;
+			Slice<TypeParameterAst> type_parameters;
 			if (lexer.try_take(' ')) {
 				copy = lexer.try_take_copy_keyword();
 				if (!copy || lexer.try_take(' '))
@@ -152,7 +152,7 @@ namespace {
 		return { lexer.range(start), n_dots == 0 ? Option<uint>{} : Option<uint>{ n_dots - 1 }, path };
 	}
 
-	Arr<ImportAst> parse_imports(Lexer& lexer, Arena& arena, PathCache& path_cache) {
+	Slice<ImportAst> parse_imports(Lexer& lexer, Arena& arena, PathCache& path_cache) {
 		SmallArrayBuilder<ImportAst> b;
 		do {
 			b.add(parse_single_import(lexer, path_cache));

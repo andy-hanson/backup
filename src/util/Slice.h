@@ -2,18 +2,18 @@
 
 #include "./assert.h"
 #include "./int.h"
-#include "./ptr.h"
+#include "./Ref.h"
 
 template <typename T>
-class Arr {
+class Slice {
 	T* _begin;
 	uint _size;
 
 public:
-	Arr() : _begin(nullptr), _size(0) {}
-	Arr(T* _data, uint _len) : _begin(_data), _size(_len) {}
+	Slice() : _begin(nullptr), _size(0) {}
+	Slice(T* _data, uint _len) : _begin(_data), _size(_len) {}
 
-	Arr slice(uint lo, uint hi) {
+	Slice slice(uint lo, uint hi) {
 		assert(lo < hi && hi < _size);
 		return { _begin + lo, hi - lo };
 	}
@@ -28,7 +28,7 @@ public:
 		return _begin[index];
 	}
 
-	bool contains_ref(ref<const T> r) const {
+	bool contains_ref(Ref<const T> r) const {
 		return begin() <= r.ptr() && r.ptr() < end();
 	}
 

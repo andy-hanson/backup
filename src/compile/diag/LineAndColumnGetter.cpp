@@ -33,6 +33,6 @@ LineAndColumn LineAndColumnGetter::line_and_column_at_pos(uint pos) const {
 
 	uint line = low_line;
 	uint line_start = line_to_pos[line];
-	assert(pos >= line_start && line == line_to_pos.size() - 1 ||  pos <= line_to_pos[line + 1]);
+	assert((pos >= line_start && line == line_to_pos.size() - 1) ||  pos <= line_to_pos[line + 1]);
 	return { line, pos - line_start };
 }

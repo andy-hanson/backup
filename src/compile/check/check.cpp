@@ -6,8 +6,8 @@
 #include "./scope.h"
 
 namespace {
-	Arr<TypeParameter> check_type_parameters(const Arr<TypeParameterAst> asts, CheckCtx& al, const Arr<TypeParameter>& spec_type_parameters) {
-		return map_with_prevs<TypeParameter>()(al.arena, asts, [&](const TypeParameterAst& ast, const Arr<TypeParameter>& prevs, uint index) {
+	Slice<TypeParameter> check_type_parameters(const Slice<TypeParameterAst> asts, CheckCtx& al, const Slice<TypeParameter>& spec_type_parameters) {
+		return map_with_prevs<TypeParameter>()(al.arena, asts, [&](const TypeParameterAst& ast, const Slice<TypeParameter>& prevs, uint index) {
 			if (some(spec_type_parameters, [&](const TypeParameter& s) { return s.name == ast.name; }))
 				al.diag(ast.name, Diag::Kind::TypeParameterShadowsSpecTypeParameter);
 			for (const TypeParameter& prev : prevs)
@@ -38,7 +38,7 @@ namespace {
 		}
 		return e;
 	}
-	Effect check_return_effect(const Option<Effect>& declared, const Arr<Parameter>& parameters) {
+	Effect check_return_effect(const Option<Effect>& declared, const Slice<Parameter>& parameters) {
 		bool some_from = some(parameters, [](const Parameter& p) { return p.from; });
 		if (some_from) {
 			if (declared.has()) {
@@ -56,10 +56,10 @@ namespace {
 		}
 	}
 
-	Arr<Parameter> check_parameters(
-		const Arr<ParameterAst>& asts, CheckCtx& al,
-		const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope, const FunsTable& funs_table, const Arr<SpecUse>& current_specs) {
-		return map_with_prevs<Parameter>()(al.arena, asts, [&](const ParameterAst& ast, const Arr<Parameter>& prevs, uint index) -> Parameter {
+	Slice<Parameter> check_parameters(
+		const Slice<ParameterAst>& asts, CheckCtx& al,
+		const StructsTable& structs_table, const TypeParametersScope& type_parameters_scope, const FunsTable& funs_table, const Slice<SpecUse>& current_specs) {
+		return map_with_prevs<Parameter>()(al.arena, asts, [&](const ParameterAst& ast, const Slice<Parameter>& prevs, uint index) -> Parameter {
 			check_param_or_local_shadows_fun(al, ast.name, funs_table, current_specs);
 			if (some(prevs, [&](const Parameter& prev) { return prev.name == ast.name; }))
 				throw "todo";
@@ -68,16 +68,16 @@ namespace {
 		});
 	}
 
-	Arr<SpecUse> check_spec_uses(const Arr<SpecUseAst>& asts, CheckCtx& ctx, const StructsTable& structs_table, const SpecsTable& specs_table, const TypeParametersScope& type_parameters_scope) {
+	Slice<SpecUse> check_spec_uses(const Slice<SpecUseAst>& asts, CheckCtx& ctx, const StructsTable& structs_table, const SpecsTable& specs_table, const TypeParametersScope& type_parameters_scope) {
 		return map_op<SpecUse>()(ctx.arena, asts, [&](const SpecUseAst& ast) -> Option<SpecUse> {
-			Option<ref<const SpecDeclaration>> spec_op = find_spec(ast.spec, ctx, specs_table);
+			Option<Ref<const SpecDeclaration>> spec_op = find_spec(ast.spec, ctx, specs_table);
 			if (!spec_op.has()) {
 				ctx.diag(ast.spec, Diag::Kind::SpecNameNotFound);
 				return {};
 			};
 
-			ref<const SpecDeclaration> spec = spec_op.get();
-			Arr<Type> args = type_arguments_from_asts(ast.type_arguments, ctx, structs_table, type_parameters_scope);
+			Ref<const SpecDeclaration> spec = spec_op.get();
+			Slice<Type> args = type_arguments_from_asts(ast.type_arguments, ctx, structs_table, type_parameters_scope);
 			if (args.size() != spec->type_parameters.size()) {
 				ctx.diag(ast.spec, { Diag::Kind::WrongNumberTypeArguments, { spec->type_parameters.size(), args.size() } });
 				return {};
@@ -89,24 +89,24 @@ namespace {
 	FunSignature check_signature(
 		const FunSignatureAst& ast, CheckCtx& ctx,
 		const StructsTable& structs_table, const SpecsTable& specs_table, const FunsTable& funs_table,
-		const Arr<TypeParameter>& spec_type_parameters, Identifier name
+		const Slice<TypeParameter>& spec_type_parameters, Identifier name
 	) {
-		Arr<TypeParameter> type_parameters = check_type_parameters(ast.type_parameters, ctx, spec_type_parameters);
+		Slice<TypeParameter> type_parameters = check_type_parameters(ast.type_parameters, ctx, spec_type_parameters);
 		TypeParametersScope type_parameters_scope { spec_type_parameters, type_parameters };
 		Type return_type = type_from_ast(ast.return_type, ctx, structs_table, type_parameters_scope);
-		Arr<SpecUse> specs = check_spec_uses(ast.spec_uses, ctx, structs_table, specs_table, type_parameters_scope);
-		Arr<Parameter> parameters = check_parameters(ast.parameters, ctx, structs_table, type_parameters_scope, funs_table, specs);
+		Slice<SpecUse> specs = check_spec_uses(ast.spec_uses, ctx, structs_table, specs_table, type_parameters_scope);
+		Slice<Parameter> parameters = check_parameters(ast.parameters, ctx, structs_table, type_parameters_scope, funs_table, specs);
 		return { ctx.copy_str(ast.comment), type_parameters, check_return_effect(ast.effect, parameters), return_type, name, parameters, specs };
 	}
 
-	Arr<StructField> check_struct_fields(const Arr<StructFieldAst>& asts, CheckCtx& ctx, const StructsTable& structs_table, const Arr<TypeParameter>& struct_type_parameters) {
+	Slice<StructField> check_struct_fields(const Slice<StructFieldAst>& asts, CheckCtx& ctx, const StructsTable& structs_table, const Slice<TypeParameter>& struct_type_parameters) {
 		TypeParametersScope type_parameters_scope { {}, struct_type_parameters };
 		return map<StructField>()(ctx.arena, asts, [&](const StructFieldAst& field) {
 			return StructField { ctx.copy_str(field.comment), type_from_ast(field.type, ctx, structs_table, type_parameters_scope), id(ctx, field.name) };
 		});
 	}
 
-	void check_type_headers(const FileAst& file_ast, CheckCtx& ctx, ref<Module> module) {
+	void check_type_headers(const FileAst& file_ast, CheckCtx& ctx, Ref<Module> module) {
 
 		if (!file_ast.includes.empty()) throw "todo";
 		//for (const StringSlice& include __attribute__((unused)) : file_ast.includes) {
@@ -142,7 +142,7 @@ namespace {
 	}
 
 	template <typename T, typename U, typename /*const T&, U& => void*/ Cb>
-	void zipp(const List<T>& a, Arr<U>& v, Cb cb) {
+	void zipp(const List<T>& a, Slice<U>& v, Cb cb) {
 		assert(a.size() == v.size());
 		uint i = 0;
 		for (const T& t : a) {
@@ -182,7 +182,7 @@ namespace {
 	const StringSlice VOID = StringSlice { "Void" };
 
 	Option<Type> get_special_named_type(const StructsTable& structs_table, CheckCtx& al, StringSlice type_name) {
-		return map_option<Type>()(structs_table.get(type_name), [&](ref<const StructDeclaration> strukt) -> Type {
+		return map_option<Type>()(structs_table.get(type_name), [&](Ref<const StructDeclaration> strukt) -> Type {
 			if (strukt->arity()) {
 				al.diag(strukt->range, Diag::Kind::SpecialTypeShouldNotHaveTypeParameters);
 				return {};
@@ -212,7 +212,7 @@ namespace {
 	}
 }
 
-void check(ref<Module> m, const FileAst& ast, Arena& arena, List<Diagnostic>::Builder& diagnostics) {
+void check(Ref<Module> m, const FileAst& ast, Arena& arena, List<Diagnostic>::Builder& diagnostics) {
 	CheckCtx ctx { arena, ast.source, m->path, m->imports, diagnostics };
 
 	if (!ast.imports.empty()) throw "todo";

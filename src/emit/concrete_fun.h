@@ -4,16 +4,16 @@
 #include "../compile/model/expr.h" // Called
 
 #include "../util/collection_util.h"
-#include "../util/ptr.h"
+#include "../util/Ref.h"
 #include "../util/MaxSizeMap.h"
 
 struct ConcreteFun {
-	ref<const FunDeclaration> fun_declaration;
-	Arr<InstStruct> type_arguments;
+	Ref<const FunDeclaration> fun_declaration;
+	Slice<InstStruct> type_arguments;
 	// Maps spec index -> signature index -> implementation
-	Arr<Arr<ref<const ConcreteFun>>> spec_impls;
+	Slice<Slice<Ref<const ConcreteFun>>> spec_impls;
 
-	ConcreteFun(ref<const FunDeclaration> _fun_declaration, Arr<InstStruct> _type_arguments, Arr<Arr<ref<const ConcreteFun>>> _spec_impls);
+	ConcreteFun(Ref<const FunDeclaration> _fun_declaration, Slice<InstStruct> _type_arguments, Slice<Slice<Ref<const ConcreteFun>>> _spec_impls);
 
 	struct hash {
 		hash_t operator()(const ConcreteFun& c) const;
@@ -25,8 +25,8 @@ bool operator==(const ConcreteFun& a, const ConcreteFun& b);
 InstStruct substitute_type_arguments(const Type& type_argument, const ConcreteFun& fun, Arena& arena);
 
 struct ConcreteFunAndCalled {
-	ref<const ConcreteFun> fun;
-	ref<const Called> called;
+	Ref<const ConcreteFun> fun;
+	Ref<const Called> called;
 
 	struct hash {
 		hash_t operator()(const ConcreteFunAndCalled& c) const;
@@ -35,10 +35,10 @@ struct ConcreteFunAndCalled {
 bool operator==(const ConcreteFunAndCalled& a, const ConcreteFunAndCalled& b);
 inline bool operator!=(const ConcreteFunAndCalled& a, const ConcreteFunAndCalled& b) { return !(a == b); }
 
-using FunInstantiations = MaxSizeMap<32, ref<const FunDeclaration>, NonEmptyList<ConcreteFun>, ref<const FunDeclaration>::hash>;
-using ResolvedCalls = MaxSizeMap<32, ConcreteFunAndCalled, ref<const ConcreteFun>, ConcreteFunAndCalled::hash>;
+using FunInstantiations = MaxSizeMap<32, Ref<const FunDeclaration>, NonEmptyList<ConcreteFun>, Ref<const FunDeclaration>::hash>;
+using ResolvedCalls = MaxSizeMap<32, ConcreteFunAndCalled, Ref<const ConcreteFun>, ConcreteFunAndCalled::hash>;
 struct EveryConcreteFun {
 	FunInstantiations fun_instantiations;
 	ResolvedCalls resolved_calls;
 };
-EveryConcreteFun get_every_concrete_fun(const Arr<Module>& modules, Arena& scratch_arena);
+EveryConcreteFun get_every_concrete_fun(const Slice<Module>& modules, Arena& scratch_arena);

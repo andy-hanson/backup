@@ -5,17 +5,17 @@
 #include "./convert_type.h"
 
 namespace {
-	Option<ref<const Parameter>> find_parameter(const ExprContext& ctx, StringSlice name) {
+	Option<Ref<const Parameter>> find_parameter(const ExprContext& ctx, StringSlice name) {
 		return find(ctx.current_fun->signature.parameters, [&](const Parameter& p) { return p.name == name; });
 	}
-	Option<ref<const Let>> find_local(const ExprContext& ctx, StringSlice name) {
-		return un_ref(find(ctx.locals, [name](const ref<const Let>& l) { return l->name == name; }));
+	Option<Ref<const Let>> find_local(const ExprContext& ctx, StringSlice name) {
+		return un_ref(find(ctx.locals, [name](const Ref<const Let>& l) { return l->name == name; }));
 	}
 
 	InstStruct struct_create_type(
 		const StructDeclaration& containing __attribute__((unused)),
 		ExprContext& ctx __attribute__((unused)),
-		const Arr<TypeAst> type_arguments __attribute__((unused)),
+		const Slice<TypeAst> type_arguments __attribute__((unused)),
 		Expected& expected __attribute__((unused))) {
 		throw "todo";
 	}
@@ -25,7 +25,7 @@ namespace {
 	}
 
 	Expression check_struct_create(const StructCreateAst& create, ExprContext& ctx, Expected& expected) {
-		Option<const ref<const StructDeclaration>&> struct_op = ctx.structs_table.get(create.struct_name);
+		Option<const Ref<const StructDeclaration>&> struct_op = ctx.structs_table.get(create.struct_name);
 		if (!struct_op.has()) {
 			ctx.check_ctx.diag(create.struct_name, Diag::Kind::StructNameNotFound);
 			return Expression::bogus();
@@ -45,7 +45,7 @@ namespace {
 			return Expression::bogus();
 		}
 
-		Arr<Expression> arguments = fill_array<Expression>()(ctx.check_ctx.arena, size, [&](uint i) {
+		Slice<Expression> arguments = fill_array<Expression>()(ctx.check_ctx.arena, size, [&](uint i) {
 			return check_and_expect(create.arguments[i], ctx, struct_field_type(inst_struct, i));
 		});
 
@@ -72,7 +72,7 @@ namespace {
 			ctx.check_ctx.diag(name, Diag::Kind::LocalShadowsLocal);
 
 		ExpressionAndType init = check_and_infer(*ast.init, ctx);
-		ref<Let> l = ctx.check_ctx.arena.put(Let { init.type, Identifier { str(ctx.check_ctx.arena, name) }, init.expression, {}, {} });
+		Ref<Let> l = ctx.check_ctx.arena.put(Let { init.type, Identifier { str(ctx.check_ctx.arena, name) }, init.expression, {}, {} });
 		ctx.locals.push(l);
 		l->then = check(*ast.then, ctx, expected);
 		assert(ctx.locals.peek() == l);
@@ -96,12 +96,12 @@ namespace {
 			return Expression::bogus();
 		}
 
-		Arr<Case> cases = map<Case>()(ctx.check_ctx.arena, ast.cases, [&](const CaseAst& c) {
+		Slice<Case> cases = map<Case>()(ctx.check_ctx.arena, ast.cases, [&](const CaseAst& c) {
 			Expression cond = check_and_expect(c.condition, ctx, ctx.builtin_types.bool_type.get());
 			Expression then = check(c.then, ctx, expected);
 			return Case { cond, then };
 		});
-		ref<Expression> elze = ctx.check_ctx.arena.put(check(*ast.elze, ctx, expected));
+		Ref<Expression> elze = ctx.check_ctx.arena.put(check(*ast.elze, ctx, expected));
 		return Expression { When { cases, elze } };
 	}
 
@@ -116,7 +116,7 @@ namespace {
 			ctx.check_ctx.diag(ast.range, Diag::Kind::MissingBoolType);
 			return Expression::bogus();
 		}
-		ref<Expression> asserted = ctx.check_ctx.arena.put(check_and_expect(ast.asserted, ctx, ctx.builtin_types.bool_type.get()));
+		Ref<Expression> asserted = ctx.check_ctx.arena.put(check_and_expect(ast.asserted, ctx, ctx.builtin_types.bool_type.get()));
 		return Expression(asserted, Expression::Kind::Assert);
 	}
 
@@ -165,16 +165,16 @@ namespace {
 	}
 
 	Expression check_identifier(const StringSlice& name, ExprContext& ctx, Expected& expected) {
-		Option<ref<const Parameter>> param_op = find_parameter(ctx, name);
+		Option<Ref<const Parameter>> param_op = find_parameter(ctx, name);
 		if (param_op.has()) {
 			const Parameter& param = param_op.get();
 			expected.check_no_infer(param.type);
 			return Expression(&param);
 		}
 
-		Option<ref<const Let>> let_op = find_local(ctx, name);
+		Option<Ref<const Let>> let_op = find_local(ctx, name);
 		if (let_op.has()) {
-			ref<const Let> let = let_op.get();
+			Ref<const Let> let = let_op.get();
 			expected.check_no_infer(let->type);
 			return Expression(let, Expression::Kind::LocalReference);
 		}

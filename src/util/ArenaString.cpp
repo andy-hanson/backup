@@ -4,13 +4,9 @@ StringBuilder& StringBuilder::operator<<(uint u) {
 	assert(ptr != slice._end);
 	//TODO: better
 	if (u < 10) {
-		*ptr = '0' + char(u);
-		++ptr;
+		*this << char('0' + char(u));
 	} else if (u < 100) {
-		assert(ptr + 1 != slice._end);
-		*ptr = '0' + char(u % 10);
-		*(ptr + 1) = '0' + char(u / 10);
-		++ptr;
+		*this << char('0' + char(u / 10)) << char('0' + char(u % 10));
 	} else
 		throw "todo";
 	return *this;
