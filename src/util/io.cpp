@@ -13,7 +13,7 @@ Option<StringSlice> try_read_file(const FileLocator& loc, Arena& out, bool null_
 
 	i.seekg(0, std::ios::end);
 	long signed_size = i.tellg();
-	size_t size = to_unsigned(signed_size);
+	uint size = to_unsigned(signed_size);
 	ArenaString res = allocate_slice(out, size + null_terminated);
 	i.seekg(0);
 	i.read(res.begin(), signed_size);

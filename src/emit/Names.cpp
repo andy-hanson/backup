@@ -37,12 +37,12 @@ namespace {
 
 	class FunIds {
 		// Filled lazily, because we won't need ids for most funs.
-		HeapAllocatedMap<ref<const ConcreteFun>, uint, ref<const ConcreteFun>::hash> ids;
+		MaxSizeMap<32, ref<const ConcreteFun>, uint, ref<const ConcreteFun>::hash> ids;
 		uint next_id = 1;
 
 	public:
 		uint get_id(ref<const ConcreteFun> f) {
-			uint& i = ids.get_or_create(f);
+			uint& i = ids.get_or_insert_default(f);
 			if (i == 0) {
 				i = next_id;
 				++next_id;
@@ -80,17 +80,22 @@ namespace {
 	}
 
 	class DuplicateNamesGetter {
-		MaxSizeSet<64, Identifier, Identifier::hash> seen;
-		MaxSizeSet<64, Identifier, Identifier::hash> duplicates;
+		enum class Dup { Zero, One, Many };
+		MaxSizeMap<64, Identifier, Dup, Identifier::hash> map;
 
 	public:
 		void add(const Identifier& i) {
-			if (!seen.insert(i).was_added)
-				duplicates.insert(i);
+			Dup& d = map.get_or_insert_default(i);
+			switch (d) {
+				case Dup::Zero: d = Dup::One; break;
+				case Dup::One: d = Dup::Many; break;
+				case Dup::Many: break;
+			}
 		}
 
-		bool has_duplicate(const Identifier& i) {
-			return duplicates.has(i);
+		bool has_duplicate(const Identifier& i) const {
+			Option<const Dup&> o = map.get(i);
+			return o.has() && o.get() == Dup::Many;
 		}
 	};
 }
@@ -120,9 +125,9 @@ Names get_names(const Arr<Module>& modules, const FunInstantiations& fun_instant
 		}
 
 		for (const FunDeclaration& f : module.funs_declaration_order) {
-			const HeapAllocatedSet<ConcreteFun, ConcreteFun::hash>& instances = fun_instantiations.must_get(&f);
+			const NonEmptyList<ConcreteFun>& instances = fun_instantiations.must_get(&f);
 			bool is_overloaded = all_fun_names.has_duplicate(f.name());
-			bool is_instantiated = instances.size() != 1;
+			bool is_instantiated = instances.has_more_than_one();
 			for (const ConcreteFun& cf : instances)
 				names.fun_names.must_insert(&cf, escape_fun_name(cf, is_overloaded, is_instantiated, ids, arena));
 		}

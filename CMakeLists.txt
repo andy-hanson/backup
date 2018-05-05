@@ -55,8 +55,6 @@ add_executable(oohoo
 
 	src/host/DocumentProvider.cpp
 	src/host/DocumentProvider.h
-	src/host/Path.cpp
-	src/host/Path.h
 
 	src/compile/model/model.cpp
 	src/compile/model/model.h
@@ -85,7 +83,6 @@ add_executable(oohoo
 	src/util/Arena.cpp
 	src/util/Arena.h
 	src/util/collection_util.h
-	src/util/HeapAllocatedMap.h
 	src/util/MaxSizeVector.h
 	src/util/Option.h
 	src/util/ptr.h
@@ -97,7 +94,8 @@ add_executable(oohoo
 	src/util/int.h
 	src/util/rlimit.cpp
 	src/util/rlimit.h
-	src/util/HeapAllocatedSet.h
+	src/util/Path.cpp
+	src/util/Path.h
 	src/util/Slice.h
 	src/util/StringSlice.cpp
 	src/util/StringSlice.h
@@ -105,4 +103,4 @@ add_executable(oohoo
 	src/util/Writer.h
 
 	src/clang.cpp
-	src/clang.h src/util/unique_ptr.h src/util/Map.h src/util/MultiMap.h src/util/MaxSizeMap.h src/util/KeyValuePair.h src/util/assert.h src/util/List.h src/util/ArenaString.h src/util/ArenaString.cpp src/util/ArenaArrayBuilders.h)
+	src/clang.h src/util/unique_ptr.h src/util/Map.h src/util/MultiMap.h src/util/MaxSizeMap.h src/util/KeyValuePair.h src/util/assert.h src/util/List.h src/util/ArenaString.h src/util/ArenaString.cpp src/util/ArenaArrayBuilders.h src/util/SmallMap.h)

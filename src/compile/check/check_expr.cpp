@@ -39,7 +39,7 @@ namespace {
 
 		InstStruct inst_struct = struct_create_type(strukt, ctx, create.type_arguments, expected);
 
-		size_t size = strukt.body.fields().size();
+		uint size = strukt.body.fields().size();
 		if (create.arguments.size() != size) {
 			ctx.check_ctx.diag(create.struct_name, Diag::Kind::WrongNumberNewStructArguments);
 			return Expression::bogus();

@@ -36,12 +36,15 @@ struct Path::Impl {
 	Option<Path> parent;
 	ArenaString name;
 
-	size_t str_len() const {
+	hash_t str_len() const {
 		return (parent.has() ? parent.get().impl->str_len() : 0) + name.slice().size();
 	}
 
 	inline friend bool operator==(const Path::Impl& a, const Path::Impl& b) {
 		return a.parent == b.parent && a.name == b.name;
+	}
+	inline friend bool operator!=(const Path::Impl& a, const Path::Impl& b) {
+		return !(a == b);
 	}
 
 	template <typename WriterLike>
@@ -54,12 +57,14 @@ struct Path::Impl {
 	}
 
 	struct hash {
-		size_t operator()(const Path::Impl& p) const {
+		hash_t operator()(const Path::Impl& p) const {
 			//TODO:PERF
 			return StringSlice::hash{}(p.name);
 		}
 	};
 };
+
+hash_t Path::impl_size() { return sizeof(Path::Impl); }
 
 const Option<Path>& Path::parent() const {
 	return impl->parent;

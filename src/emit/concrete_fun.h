@@ -5,19 +5,18 @@
 
 #include "../util/collection_util.h"
 #include "../util/ptr.h"
-#include "../util/HeapAllocatedMap.h"
-#include "../util/HeapAllocatedSet.h"
+#include "../util/MaxSizeMap.h"
 
 struct ConcreteFun {
-	const ref<const FunDeclaration> fun_declaration;
-	const Arr<InstStruct> type_arguments;
+	ref<const FunDeclaration> fun_declaration;
+	Arr<InstStruct> type_arguments;
 	// Maps spec index -> signature index -> implementation
-	const Arr<Arr<ref<const ConcreteFun>>> spec_impls;
+	Arr<Arr<ref<const ConcreteFun>>> spec_impls;
 
 	ConcreteFun(ref<const FunDeclaration> _fun_declaration, Arr<InstStruct> _type_arguments, Arr<Arr<ref<const ConcreteFun>>> _spec_impls);
 
 	struct hash {
-		size_t operator()(const ConcreteFun& c) const;
+		hash_t operator()(const ConcreteFun& c) const;
 	};
 };
 
@@ -30,13 +29,14 @@ struct ConcreteFunAndCalled {
 	ref<const Called> called;
 
 	struct hash {
-		size_t operator()(const ConcreteFunAndCalled& c) const;
+		hash_t operator()(const ConcreteFunAndCalled& c) const;
 	};
 };
 bool operator==(const ConcreteFunAndCalled& a, const ConcreteFunAndCalled& b);
+inline bool operator!=(const ConcreteFunAndCalled& a, const ConcreteFunAndCalled& b) { return !(a == b); }
 
-using FunInstantiations = HeapAllocatedMap<ref<const FunDeclaration>, HeapAllocatedSet<ConcreteFun, ConcreteFun::hash>, ref<const FunDeclaration>::hash>;
-using ResolvedCalls = HeapAllocatedMap<ConcreteFunAndCalled, ref<const ConcreteFun>, ConcreteFunAndCalled::hash>;
+using FunInstantiations = MaxSizeMap<32, ref<const FunDeclaration>, NonEmptyList<ConcreteFun>, ref<const FunDeclaration>::hash>;
+using ResolvedCalls = MaxSizeMap<32, ConcreteFunAndCalled, ref<const ConcreteFun>, ConcreteFunAndCalled::hash>;
 struct EveryConcreteFun {
 	FunInstantiations fun_instantiations;
 	ResolvedCalls resolved_calls;

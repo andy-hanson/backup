@@ -80,6 +80,10 @@ public:
 
 	bool has() const { return ref != nullptr; }
 
+	T& get() {
+		assert(ref != nullptr);
+		return *ref;
+	}
 	const T& get() const {
 		assert(ref != nullptr);
 		return *ref;

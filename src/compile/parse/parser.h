@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../host/Path.h"
+#include "../../util/Path.h"
 #include "../../util/Arena.h"
 #include "./ast.h"
 

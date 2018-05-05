@@ -2,7 +2,7 @@
 
 #include "../../util/StringSlice.h"
 #include "../../util/List.h"
-#include "../../host/Path.h"
+#include "../../util/Path.h"
 #include "../model/effect.h"
 #include "./expr_ast.h"
 

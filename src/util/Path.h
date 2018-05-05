@@ -9,6 +9,7 @@
 // Can only be constructed through a PathCache.
 class Path {
 	struct Impl;
+	static hash_t impl_size();
 	friend class PathCache;
 	ref<const Impl> impl;
 
@@ -27,8 +28,8 @@ public:
 	}
 
 	struct hash {
-		inline size_t operator()(const Path& p) const {
-			return ref<const Impl>::hash{}(p.impl);
+		inline hash_t operator()(const Path& p) const {
+			return hash_t(p.impl.ptr()) >> impl_size();
 		}
 	};
 };

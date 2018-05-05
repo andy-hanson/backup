@@ -29,14 +29,14 @@ ArenaString StringBuilder::finish() {
 }
 
 ArenaString str(Arena& arena, const StringSlice& slice) {
-	size_t size = slice.size();
+	uint size = slice.size();
 	char* const begin = static_cast<char*>(arena.allocate(size));
 	char* end = begin;
 	for (char c : slice) {
 		*end = c;
 		++end;
 	}
-	assert(size_t(end - begin) == size);
+	assert(end - begin == size);
 	//TODO: assert(arena.alloc_next == end);
 	return { begin, end };
 }

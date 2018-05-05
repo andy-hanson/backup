@@ -3,6 +3,17 @@
 #include "./assert.h"
 #include "./int.h" // size_t
 
+//TODO:MOVE
+inline constexpr uint floor_log2(uint size) {
+	uint res = 0;
+	uint power = 1;
+	while (power * 2 <= size) {
+		++res;
+		power *= 2;
+	}
+	return res;
+}
+
 /** Type of non-null references. */
 template <typename T>
 class ref {
@@ -41,9 +52,10 @@ public:
 	inline const T* operator->() const { return _ptr; }
 
 	struct hash {
-		inline size_t operator()(ref<T> r) const {
-			// TODO:PERF
-			return reinterpret_cast<size_t>(r.ptr());
+		inline hash_t operator()(ref<T> r) const {
+			// https://stackoverflow.com/questions/20953390/what-is-the-fastest-hash-function-for-pointers
+			static const hash_t shift = floor_log2(1 + sizeof(T));
+			return hash_t(r.ptr()) >> shift;
 		}
 	};
 };

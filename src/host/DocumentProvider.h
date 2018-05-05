@@ -2,7 +2,7 @@
 
 #include "../util/Arena.h"
 #include "../util/unique_ptr.h"
-#include "./Path.h"
+#include "../util/Path.h"
 
 /*abstract*/ class DocumentProvider {
 public:

@@ -7,40 +7,79 @@ struct InsertResult { bool was_added; };
 
 template <uint capacity, typename K, typename V, typename Hash>
 class MaxSizeMap {
+	static_assert(capacity > 16, "Use SmallMap");
+
 	Option<KeyValuePair<K, V>> arr[capacity];
 
+	Option<KeyValuePair<K, V>>& get_raw_entry(const K& key) {
+		return arr[Hash{}(key) % capacity];
+	}
+	const Option<KeyValuePair<K, V>>& get_raw_entry(const K& key) const {
+		return arr[Hash{}(key) % capacity];
+	}
+
+	Option<KeyValuePair<K, V>&> get_entry(const K& key) {
+		Option<KeyValuePair<K, V>>& op_entry = get_raw_entry(key);
+		if (op_entry.has()) {
+			KeyValuePair<K, V>& entry = op_entry.get();
+			if (entry.key != key) throw "todo"; // false conflict
+			return Option<KeyValuePair<K, V>&> { entry };
+		} else
+			return {};
+	}
 	Option<const KeyValuePair<K, V>&> get_entry(const K& key) const {
-		size_t hash = Hash{}(key);
-		const Option<KeyValuePair<K, V>> op_entry = arr[hash % capacity];
-		return op_entry.has() && op_entry.get().key == key ? Option<const KeyValuePair<K, V>&> { op_entry.get() } : Option<const KeyValuePair<K, V>&>{};
+		const Option<KeyValuePair<K, V>>& op_entry = get_raw_entry(key);
+		if (op_entry.has()) {
+			const KeyValuePair<K, V>& entry = op_entry.get();
+			if (entry.key != key) throw "todo"; // false conflict
+			return Option<const KeyValuePair<K, V>&> { entry };
+		} else
+			return {};
 	}
 
 public:
-	bool has(const K& key) {
+	bool has(const K& key) const {
 		return get_entry(key).has();
 	}
 
-	InsertResult insert(const K& key, const V& value) {
-		size_t hash = Hash{}(key);
-		Option<KeyValuePair<K, V>>& op_entry = arr[hash % capacity];
+	InsertResult try_insert(const K& key, const V& value) {
+		Option<KeyValuePair<K, V>>& op_entry = get_raw_entry(key);
 		if (op_entry.has()) {
-			if (op_entry.get().key != key) throw "todo";
+			if (op_entry.get().key != key) throw "todo"; // false conflict
 			return { false };
 		} else {
 			op_entry = KeyValuePair<K, V> { key, value };
 			return { true };
 		}
+	}
 
+	V& get_or_insert_default(const K& key) {
+		Option<KeyValuePair<K, V>>& op_entry = get_raw_entry(key);
+		if (op_entry.has()) {
+			KeyValuePair<K, V>& entry = op_entry.get();
+			if (entry.key != key) throw "todo"; // false conflict
+			return entry.value;
+		} else {
+			op_entry = KeyValuePair<K, V> { key, {} };
+			return op_entry.get().value;
+		}
 	}
 
 	ref<KeyValuePair<K, V>> must_insert(K key, V value) {
-		size_t hash = Hash{}(key);
-		Option<KeyValuePair<K, V>>& op_entry = arr[hash % capacity];
-		if (op_entry.has()) throw "todo";
-		op_entry = KeyValuePair<K, V> { key, value };
-		return &op_entry.get();
+		Option<KeyValuePair<K, V>>& op_entry = get_raw_entry(key);
+		if (op_entry.has()) {
+			KeyValuePair<K, V>& entry = op_entry.get();
+			if (entry.key == key) throw "todo"; // false conflict
+			assert(false); // true conflict
+		} else {
+			op_entry = KeyValuePair<K, V> { key, value };
+			return &op_entry.get();
+		}
 	}
 
+	V& must_get(const K& key) {
+		return get_entry(key).get().value;
+	}
 	const V& must_get(const K& key) const {
 		return get_entry(key).get().value;
 	}
@@ -62,7 +101,7 @@ class MaxSizeSet {
 	MaxSizeMap<capacity, T, Dummy, Hash> inner;
 
 public:
-	bool has(const T& value) {
+	bool has(const T& value) const {
 		return inner.has(value);
 	}
 
@@ -83,7 +122,7 @@ public:
 			return must_insert(value);
 	}
 
-	InsertResult insert(const T& value) {
-		return inner.insert(value, {});
+	InsertResult try_insert(const T& value) {
+		return inner.try_insert(value, {});
 	}
 };

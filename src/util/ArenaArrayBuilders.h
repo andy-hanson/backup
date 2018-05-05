@@ -6,7 +6,7 @@
 #include "./Option.h"
 
 template <typename T>
-Arr<T> uninitialized_array(Arena& arena, size_t len) {
+Arr<T> uninitialized_array(Arena& arena, uint len) {
 	return Arr<T> { static_cast<T*>(arena.allocate(sizeof(T) * len)), len };
 }
 
@@ -18,12 +18,14 @@ Arr<T> single_element_array(Arena& arena, T elem) {
 template <typename T>
 struct FillArray {
 public:
-	template <typename Cb>
-	Arr<T> operator()(Arena& arena, size_t len, Cb cb) {
+	template <typename /*() => T*/ Cb>
+	Arr<T> operator()(Arena& arena, uint len, Cb cb) {
 		if (len == 0) return {};
 		Arr<T> arr = uninitialized_array<T>(arena, len);
-		for (uint i = 0; i < len; ++i)
-			arr[i] = cb(i);
+		for (uint i = 0; i < len; ++i) {
+			T value = cb(i);
+			arr[i] = value;
+		}
 		return arr;
 	}
 };

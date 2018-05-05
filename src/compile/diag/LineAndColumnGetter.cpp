@@ -18,7 +18,7 @@ LineAndColumnGetter LineAndColumnGetter::for_text(const StringSlice& text, Arena
 
 LineAndColumn LineAndColumnGetter::line_and_column_at_pos(uint pos) const {
 	uint low_line = 0; // inclusive
-	uint high_line = to_uint(line_to_pos.size()); // exclusive
+	uint high_line = line_to_pos.size(); // exclusive
 
 	while (low_line < high_line - 1) {
 		uint middle_line = mid(low_line, high_line);

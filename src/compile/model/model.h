@@ -5,9 +5,9 @@
 #include "../../util/assert.h"
 #include "../../util/Map.h"
 #include "../../util/MultiMap.h"
+#include "../../util/Path.h"
 
 #include "./effect.h"
-#include "../../host/Path.h"
 
 using Identifier = ArenaString;
 
@@ -77,7 +77,7 @@ struct StructDeclaration {
 	inline StructDeclaration(ref<const Module> _containing_module, SourceRange _range, bool _is_public, Arr<TypeParameter> _type_parameters, Identifier _name, bool _copy)
 		: containing_module(_containing_module), range(_range), is_public(_is_public), type_parameters(_type_parameters), name(_name), copy(_copy) {}
 
-	inline size_t arity() const { return type_parameters.size(); }
+	inline uint arity() const { return type_parameters.size(); }
 };
 
 class Type;
@@ -92,7 +92,7 @@ struct InstStruct {
 	bool is_deeply_concrete() const;
 
 	struct hash {
-		size_t operator()(const InstStruct& i);
+		hash_t operator()(const InstStruct& i);
 	};
 };
 bool operator==(const InstStruct& a, const InstStruct& b);
@@ -141,7 +141,7 @@ public:
 	}
 
 	struct hash {
-		size_t operator()(const Type& t) const;
+		hash_t operator()(const Type& t) const;
 	};
 };
 
@@ -184,7 +184,7 @@ struct FunSignature {
 		: comment(_comment), type_parameters(_type_parameters), effect(_effect), return_type(_return_type), name(_name), parameters(_parameters), specs(_specs) {}
 	inline FunSignature(Identifier _name) : name(_name) {}
 
-	inline uint arity() const { return to_uint(parameters.size()); }
+	inline uint arity() const { return parameters.size(); }
 	bool is_generic() const;
 };
 

@@ -29,7 +29,7 @@ namespace {
 		}
 	};
 
-	Grow<char> diagnostics_baseline(const Grow<Diagnostic>& diags, DocumentProvider& document_provider) {
+	Grow<char> diagnostics_baseline(const List<Diagnostic>& diags, DocumentProvider& document_provider) {
 		Grow<char> out;
 		Writer w { out };
 		Arena temp;

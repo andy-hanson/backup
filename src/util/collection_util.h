@@ -1,11 +1,20 @@
 #pragma once
 
-#include "Arena.h"
+#include "./Arena.h"
+#include "./List.h"
 #include "./MaxSizeVector.h"
 #include "./Option.h"
 
 template <typename T, typename Pred>
 Option<ref<const T>> find(const Arr<T>& collection, Pred pred) {
+	for (const T& t : collection)
+		if (pred(t))
+			return Option<ref<const T>>{&t};
+	return {};
+}
+
+template <typename T, typename Pred>
+Option<ref<const T>> find(const NonEmptyList<T>& collection, Pred pred) {
 	for (const T& t : collection)
 		if (pred(t))
 			return Option<ref<const T>>{&t};
@@ -34,9 +43,9 @@ bool every(const Arr<T>& collection, Pred pred) {
 	return true;
 }
 
-template <typename T, typename Pred>
-bool some(const Arr<T>& collection, Pred pred) {
-	for (const T& t : collection)
+template <typename C, typename Pred>
+bool some(const C& collection, Pred pred) {
+	for (const auto& t : collection)
 		if (pred(t))
 			return true;
 	return false;
@@ -78,8 +87,8 @@ bool operator==(Arr<T> da, Arr<T> db) {
 template <typename T>
 Option<uint> try_get_index(const Arr<T>& collection, ref<const T> value) {
 	//TODO:PERF always use fast way
-	ptrdiff_t fast_way = value.ptr() - collection.begin();
-	if (fast_way < 0 || fast_way >= ptrdiff_t(collection.size())) return {};
+	long fast_way = value.ptr() - collection.begin();
+	if (fast_way < 0 || fast_way >= long(collection.size())) return {};
 
 	uint i = 0;
 	for (const T& v : collection) {

@@ -3,7 +3,7 @@
 #include "./Grow.h"
 #include "./Option.h"
 #include "Arena.h"
-#include "../host/Path.h"
+#include "../util/Path.h"
 
 struct FileLocator {
 	const StringSlice& root;

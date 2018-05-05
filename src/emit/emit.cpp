@@ -69,7 +69,7 @@ namespace {
 	}
 
 	void emit_structs(Writer& out, const StructsDeclarationOrder& structs, const Names& names) {
-		HeapAllocatedMap<ref<const StructDeclaration>, EmitStructState, ref<const StructDeclaration>::hash> map;
+		MaxSizeMap<32, ref<const StructDeclaration>, EmitStructState, ref<const StructDeclaration>::hash> map;
 		MaxSizeVector<16, ref<const StructDeclaration>> stack;
 
 		for (const StructDeclaration& struct_in_order : structs) {
@@ -77,7 +77,7 @@ namespace {
 			do {
 				// At each step, we either pop, or mark a struct as emitting (which will be popped next time). So should terminate eventually.
 				ref<const StructDeclaration> s = stack.peek();
-				EmitStructState& state = map.get_or_create(s);
+				EmitStructState& state = map.get_or_insert_default(s);
 				switch (state) {
 					case EmitStructState::Emitted:
 						stack.pop();
@@ -112,7 +112,7 @@ namespace {
 	template <typename /*ref<constConcreteFun>> => void>*/ Cb>
 	void each_concrete_fun(const Module& module, const FunInstantiations& fun_instantiations, Cb cb) {
 		for (const FunDeclaration& f : module.funs_declaration_order) {
-			Option<const HeapAllocatedSet<ConcreteFun, ConcreteFun::hash>&> instantiations = fun_instantiations.get(&f);
+			Option<const NonEmptyList<ConcreteFun>&> instantiations = fun_instantiations.get(&f);
 			if (instantiations.has())
 				for (const ConcreteFun& cf : instantiations.get())
 					cb(&cf);

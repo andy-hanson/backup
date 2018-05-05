@@ -6,8 +6,8 @@
 #include "./LineAndColumnGetter.h"
 
 struct WrongNumber {
-	size_t expected;
-	size_t actual;
+	uint expected;
+	uint actual;
 };
 
 class Diag {

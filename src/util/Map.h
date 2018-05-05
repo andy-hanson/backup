@@ -17,7 +17,7 @@ public:
 	Option<const V&> get(const K& key) const {
 		assert(!arr.empty());
 
-		size_t hash = Hash{}(key);
+		hash_t hash = Hash{}(key);
 		const Option<KeyValuePair<K, V>>& op_entry = arr[hash % arr.size()];
 		if (op_entry.has()) {
 			const KeyValuePair<K, V>& entry = op_entry.get();
@@ -41,7 +41,7 @@ struct BuildMap {
 
 		for (const V& value : values) {
 			const K& key = get_key(value);
-			size_t hash = Hash{}(key);
+			hash_t hash = Hash{}(key);
 			Option<KeyValuePair<K, ref<const V>>>& op_entry = arr[hash % arr.size()];
 			if (op_entry.has()) {
 				const KeyValuePair<K, ref<const V>>& entry = op_entry.get();

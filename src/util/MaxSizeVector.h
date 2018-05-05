@@ -34,7 +34,7 @@ public:
 		push(first);
 	}
 
-	size_t size() const { return _size; }
+	uint size() const { return _size; }
 
 	bool empty() const { return _size == 0; }
 
@@ -57,11 +57,11 @@ public:
 		return (*this)[_size - 1];
 	}
 
-	T& operator[](size_t i) {
+	T& operator[](uint i) {
 		assert(i < _size);
 		return data.values[i];
 	}
-	const T& operator[](size_t i) const {
+	const T& operator[](uint i) const {
 		assert(i < _size);
 		return data.values[i];
 	}

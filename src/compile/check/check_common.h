@@ -12,13 +12,13 @@ struct CheckCtx {
 	const StringSlice& source;
 	Path path; // Path of current module
 	const Arr<ref<const Module>>& imports;
-	Grow<Diagnostic>& diags;
+	List<Diagnostic>::Builder& diags;
 
 	inline SourceRange range(StringSlice slice) {
 		return source.range_from_inner_slice(slice);
 	}
 	inline void diag(SourceRange range, Diag diag) {
-		diags.push({ path, range, diag });
+		diags.add({ path, range, diag }, arena);
 	}
 	inline void diag(StringSlice slice, Diag d) {
 		diag(range(slice), d);

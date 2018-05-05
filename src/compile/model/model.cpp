@@ -49,7 +49,7 @@ bool InstStruct::is_deeply_concrete() const {
 	return every(type_arguments, [](const Type& t) {  return t.is_inst_struct() && t.inst_struct().is_deeply_concrete(); });
 }
 
-size_t InstStruct::hash::operator()(const InstStruct& i) {
+hash_t InstStruct::hash::operator()(const InstStruct& i) {
 	return hash_combine(ref<const StructDeclaration>::hash{}(i.strukt), hash_arr(i.type_arguments, Type::hash {}));
 }
 
@@ -57,7 +57,7 @@ bool operator==(const InstStruct& a, const InstStruct& b) {
 	return a.strukt == b.strukt && a.type_arguments == b.type_arguments;
 }
 
-size_t Type::hash::operator()(const Type& t) const {
+hash_t Type::hash::operator()(const Type& t) const {
 	switch (t.kind()) {
 		case Type::Kind::Nil: assert(false);
 		case Type::Kind::Bogus:

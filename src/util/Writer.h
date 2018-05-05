@@ -29,7 +29,6 @@ public:
 			out.push_copy(c);
 		return *this;
 	}
-	Writer& operator<<(size_t u);
 	Writer& operator<<(uint u);
 	Writer& operator<<(ushort u);
 	static const struct indent_t {} indent;

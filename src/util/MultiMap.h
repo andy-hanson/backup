@@ -21,7 +21,7 @@ public:
 	MultiMap() : arr() {}
 
 	bool has(const K& key) const {
-		size_t hash = Hash{}(key);
+		hash_t hash = Hash{}(key);
 		const Option<MultiMapPair<K, V>>& op_entry = arr[hash % arr.size()];
 		return op_entry.has() && op_entry.get().key.has() && op_entry.get().key.get() == key;
 	}
@@ -30,7 +30,7 @@ public:
 	void each_with_key(const K& key, Cb cb) const {
 		assert(!arr.empty());
 
-		size_t hash = Hash{}(key);
+		hash_t hash = Hash{}(key);
 		const Option<MultiMapPair<K, V>>* op_entry_ptr = &arr[hash % arr.size()];
 		if (!op_entry_ptr->has()) return;
 
@@ -61,13 +61,13 @@ struct BuildMultiMap {
 		if (values.empty())
 			return {};
 
-		size_t arr_size = values.size() * 2;
+		uint arr_size = values.size() * 2;
 		Arr<Option<MultiMapPair<K, ref<const V>>>> arr = fill_array<Option<MultiMapPair<K, ref<const V>>>>()(
 			arena, arr_size, [](uint i __attribute__((unused))) { return Option<MultiMapPair<K, ref<const V>>> {}; });
 
 		for (const V& value : values) {
 			const K& key = get_key(value);
-			size_t hash = Hash{}(key);
+			hash_t hash = Hash{}(key);
 			Option<MultiMapPair<K, ref<const V>>>& op_entry = arr[hash % arr.size()];
 			if (op_entry.has()) {
 				const MultiMapPair<K, ref<const V>>& entry = op_entry.get();

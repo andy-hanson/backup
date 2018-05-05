@@ -15,7 +15,7 @@ public:
 	void operator=(const Arena& other) = delete;
 	~Arena();
 
-	void* allocate(size_t n_bytes);
+	void* allocate(uint n_bytes);
 
 	template <typename T>
 	ref<T> allocate_uninitialized() {

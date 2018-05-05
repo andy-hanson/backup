@@ -7,23 +7,23 @@
 template <typename T>
 class Arr {
 	T* _begin;
-	size_t _size;
+	uint _size;
 
 public:
 	Arr() : _begin(nullptr), _size(0) {}
-	Arr(T* _data, size_t _len) : _begin(_data), _size(_len) {}
+	Arr(T* _data, uint _len) : _begin(_data), _size(_len) {}
 
 	Arr slice(uint lo, uint hi) {
 		assert(lo < hi && hi < _size);
 		return { _begin + lo, hi - lo };
 	}
 
-	T& operator[](size_t index) {
+	T& operator[](uint index) {
 		assert(index < _size);
 		return _begin[index];
 	}
 
-	const T& operator[](size_t index) const {
+	const T& operator[](uint index) const {
 		assert(index < _size);
 		return _begin[index];
 	}
@@ -35,7 +35,7 @@ public:
 	using iterator = T*;
 	using const_iterator = const T*;
 
-	size_t size() const { return _size; }
+	uint size() const { return _size; }
 	bool empty() const { return _size == 0; }
 	iterator begin() { return _begin; }
 	iterator end() { return _begin + _size; }

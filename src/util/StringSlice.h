@@ -19,7 +19,7 @@ private:
 public:
 	StringSlice() : _begin(nullptr), _end(nullptr) {}
 
-	template <size_t N>
+	template <uint N>
 	// Note: the char array will include a '\0', but we don't want that included in the slice.
 	constexpr StringSlice(char const (&c)[N]) : StringSlice(c, c + N - 1) {
 		static_assert(N > 0);
@@ -32,7 +32,7 @@ public:
 	}
 
 	inline static StringSlice from_range(const StringSlice& slice, const SourceRange& range) {
-		size_t len = slice.size();
+		uint len = slice.size();
 		assert(range.end < len);
 		return { slice.begin() + range.begin, slice.begin() + range.end };
 	}
@@ -53,12 +53,12 @@ public:
 
 	inline bool empty() const { return _end == _begin; }
 
-	inline constexpr size_t size() const {
+	inline constexpr uint size() const {
 		assert(_end > _begin);
-		return size_t(_end - _begin);
+		return to_unsigned(_end - _begin);
 	}
 
-	inline char operator[](size_t index) const {
+	inline char operator[](uint index) const {
 		const char* ptr = _begin + index;
 		assert(ptr < _end);
 		return *ptr;
@@ -72,10 +72,10 @@ public:
 	friend bool operator==(const StringSlice& a, const StringSlice& b);
 
 	struct hash {
-		size_t operator()(StringSlice slice) const {
-			size_t h = 0;
+		hash_t operator()(StringSlice slice) const {
+			hash_t h = 0;
 			for (char c : slice)
-				h = 31 * h + size_t(c + 128);
+				h = 31 * h + hash_t(c + 128);
 			return h;
 		}
 	};
@@ -91,7 +91,7 @@ struct MutableStringSlice {
 	char* begin;
 	char* end;
 
-	size_t size() const { return to_unsigned(end - begin); }
+	hash_t size() const { return to_unsigned(end - begin); }
 
 	MutableStringSlice& operator<<(char c) {
 		assert(size() > 0);

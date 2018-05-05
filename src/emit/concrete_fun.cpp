@@ -26,9 +26,23 @@ namespace {
 		}
 	}
 
-	template<typename K, typename V, typename KH, typename VH>
-	typename HeapAllocatedSet<V, VH>::InsertResult add_to_map_of_sets(HeapAllocatedMap<K, HeapAllocatedSet<V, VH>, KH>& map, K key, V value) {
-		return map.get_or_create(key).insert(value);
+	template <typename V>
+	struct InsertResult { bool was_added; ref<const V> value; };
+	template<uint capacity, typename K, typename V, typename KH>
+	InsertResult<V> add_to_map_of_lists(MaxSizeMap<capacity, K, NonEmptyList<V>, KH>& map, K key, V value, Arena& arena) {
+		//TODO:PERF avoid repeated map lookup
+		if (!map.has(key)) {
+			return { true, &map.must_insert(key, { value })->value.first() };
+		} else {
+			NonEmptyList<V>& list = map.must_get(key);
+			Option<ref<const V>> found = find(list, [&](const V& v) { return v == value; });
+			if (found.has())
+				return { false, found.get() };
+			else {
+				list.prepend(value, arena);
+				return { true, &list.first() };
+			}
+		}
 	}
 
 	// Iterates over every Called in the body.
@@ -104,7 +118,9 @@ namespace {
 						ref<const FunDeclaration> spec_impl = called_spec.fun();
 						if (spec_impl->signature.is_generic()) throw "todo";
 						// Since it's non-generic, should have exactly 1 instantiation.
-						return &res.fun_instantiations.get(spec_impl).get().only();
+						const NonEmptyList<ConcreteFun>& list = res.fun_instantiations.get(spec_impl).get();
+						assert(!list.has_more_than_one());
+						return &list.first();
 					}
 				}
 			});
@@ -135,7 +151,7 @@ ConcreteFun::ConcreteFun(ref<const FunDeclaration> _fun_declaration, Arr<InstStr
 	assert(every(type_arguments, [](const InstStruct& p) { return p.is_deeply_concrete(); }));
 }
 
-size_t ConcreteFun::hash::operator()(const ConcreteFun& c) const {
+hash_t ConcreteFun::hash::operator()(const ConcreteFun& c) const {
 	// Don't hash the spec_impls because that could lead to infinite recursion.
 	return hash_combine(ref<const FunDeclaration>::hash{}(c.fun_declaration), hash_arr(c.type_arguments, InstStruct::hash {}));
 }
@@ -144,7 +160,7 @@ bool operator==(const ConcreteFun& a, const ConcreteFun& b) {
 	return a.fun_declaration == b.fun_declaration && a.type_arguments == b.type_arguments && a.spec_impls == b.spec_impls;
 }
 
-size_t ConcreteFunAndCalled::hash::operator()(const ConcreteFunAndCalled& c) const {
+hash_t ConcreteFunAndCalled::hash::operator()(const ConcreteFunAndCalled& c) const {
 	return hash_combine(ref<const ConcreteFun>::hash{}(c.fun), ref<const Called>::hash{}(c.called));
 }
 
@@ -164,7 +180,7 @@ EveryConcreteFun get_every_concrete_fun(const Arr<Module>& modules, Arena& scrat
 	for (const Module& m : modules) {
 		for (const FunDeclaration& f : m.funs_declaration_order) {
 			if (!f.signature.is_generic()) {
-				auto a = add_to_map_of_sets(res.fun_instantiations, ref<const FunDeclaration>{&f}, ConcreteFun { &f, {}, {}});
+				InsertResult<ConcreteFun> a = add_to_map_of_lists(res.fun_instantiations, ref<const FunDeclaration>{&f}, ConcreteFun { &f, {}, {}}, scratch_arena);
 				if (a.was_added) to_analyze.push(a.value);
 			}
 		}
@@ -176,7 +192,7 @@ EveryConcreteFun get_every_concrete_fun(const Arr<Module>& modules, Arena& scrat
 		if (body.kind() != AnyBody::Kind::Expr) continue;
 		each_dependent_fun(body.expression(), [&](ref<const Called> called) {
 			ConcreteFun concrete_called = get_concrete_called(*fun, called, res, scratch_arena);
-			auto added = add_to_map_of_sets(res.fun_instantiations, concrete_called.fun_declaration, concrete_called);
+			auto added = add_to_map_of_lists(res.fun_instantiations, concrete_called.fun_declaration, concrete_called, scratch_arena);
 			if (added.was_added) to_analyze.push(added.value);
 			res.resolved_calls.must_insert({ fun, called }, added.value );
 		});

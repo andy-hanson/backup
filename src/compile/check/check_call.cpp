@@ -44,7 +44,7 @@ namespace {
 		each_fun_with_name(ctx, fun_name, cb);
 	}
 
-	void get_initial_candidates(Candidates& candidates, ExprContext& ctx, const StringSlice& fun_name, const Arr<Type>& explicit_type_arguments, size_t arity) {
+	void get_initial_candidates(Candidates& candidates, ExprContext& ctx, const StringSlice& fun_name, const Arr<Type>& explicit_type_arguments, uint arity) {
 		each_initial_candidate(ctx, fun_name, [&](CalledDeclaration called) {
 			const FunSignature& sig = called.sig();
 			if (sig.arity() == arity && (explicit_type_arguments.empty() || sig.type_parameters.size() == explicit_type_arguments.size())) {
@@ -210,7 +210,7 @@ namespace {
 
 Expression check_call(const StringSlice& fun_name, const Arr<ExprAst>& argument_asts, const Arr<TypeAst>& type_argument_asts, ExprContext& ctx, Expected& expected) {
 	Arr<Type> explicit_type_arguments = type_arguments_from_asts(type_argument_asts, ctx.check_ctx, ctx.structs_table, ctx.current_fun->signature.type_parameters);
-	size_t arity = argument_asts.size();
+	uint arity = argument_asts.size();
 
 	// Can never use an expected type in a unary call, because it might be a struct field access.
 	const Option<ExpressionAndType> first_arg_and_type = arity == 1 && explicit_type_arguments.empty() ? Option{check_and_infer(argument_asts[0], ctx)} : Option<ExpressionAndType>{};

@@ -212,7 +212,7 @@ namespace {
 	}
 }
 
-void check(ref<Module> m, const FileAst& ast, Arena& arena, Grow<Diagnostic>& diagnostics) {
+void check(ref<Module> m, const FileAst& ast, Arena& arena, List<Diagnostic>::Builder& diagnostics) {
 	CheckCtx ctx { arena, ast.source, m->path, m->imports, diagnostics };
 
 	if (!ast.imports.empty()) throw "todo";

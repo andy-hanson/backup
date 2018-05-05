@@ -1,9 +1,9 @@
 #include "./check_effects.h"
 
 #include "../model/expr.h"
-#include "../../util/HeapAllocatedMap.h"
-#include "../../util/MaxSizeVector.h"
 #include "../../util/collection_util.h"
+#include "../../util/MaxSizeVector.h"
+#include "../../util/SmallMap.h"
 
 namespace {
 	// Sorted by parameter index.
@@ -116,7 +116,7 @@ namespace {
 	};
 
 	struct Ctx {
-		HeapAllocatedMap<ref<const Let>, ExprEffect, ref<const Let>::hash> local_effects;
+		SmallMap<16, ref<const Let>, ExprEffect> local_effects;
 	};
 
 	ExprEffect infer_effect(Expression& e, Ctx& ctx);
@@ -179,8 +179,10 @@ namespace {
 				Let& l = e.let();
 				ExprEffect init_effect = infer_effect(l.init, ctx);
 				l.is_own.init(init_effect.is_own());
-				ctx.local_effects.must_insert(&l, init_effect);
-				return infer_effect(l.then, ctx);
+				ctx.local_effects.push(&l, init_effect);
+				ExprEffect res = infer_effect(l.then, ctx);
+				ctx.local_effects.pop();
+				return res;
 			}
 			case Expression::Kind::Seq: {
 				Seq& seq = e.seq();
