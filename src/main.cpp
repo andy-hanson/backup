@@ -24,7 +24,11 @@ namespace {
 	void get_test_directory(MaxSizeStringWriter& buf) {
 		char* begin = buf.cur;
 		if (!getcwd(begin, buf.remaining_capacity())) todo();
-		buf.cur = strip_last_part(buf.cur, get_end(begin));
+		// Strip out '/src/cmake-build-debug'
+		buf.cur = strip_last_part(begin, get_end(begin));
+		assert(buf.cur > begin && *buf.cur == '/');
+		--buf.cur;
+		buf.cur = strip_last_part(begin, buf.cur);
 		buf << "/test";
 	}
 
