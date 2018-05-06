@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../util/Arena.h"
+#include "../util/store/Arena.h"
+#include "../util/store/StringSlice.h"
 #include "../util/unique_ptr.h"
 #include "../util/Path.h"
 

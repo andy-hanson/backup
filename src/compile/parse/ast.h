@@ -1,7 +1,9 @@
 #pragma once
 
-#include "../../util/StringSlice.h"
-#include "../../util/List.h"
+#include "../../util/store/ArenaString.h"
+#include "../../util/store/Slice.h"
+#include "../../util/store/StringSlice.h"
+#include "../../util/store/List.h"
 #include "../../util/Path.h"
 #include "../model/effect.h"
 #include "./expr_ast.h"

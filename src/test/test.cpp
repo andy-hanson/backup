@@ -1,7 +1,7 @@
 #include "./test.h"
 
 #include <iostream> // std::cerr, std::ostream
-#include "../util/MaxSizeMap.h"
+#include "../util/store/ListBuilder.h"
 #include "../compile/compile.h"
 #include "./test_single.h"
 
@@ -59,7 +59,7 @@ namespace {
 		}
 	};
 
-	void do_test_recur(const StringSlice& dir, TestMode mode, PathCache& paths, List<TestFailure>::Builder& failures, Arena& arena) {
+	void do_test_recur(const StringSlice& dir, TestMode mode, PathCache& paths, ListBuilder<TestFailure>& failures, Arena& arena) {
 		TestDirectoryIteratee iteratee { paths, {} };
 		list_directory(dir, iteratee);
 		if (iteratee.any_files) {
@@ -77,7 +77,7 @@ namespace {
 
 	int do_test(const StringSlice& root_dir, TestMode mode) {
 		PathCache paths;
-		List<TestFailure>::Builder failures_builder;
+		ListBuilder<TestFailure> failures_builder;
 		Arena arena;
 		do_test_recur(root_dir, mode, paths, failures_builder, arena);
 

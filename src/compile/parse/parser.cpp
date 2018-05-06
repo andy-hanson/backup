@@ -1,6 +1,7 @@
 #include "./parser.h"
 
-#include "../../util/ArenaArrayBuilders.h"
+#include "../../util/store/ArenaArrayBuilders.h"
+#include "../../util/store/ListBuilder.h"
 #include "./Lexer.h"
 #include "./parse_expr.h"
 #include "./parse_type.h"
@@ -112,7 +113,7 @@ namespace {
 	}
 
 	void parse_struct_or_fun(Lexer& lexer, Arena& arena, bool is_public, const char* start, Option<ArenaString> comment,
-		List<StringSlice>::Builder& includes, List<StructDeclarationAst>::Builder& structs, List<FunDeclarationAst>::Builder& funs) {
+		ListBuilder<StringSlice>& includes, ListBuilder<StructDeclarationAst>& structs, ListBuilder<FunDeclarationAst>& funs) {
 		bool c = lexer.try_take('c');
 		if (c) lexer.take(' ');
 
@@ -172,10 +173,10 @@ void parse_file(FileAst& ast, PathCache& path_cache, Arena& arena) {
 		lexer.take('\n');
 	}
 
-	List<StringSlice>::Builder includes;
-	List<SpecDeclarationAst>::Builder specs;
-	List<StructDeclarationAst>::Builder structs;
-	List<FunDeclarationAst>::Builder funs;
+	ListBuilder<StringSlice> includes;
+	ListBuilder<SpecDeclarationAst> specs;
+	ListBuilder<StructDeclarationAst> structs;
+	ListBuilder<FunDeclarationAst> funs;
 
 	bool is_public = true;
 	while (true) {

@@ -1,9 +1,9 @@
 #pragma once
 
+#include "../../util/store/Arena.h"
+#include "../../util/store/Slice.h"
+#include "../../util/store/StringSlice.h"
 #include "../../util/int.h"
-#include "../../util/Arena.h"
-#include "../../util/Slice.h"
-#include "../../util/StringSlice.h"
 
 struct LineAndColumn { uint line; uint column; };
 

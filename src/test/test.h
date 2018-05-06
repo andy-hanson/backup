@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../util/StringSlice.h"
+#include "../util/store/StringSlice.h"
 #include "./TestMode.h"
 
 // Returns exit code

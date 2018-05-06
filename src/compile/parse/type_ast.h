@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../util/Arena.h"
-#include "../../util/Slice.h"
-#include "../../util/StringSlice.h"
+#include "../../util/store/Arena.h"
+#include "../../util/store/Slice.h"
+#include "../../util/store/StringSlice.h"
 
 class TypeAst {
 public:

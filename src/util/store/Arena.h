@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./Ref.h"
+#include "../Ref.h"
 
 class Arena {
 	friend class StringBuilder; // TODO

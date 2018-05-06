@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../util/StringSlice.h"
+#include "../../util/store/StringSlice.h"
 
 // https://youtrack.jetbrains.com/issue/CPP-7797
 enum class Effect { EGet, ESet, EIo, EOwn };

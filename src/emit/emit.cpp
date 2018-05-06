@@ -1,8 +1,6 @@
 #include "emit.h"
 
 #include "../compile/model/expr.h"
-#include "../util/Arena.h"
-#include "../util/Writer.h"
 #include "./concrete_fun.h"
 #include "./emit_body.h"
 #include "./emit_comment.h"
@@ -120,10 +118,9 @@ namespace {
 	}
 }
 
-BlockedList<char> emit(const Slice<Module>& modules, Arena& out_arena) {
+Writer::Output emit(const Slice<Module>& modules, Arena& out_arena) {
 	assert(!modules.is_empty());
-	BlockedList<char> list;
-	Writer out { list, out_arena };
+	Writer out { out_arena };
 	out << "#include <assert.h>\n\n";
 
 	Arena scratch_arena;
@@ -142,5 +139,5 @@ BlockedList<char> emit(const Slice<Module>& modules, Arena& out_arena) {
 
 	out << "int main() { run(); }\n";
 
-	return list;
+	return out.finish();
 }

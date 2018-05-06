@@ -1,8 +1,9 @@
 #pragma once
 
+#include "../util/store/List.h"
+#include "../host/DocumentProvider.h"
 #include "./diag/diag.h"
 #include "./model/model.h"
-#include "../host/DocumentProvider.h"
 
 struct CompiledProgram {
 	Arena arena;

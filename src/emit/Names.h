@@ -1,9 +1,9 @@
 #pragma once
 
+#include "../util/store/Arena.h"
+#include "../util/store/MaxSizeMap.h"
+#include "../util/store/StringSlice.h"
 #include "../compile/model/model.h"
-#include "../util/Arena.h"
-#include "../util/MaxSizeMap.h"
-#include "../util/StringSlice.h"
 
 #include "./concrete_fun.h"
 

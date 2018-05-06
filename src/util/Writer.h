@@ -1,18 +1,24 @@
 #pragma once
 
-#include "BlockedList.h"
+#include "./store/BlockedList.h"
+#include "./store/StringSlice.h"
 #include "./Option.h"
-#include "./StringSlice.h"
 
 class Writer {
-	BlockedList<char>& out;
+public:
+	using Output = BlockedList<1024, char>;
+
+private:
+	Output out;
 	Arena& arena;
-	uint _indent = 0;
+	uint _indent;
 
 public:
-	Writer(BlockedList<char>& _out, Arena& _arena) : out{_out}, arena{_arena} {}
+	Writer(Arena& _arena) : out{}, arena{_arena}, _indent{0} {}
 	Writer(const Writer& other) = delete;
 	void operator=(const Writer& other) = delete;
+
+	Output finish() { return out; }
 
 	inline Writer& operator<<(char c) {
 		out.push(c, arena);

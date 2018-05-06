@@ -33,6 +33,7 @@ add_executable(oohoo
 	src/compile/diag/parse_diag.h
 	src/compile/diag/LineAndColumnGetter.cpp
 	src/compile/diag/LineAndColumnGetter.h
+	src/compile/diag/SourceRange.h
 
 	src/compile/compile.h
 	src/compile/compile.cpp
@@ -78,13 +79,33 @@ add_executable(oohoo
 	src/test/test.cpp
 	src/test/test.h
 
-	src/util/Arena.cpp
-	src/util/Arena.h
-	src/util/collection_util.h
-	src/util/MaxSizeVector.h
+	src/util/store/Arena.cpp
+	src/util/store/Arena.h
+	src/util/store/ArenaArrayBuilders.h
+	src/util/store/ArenaString.cpp
+	src/util/store/ArenaString.h
+	src/util/store/BlockedList.h
+	src/util/store/collection_util.h
+	src/util/store/KeyValuePair.h
+	src/util/store/List.h
+	src/util/store/ListBuilder.h
+	src/util/store/ListNode.h
+	src/util/store/Map.h
+	src/util/store/MaxSizeMap.h
+	src/util/store/MaxSizeVector.h
+	src/util/store/MaxSizeStringStorage.cpp
+	src/util/store/MaxSizeStringStorage.h
+	src/util/store/MultiMap.h
+	src/util/store/NonEmptyList.h
+	src/util/store/SmallMap.h
+	src/util/store/Slice.h
+	src/util/store/slice_util.h
+	src/util/store/StringSlice.cpp
+	src/util/store/StringSlice.h
+
+	src/util/assert.h
 	src/util/Option.h
 	src/util/Ref.h
-	src/util/BlockedList.h
 	src/util/hash_util.h
 	src/util/io.cpp
 	src/util/io.h
@@ -94,11 +115,14 @@ add_executable(oohoo
 	src/util/rlimit.h
 	src/util/Path.cpp
 	src/util/Path.h
-	src/util/Slice.h
-	src/util/StringSlice.cpp
-	src/util/StringSlice.h
+	src/util/unique_ptr.h
 	src/util/Writer.cpp
 	src/util/Writer.h
 
+	src/test/test_single.cpp
+	src/test/test_single.h
+	src/test/TestMode.h
+	src/test/TestFailure.h
+
 	src/clang.cpp
-	src/clang.h src/util/unique_ptr.h src/util/Map.h src/util/MultiMap.h src/util/MaxSizeMap.h src/util/KeyValuePair.h src/util/assert.h src/util/List.h src/util/ArenaString.h src/util/ArenaString.cpp src/util/ArenaArrayBuilders.h src/util/SmallMap.h src/test/test_single.h src/test/test_single.cpp src/test/TestMode.h src/test/TestFailure.h src/util/MaxSizeStringStorage.h src/util/MaxSizeStringStorage.cpp src/compile/diag/SourceRange.h)
+	src/clang.h)

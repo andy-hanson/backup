@@ -1,7 +1,7 @@
 #include "./Path.h"
 
-#include "../util/ArenaString.h"
-#include "../util/MaxSizeMap.h"
+#include "../util/store/ArenaString.h"
+#include "../util/store/MaxSizeMap.h"
 
 namespace {
 	template <typename /*StringSlice => void*/ Cb>

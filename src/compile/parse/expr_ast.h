@@ -1,9 +1,10 @@
 #pragma once
 
-#include "../../util/Arena.h"
-#include "../../util/ArenaString.h"
+#include "../../util/store/Arena.h"
+#include "../../util/store/ArenaString.h"
+#include "../../util/store/StringSlice.h"
+#include "../../util/store/Slice.h"
 #include "../../util/assert.h"
-#include "../../util/StringSlice.h"
 #include "../diag/SourceRange.h"
 #include "./type_ast.h"
 

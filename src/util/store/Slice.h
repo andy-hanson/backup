@@ -1,8 +1,8 @@
 #pragma once
 
-#include "./assert.h"
-#include "./int.h"
-#include "./Ref.h"
+#include "../assert.h"
+#include "../int.h"
+#include "../Ref.h"
 
 template <typename T>
 class Slice {
@@ -32,6 +32,7 @@ public:
 		return begin() <= r.ptr() && r.ptr() < end();
 	}
 
+	using value_type = T;
 	using iterator = T*;
 	using const_iterator = const T*;
 

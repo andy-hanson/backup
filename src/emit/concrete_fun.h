@@ -3,9 +3,10 @@
 #include "../compile/model/model.h"
 #include "../compile/model/expr.h" // Called
 
-#include "../util/collection_util.h"
+#include "../util/store/collection_util.h"
+#include "../util/store/MaxSizeMap.h"
+#include "../util/store/NonEmptyList.h"
 #include "../util/Ref.h"
-#include "../util/MaxSizeMap.h"
 
 struct ConcreteFun {
 	Ref<const FunDeclaration> fun_declaration;

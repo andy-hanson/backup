@@ -1,9 +1,10 @@
 #include "./check_effects.h"
 
+#include "../../util/store/collection_util.h" // contains
+#include "../../util/store/slice_util.h" // zip
+#include "../../util/store/MaxSizeVector.h"
+#include "../../util/store/SmallMap.h"
 #include "../model/expr.h"
-#include "../../util/collection_util.h"
-#include "../../util/MaxSizeVector.h"
-#include "../../util/SmallMap.h"
 
 namespace {
 	// Sorted by parameter index.

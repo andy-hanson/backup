@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../util/StringSlice.h"
+#include "../../util/store/StringSlice.h"
 #include "../../util/int.h"
 #include "../../util/Writer.h"
 #include "./SourceRange.h"

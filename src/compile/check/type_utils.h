@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../util/collection_util.h" // try_get_index
+#include "../../util/store/slice_util.h" // get_index
 #include "../model/model.h"
 #include "../model/expr.h"
 
@@ -12,7 +12,7 @@ struct Candidate {
 	// These will be None if not yet inferred.
 	Slice<Option<Type>> inferring_type_arguments;
 
-	Candidate(CalledDeclaration _called, Ref<const FunSignature> _signature, Slice<Option<Type>> _inferring_type_arguments)
+	inline Candidate(CalledDeclaration _called, Ref<const FunSignature> _signature, Slice<Option<Type>> _inferring_type_arguments)
 		: called(_called), signature(_signature), inferring_type_arguments(_inferring_type_arguments) {
 		assert(signature->type_parameters.size() == inferring_type_arguments.size());
 	}
@@ -21,7 +21,7 @@ struct Candidate {
 template <typename T>
 const T& get_type_argument(const Slice<TypeParameter>& type_parameters, const Slice<T>& type_arguments, Ref<const TypeParameter> type_parameter) {
 	assert(type_parameters.size() == type_arguments.size());
-	return type_arguments[try_get_index(type_parameters, type_parameter).get()];
+	return type_arguments[get_index(type_parameters, type_parameter)];
 }
 
 // Recursively replaces every type parameter with a corresponding type argument.

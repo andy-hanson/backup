@@ -1,7 +1,7 @@
 #pragma once
 
-#include "./assert.h"
-#include "./int.h"
+#include "../assert.h"
+#include "../int.h"
 
 template <uint capacity, typename T>
 class MaxSizeVector {
@@ -77,6 +77,7 @@ public:
 		return res;
 	}
 
+	using value_type = T;
 	using const_iterator = const T*;
 	inline const_iterator begin() const { return &data.values[0]; }
 	inline const_iterator end() const { return begin() + _size; }

@@ -2,7 +2,7 @@
 
 #include "../model/model.h"
 #include "../parse/ast.h"
-#include "../../util/collection_util.h"
+#include "../../util/store/collection_util.h"
 
 #include "./check_common.h"
 

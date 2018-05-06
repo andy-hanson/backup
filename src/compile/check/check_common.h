@@ -2,8 +2,8 @@
 
 #include "../diag/diag.h"
 #include "../model/model.h"
-#include "../../util/Arena.h"
-#include "../../util/BlockedList.h"
+#include "../../util/store/Arena.h"
+#include "../../util/store/ListBuilder.h"
 #include "./type_utils.h"
 #include "./BuiltinTypes.h"
 
@@ -12,7 +12,7 @@ struct CheckCtx {
 	const StringSlice& source;
 	Path path; // Path of current module
 	const Slice<Ref<const Module>>& imports;
-	List<Diagnostic>::Builder& diags;
+	ListBuilder<Diagnostic>& diags;
 
 	inline SourceRange range(StringSlice slice) {
 		return SourceRange::inner_slice(source, slice);

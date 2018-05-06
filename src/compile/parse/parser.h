@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../../util/store/Arena.h"
 #include "../../util/Path.h"
-#include "../../util/Arena.h"
 #include "./ast.h"
 
 // May throw a ParseDiagnostic.

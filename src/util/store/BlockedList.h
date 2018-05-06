@@ -1,15 +1,14 @@
 #pragma once
 
+#include "../int.h"
+#include "../Option.h"
+#include "../Ref.h"
 #include "./Arena.h"
 #include "./assert.h"
-#include "./int.h"
-#include "./Option.h"
-#include "./Ref.h"
 #include "./MaxSizeVector.h"
 
-template <typename T>
+template <uint elements_per_node, typename T>
 class BlockedList {
-	static const uint elements_per_node = 64;
 	struct Node {
 		T values[elements_per_node];
 		Option<Ref<Node>> next;
@@ -43,9 +42,6 @@ public:
 	BlockedList() : head{}, tail{}, next_index_in_node{0} {}
 	BlockedList(T first) : BlockedList() {
 		push(first);
-	}
-	BlockedList(const BlockedList& other __attribute__((unused))) {
-		throw "should be optimized away";
 	}
 
 	uint size() const {

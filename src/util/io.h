@@ -1,9 +1,9 @@
 #pragma once
 
-#include "./Arena.h"
-#include "./BlockedList.h"
+#include "./store/Arena.h"
 #include "./Option.h"
-#include "../util/Path.h"
+#include "./Path.h"
+#include "./Writer.h"
 
 struct FileLocator {
 	StringSlice root;
@@ -40,6 +40,6 @@ public:
 void list_directory(const StringSlice& loc, DirectoryIteratee& iteratee);
 
 Option<StringSlice> try_read_file(const FileLocator& loc, Arena& out, bool null_terminated);
-void write_file(const FileLocator& loc, const BlockedList<char>& contents);
+void write_file(const FileLocator& loc, const Writer::Output& contents);
 void delete_file(const FileLocator& loc);
 bool file_exists(const FileLocator& loc);

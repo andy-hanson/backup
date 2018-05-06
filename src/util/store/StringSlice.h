@@ -1,7 +1,7 @@
 #pragma once
 
-#include "./assert.h"
-#include "./int.h"
+#include "../assert.h"
+#include "../int.h"
 
 class StringSlice {
 private:

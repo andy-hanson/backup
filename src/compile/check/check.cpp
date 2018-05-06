@@ -1,5 +1,6 @@
 #include "check.h"
 
+#include "../../util/store/collection_util.h" // some
 #include "./check_effects.h"
 #include "./check_expr.h"
 #include "./convert_type.h"
@@ -208,7 +209,7 @@ namespace {
 	}
 }
 
-void check(Ref<Module> m, const FileAst& ast, Arena& arena, List<Diagnostic>::Builder& diagnostics) {
+void check(Ref<Module> m, const FileAst& ast, Arena& arena, ListBuilder<Diagnostic>& diagnostics) {
 	CheckCtx ctx { arena, ast.source, m->path, m->imports, diagnostics };
 
 	if (!ast.imports.is_empty()) todo();

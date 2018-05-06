@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../util/Arena.h"
+#include "../../util/store/Arena.h"
 #include "./model.h"
 
 class Expression;

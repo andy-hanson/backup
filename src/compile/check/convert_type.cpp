@@ -1,5 +1,6 @@
 #include "./convert_type.h"
 
+#include "../../util/store/collection_util.h" // find_in_either
 #include "./scope.h"
 
 namespace {

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../util/Arena.h"
-#include "../util/Option.h"
-#include "../util/StringSlice.h"
-#include "../util/unique_ptr.h"
-#include "MaxSizeStringStorage.h"
-#include "../util/Writer.h"
+#include "./store/Arena.h"
+#include "./store/MaxSizeStringStorage.h"
+#include "./store/StringSlice.h"
+#include "./Option.h"
+#include "./unique_ptr.h"
+#include "./Writer.h"
 
 // Can only be constructed through a PathCache.
 class Path {

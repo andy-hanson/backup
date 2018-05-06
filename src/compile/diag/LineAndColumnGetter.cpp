@@ -1,5 +1,5 @@
 #include "./LineAndColumnGetter.h"
-#include "../../util/ArenaArrayBuilders.h"
+#include "../../util/store/ArenaArrayBuilders.h"
 
 namespace {
 	uint mid(uint a, uint b) {

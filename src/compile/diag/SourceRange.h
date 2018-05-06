@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../util/int.h"
-#include "../../util/StringSlice.h"
+#include "../../util/store/StringSlice.h"
 
 struct SourceRange {
 	ushort begin;

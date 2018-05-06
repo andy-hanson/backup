@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Arena.h"
+#include "../Option.h"
+#include "./Arena.h"
 #include "./ArenaArrayBuilders.h"
-#include "./Option.h"
 
 //Key=None means this is a non-first entry
 template<typename K, typename V>

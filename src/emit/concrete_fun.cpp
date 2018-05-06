@@ -1,5 +1,6 @@
 #include "concrete_fun.h"
 
+#include "../util/store/slice_util.h" // get_index
 #include "../util/hash_util.h"
 
 namespace {

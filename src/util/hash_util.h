@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Arena.h" // Arr
+#include "./store/Slice.h"
 
 // https://stackoverflow.com/questions/2590677/how-do-i-combine-hash-values-in-c0x#2595226
 inline hash_t hash_combine(hash_t a, hash_t b) {

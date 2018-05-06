@@ -27,19 +27,18 @@ namespace {
 		}
 	};
 
-	BlockedList<char> diagnostics_baseline(const List<Diagnostic>& diags, DocumentProvider& document_provider, Arena& out) {
-		BlockedList<char> list;
-		Writer w { list, out };
+	Writer::Output diagnostics_baseline(const List<Diagnostic>& diags, DocumentProvider& document_provider, Arena& arena) {
+		Writer out { arena };
 		Arena temp;
 		for (const Diagnostic& d : diags) {
 			StringSlice document = document_provider.try_get_document(d.path, NZ_EXTENSION, temp).get();
-			d.write(w, document, LineAndColumnGetter::for_text(document, temp));
-			w << Writer::nl;
+			d.write(out, document, LineAndColumnGetter::for_text(document, temp));
+			out << Writer::nl;
 		}
-		return list;
+		return out.finish();
 	}
 
-	void no_baseline(const FileLocator& loc, TestMode mode, List<TestFailure>::Builder& failures, Arena& failures_arena) {
+	void no_baseline(const FileLocator& loc, TestMode mode, ListBuilder<TestFailure>& failures, Arena& failures_arena) {
 		if (file_exists(loc)) {
 			switch (mode) {
 				case TestMode::Test:
@@ -53,7 +52,7 @@ namespace {
 	}
 
 	// Returns true on success. Always succeeds with TestMode::Accept
-	void baseline(const FileLocator& loc, const StringSlice& error_extension, const BlockedList<char>& actual, TestMode mode, List<TestFailure>::Builder& failures, Arena& failures_arena) {
+	void baseline(const FileLocator& loc, const StringSlice& error_extension, const Writer::Output& actual, TestMode mode, ListBuilder<TestFailure>& failures, Arena& failures_arena) {
 		bool should_write_new = false;
 		bool should_delete_new = false;
 		bool should_overwrite = false;
@@ -96,7 +95,7 @@ namespace {
 	}
 }
 
-void test_single(const StringSlice& root, TestMode mode, PathCache& paths, List<TestFailure>::Builder& failures, Arena& failures_arena) {
+void test_single(const StringSlice& root, TestMode mode, PathCache& paths, ListBuilder<TestFailure>& failures, Arena& failures_arena) {
 	unique_ptr<DocumentProvider> document_provider = file_system_document_provider(root);
 
 	CompiledProgram out;

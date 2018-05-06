@@ -4,7 +4,7 @@
 #include <dirent.h> // readdir_r
 #include <fstream> // std::ifstream, std::ofstream, std::remove
 #include <cstring> // strlen
-#include "./ArenaString.h"
+#include "./store/ArenaString.h"
 
 namespace {
 	using PathString = MaxSizeStringStorage<128>;
@@ -64,7 +64,7 @@ void list_directory(const StringSlice& loc, DirectoryIteratee& iteratee) {
 	closedir(dir.ptr());
 }
 
-void write_file(const FileLocator& loc, const BlockedList<char>& contents) {
+void write_file(const FileLocator& loc, const Writer::Output& contents) {
 	PathString temp;
 	const char* c_path = loc.get_cstring(temp);
 	std::ofstream out(c_path);

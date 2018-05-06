@@ -1,6 +1,6 @@
 #include "./check_expr.h"
 
-#include "../../util/ArenaArrayBuilders.h"
+#include "../../util/store/ArenaArrayBuilders.h"
 #include "./check_call.h"
 #include "./convert_type.h"
 
@@ -9,7 +9,8 @@ namespace {
 		return find(ctx.current_fun->signature.parameters, [&](const Parameter& p) { return p.name == name; });
 	}
 	Option<Ref<const Let>> find_local(const ExprContext& ctx, StringSlice name) {
-		return un_ref(find(ctx.locals, [name](const Ref<const Let>& l) { return l->name == name; }));
+		Option<Ref<const Ref<const Let>>> o = find(ctx.locals, [name](const Ref<const Let>& l) { return l->name == name; });
+		return o.has() ? Option<Ref<const Let>> { o.get() } : Option<Ref<const Let>> {};
 	}
 
 	InstStruct struct_create_type(

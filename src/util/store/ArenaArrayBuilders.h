@@ -1,9 +1,8 @@
 #pragma once
 
-#include "Arena.h"
-#include "BlockedList.h"
-#include "./List.h"
-#include "./Option.h"
+#include "../Option.h"
+#include "./Arena.h"
+#include "./MaxSizeVector.h"
 #include "./Slice.h"
 
 template <typename T>
@@ -12,12 +11,7 @@ Slice<T> uninitialized_array(Arena& arena, uint len) {
 }
 
 template <typename T>
-Slice<T> single_element_array(Arena& arena, T elem) {
-	return Slice<T> { arena.put(elem).ptr(), 1 };
-}
-
-template <typename T>
-struct FillArray {
+struct fill_array {
 public:
 	template <typename /*() => T*/ Cb>
 	Slice<T> operator()(Arena& arena, uint len, Cb cb) {
@@ -30,11 +24,9 @@ public:
 		return arr;
 	}
 };
-template <typename T>
-FillArray<T> fill_array() { return {}; }
 
 template <typename Out>
-struct MapWithPrevs {
+struct map_with_prevs {
 	template <typename In, typename /*const In&, const Arr<Out>&, uint => Out*/ Cb>
 	Slice<Out> operator()(Arena& arena, const Slice<In>& inputs, Cb cb) {
 		if (inputs.is_empty()) return {};
@@ -49,11 +41,10 @@ struct MapWithPrevs {
 		return out;
 	}
 };
-template <typename Out>
-MapWithPrevs<Out> map_with_prevs() { return {}; }
 
 template <typename Out>
-struct MapOp {
+struct map_op {
+	// Note: we assume that the output will probably be the same size as the input, or else it's a compile error.
 	template <typename In, typename /*const In& => Option<Out>*/ Cb>
 	Slice<Out> operator()(Arena& arena, const Slice<In>& inputs, Cb cb) {
 		if (inputs.is_empty()) return {};
@@ -70,12 +61,9 @@ struct MapOp {
 		return out.slice(0, i);
 	}
 };
-// Note: we assume that the output will probably be the same size as the input, or else it's a compile error.
-template <typename Out>
-MapOp<Out> map_op() { return {}; }
 
 template<typename Out>
-class MapOrFail {
+class map_or_fail {
 	template <typename InCollection, typename In, typename Cb>
 	Option<Slice<Out>> worker(Arena& arena, const InCollection& inputs, Cb cb) {
 		Slice<Out> out = uninitialized_array<Out>(arena, inputs.size());
@@ -97,30 +85,6 @@ public:
 		return worker<Slice<In>, In, Cb>(arena, inputs, cb);
 	}
 };
-template<typename Out>
-MapOrFail<Out> map_or_fail() { return {}; }
-
-template <typename Out>
-struct MapOrFailReverse {
-	template <typename In, typename /*const In&, uninitialized T* => Out*/ Cb>
-	Option<Slice<Out>> operator()(Arena& arena, const BlockedList<In>& inputs, Cb cb) {
-		Slice<Out> out = uninitialized_array<Out>(arena, inputs.size());
-		uint i = 0;
-		bool success = true;
-		inputs.each_reverse([&](const In& input) {
-			if (!success) return;
-			success = cb(input, &out[i]);
-			++i;
-		});
-		if (success) {
-			assert(i == out.size());
-			return Option { out };
-		} else
-			return {};
-	}
-};
-template <typename Out>
-MapOrFailReverse<Out> map_or_fail_reverse() { return {}; }
 
 template <typename T, uint max_size = 8>
 class SmallArrayBuilder {
@@ -135,20 +99,14 @@ public:
 };
 
 template <typename Out>
-struct Mapper {
-	template <typename In, typename /*const In& => Out*/ Cb>
-	Slice<Out> operator()(Arena& arena, const Slice<In>& in, Cb cb) {
-		if (in.is_empty()) return {};
-		return fill_array<Out>()(arena, in.size(), [&](uint i) { return cb(in[i]); });
-	}
-
-	template <typename In, typename /*const In& => Out*/ Cb>
-	Slice<Out> operator()(Arena& arena, const List<In> in, Cb cb) {
+struct map {
+	template <typename Collection, typename /*const In& => Out*/ Cb>
+	Slice<Out> operator()(Arena& arena, const Collection& in, Cb cb) {
 		if (in.is_empty()) return {};
 		uint size = in.size();
 		Slice<Out> arr = uninitialized_array<Out>(arena, size);
 		uint i = 0;
-		for (const In& input : in) {
+		for (const auto& input : in) {
 			arr[i] = cb(input);
 			++i;
 		}
@@ -156,5 +114,3 @@ struct Mapper {
 		return arr;
 	}
 };
-template <typename Out>
-Mapper<Out> map() { return {}; }

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "./assert.h"
-#include "./int.h"
+#include "../assert.h"
+#include "../int.h"
 #include "./StringSlice.h"
 
 struct MaxSizeStringWriter {

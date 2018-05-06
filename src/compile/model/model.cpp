@@ -1,6 +1,7 @@
 #include "model.h"
 
-#include "../../util/collection_util.h"
+#include "../../util/store/collection_util.h" // every
+#include "../../util/store/slice_util.h" // ==
 #include "../../util/hash_util.h"
 
 void StructBody::operator=(const StructBody& other) {

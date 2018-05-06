@@ -5,6 +5,18 @@
 #include "./scope.h"
 
 namespace {
+	template <uint capacity, typename T, typename Pred>
+	void filter_unordered(MaxSizeVector<capacity, T>& collection, Pred pred) {
+		for (uint i = 0; i != collection.size(); ) {
+			if (pred(collection[i])) {
+				++i;
+			} else {
+				collection[i] = collection[collection.size() - 1];
+				collection.pop();
+			}
+		}
+	}
+
 	using Candidates = MaxSizeVector<16, Candidate>;
 
 	/** Returns an expected argument type if all candidates agree on it. */

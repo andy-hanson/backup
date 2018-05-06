@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Arena.h"
+#include "../Option.h"
+#include "./Arena.h"
 #include "./ArenaArrayBuilders.h"
-#include "./Option.h"
 #include "./KeyValuePair.h"
 
 template <typename K, typename V, typename Hash>
