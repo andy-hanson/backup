@@ -178,7 +178,7 @@ namespace {
 		zipp(file_ast.structs, structs, [&](const StructDeclarationAst& struct_ast, StructDeclaration& strukt) {
 			const StructBodyAst& body_ast = struct_ast.body;
 			strukt.body = body_ast.kind() == StructBodyAst::Kind::CppName
-						   ? StructBody{str(al.arena, body_ast.cpp_name())}
+						   ? StructBody{ copy_string(al.arena, body_ast.cpp_name())}
 						   : StructBody{check_struct_fields(body_ast.fields(), al, structs_table, strukt.type_parameters)};
 		});
 
@@ -214,7 +214,7 @@ namespace {
 		BuiltinTypes builtin_types { get_special_named_type(structs_table, al, BOOL), get_special_named_type(structs_table, al, STRING), get_special_named_type(structs_table, al, VOID) };
 		zipp(file_ast.funs, funs, [&](const FunDeclarationAst& ast, FunDeclaration& fun) {
 			if (ast.body.kind() == FunBodyAst::Kind::CppSource)
-				fun.body = AnyBody { str(al.arena, ast.body.cpp_source()) };
+				fun.body = AnyBody { copy_string(al.arena, ast.body.cpp_source()) };
 			else {
 				fun.body = AnyBody { al.arena.put(check_function_body(ast.body.expression(), al, funs_table, structs_table, fun, builtin_types)) };
 				check_effects(fun);

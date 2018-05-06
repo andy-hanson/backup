@@ -22,10 +22,10 @@ struct CheckCtx {
 		diag(range(slice), d);
 	}
 	inline Option<ArenaString> copy_str(Option<ArenaString> s) {
-		return s.has() ? Option { str(arena, s.get()) } : Option<ArenaString> {};
+		return s.has() ? Option { copy_string(arena, s.get()) } : Option<ArenaString> {};
 	}
 };
 
 inline Identifier id(CheckCtx& al, StringSlice s) {
-	return Identifier { str(al.arena, s) };
+	return Identifier { copy_string(al.arena, s) };
 }

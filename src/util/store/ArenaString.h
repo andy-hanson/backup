@@ -7,7 +7,7 @@
 class ArenaString {
 	friend class StringBuilder;
 	friend ArenaString allocate_slice(Arena& arena, uint size);
-	friend ArenaString str(Arena& arena, const StringSlice& slice);
+	friend ArenaString copy_string(Arena& arena, const StringSlice& slice);
 	char* _begin;
 	char* _end;
 	// Keep this private to avoid using a non-arena slice.
@@ -73,4 +73,4 @@ public:
 	ArenaString finish();
 };
 
-ArenaString str(Arena& arena, const StringSlice& slice);
+ArenaString copy_string(Arena& arena, const StringSlice& slice);

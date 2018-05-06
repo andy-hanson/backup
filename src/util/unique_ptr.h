@@ -14,7 +14,7 @@ public:
 		assert(ptr != nullptr);
 	}
 
-	~unique_ptr() {
+	inline ~unique_ptr() {
 		assert(_ptr != nullptr);
 		delete _ptr;
 		_ptr = nullptr;

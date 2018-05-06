@@ -38,7 +38,7 @@ ArenaString StringBuilder::finish() {
 	return { slice._begin, ptr };
 }
 
-ArenaString str(Arena& arena, const StringSlice& slice) {
+ArenaString copy_string(Arena& arena, const StringSlice& slice) {
 	uint size = slice.size();
 	char* const begin = static_cast<char*>(arena.allocate(size));
 	char* end = begin;

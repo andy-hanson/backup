@@ -48,7 +48,7 @@ namespace {
 	ArenaString take_numeric_literal(const char* &ptr, Arena& arena) {
 		const char* begin = ptr;
 		while (is_digit(*ptr) || *ptr == '.') ++ptr;
-		return str(arena, { begin, ptr });
+		return copy_string(arena, { begin, ptr });
 	}
 
 	// Assumes the first char is validated already.

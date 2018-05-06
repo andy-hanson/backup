@@ -26,7 +26,7 @@ namespace {
 		if (already.has()) {
 			return already.get();
 		} else {
-			ArenaString a = str(arena, name);
+			ArenaString a = copy_string(arena, name);
 			slices.must_insert(a, a);
 			return slices.get(name).get(); //TODO:PERF
 		}

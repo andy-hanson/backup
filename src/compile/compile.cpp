@@ -100,7 +100,7 @@ void compile(CompiledProgram& out, DocumentProvider& document_provider, Path fir
 			}
 			m->path = ast.path;
 			m->imports = imports.get();
-			m->comment = ast.comment.has() ? Option { str(out.arena, ast.comment.get()) } : Option<ArenaString> {};
+			m->comment = ast.comment.has() ? Option { copy_string(out.arena, ast.comment.get()) } : Option<ArenaString> {};
 			check(m, ast, out.arena, diagnostics);
 			if (!diagnostics.is_empty())
 				return false;

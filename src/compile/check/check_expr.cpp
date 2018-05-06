@@ -74,7 +74,7 @@ namespace {
 			ctx.check_ctx.diag(name, Diag::Kind::LocalShadowsLocal);
 
 		ExpressionAndType init = check_and_infer(*ast.init, ctx);
-		Ref<Let> l = ctx.check_ctx.arena.put(Let { init.type, Identifier { str(ctx.check_ctx.arena, name) }, init.expression, {}, {} });
+		Ref<Let> l = ctx.check_ctx.arena.put(Let { init.type, Identifier { copy_string(ctx.check_ctx.arena, name) }, init.expression, {}, {} });
 		ctx.locals.push(l);
 		l->then = check(*ast.then, ctx, expected);
 		assert(ctx.locals.peek() == l);
@@ -135,7 +135,7 @@ namespace {
 
 	Expression check_no_call_literal_inner(const StringSlice& literal, ExprContext& ctx, Expected& expected) {
 		if (expected.has_expectation_or_inferred_type()) expected.as_if_checked(); else expected.set_inferred(ctx.builtin_types.string_type.get());
-		return Expression { str(ctx.check_ctx.arena, literal) };
+		return Expression { copy_string(ctx.check_ctx.arena, literal) };
 	}
 
 	Expression check_no_call_literal(const StringSlice& literal, ExprContext& ctx, Expected& expected) {
@@ -159,7 +159,7 @@ namespace {
 			return check_no_call_literal_inner(literal.literal, ctx, expected);
 		} else {
 			SmallArrayBuilder<ExprAst> b;
-			b.add(ExprAst { str(ctx.check_ctx.arena, literal.literal) }); // This is a NoCallLiteral
+			b.add(ExprAst { copy_string(ctx.check_ctx.arena, literal.literal) }); // This is a NoCallLiteral
 			for (const ExprAst &arg : literal.arguments)
 				b.add(arg);
 			return check_call(LITERAL, b.finish(ctx.scratch_arena), literal.type_arguments, ctx, expected);
