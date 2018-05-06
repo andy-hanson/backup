@@ -27,6 +27,10 @@ namespace {
 		}
 	};
 
+	MaxSizeString<128> loc_to_string(const FileLocator& loc) {
+		return MaxSizeString<128>::make([&](MaxSizeStringWriter& w) { w << loc; });
+	}
+
 	Writer::Output diagnostics_baseline(const List<Diagnostic>& diags, DocumentProvider& document_provider, Arena& arena) {
 		Writer out { arena };
 		Arena temp;
@@ -42,7 +46,7 @@ namespace {
 		if (file_exists(loc)) {
 			switch (mode) {
 				case TestMode::Test:
-					failures.add({ TestFailure::Kind::BaselineRemoved, loc }, failures_arena);
+					failures.add({ TestFailure::Kind::BaselineRemoved, loc_to_string(loc) }, failures_arena);
 					todo();
 				case TestMode::Accept:
 					delete_file(loc);
@@ -86,7 +90,7 @@ namespace {
 
 		if (should_write_new) {
 			write_file(loc.with_extension(error_extension), actual);
-			failures.add({ expected.has() ? TestFailure::Kind::BaselineChanged : TestFailure::Kind::BaselineAdded, loc }, failures_arena);
+			failures.add({ expected.has() ? TestFailure::Kind::BaselineChanged : TestFailure::Kind::BaselineAdded, loc_to_string(loc) }, failures_arena);
 		} else if (should_delete_new) {
 			delete_file(loc.with_extension(error_extension));
 			if (should_overwrite)
@@ -115,7 +119,7 @@ void test_single(const StringSlice& root, TestMode mode, PathCache& paths, ListB
 		compile_cpp_file(cpp_path, exe_path); // No error if this produces different code... that's clang's problem
 		int exit_code = execute_file(exe_path);
 		if (exit_code != 0)
-			failures.add({ TestFailure::Kind::CppCompilationFailed, cpp_path }, failures_arena);
+			failures.add({ TestFailure::Kind::CppCompilationFailed, loc_to_string(cpp_path) }, failures_arena);
 	} else {
 		Arena temp; //TODO:PERF
 		baseline(diags_path, "txt.new", diagnostics_baseline(out.diagnostics, *document_provider, temp), mode, failures, failures_arena);

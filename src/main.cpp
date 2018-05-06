@@ -36,7 +36,7 @@ namespace {
 	bool is_substring(const StringSlice& haystack, const StringSlice& needle) {
 		if (needle.size() > haystack.size()) return false;
 		//TODO:PERF?
-		uint max_i = to_unsigned(long(haystack.size()) - needle.size());
+		uint max_i = to_unsigned(long(haystack.size()) - needle.size()) + 1; // + 1 because this is the first value we will *not* test
 		for (uint i = 0; i != max_i; ++i) {
 			if (slice(haystack, i, i + needle.size()) == needle) {
 				return true;
@@ -76,8 +76,8 @@ namespace {
 
 	int go() {
 		MaxSizeString<128> test_dir = MaxSizeString<128>::make([&](MaxSizeStringWriter& w) { get_test_directory(w); });
-		auto filter = SubstrTestFilter { "circ" }; // EveryTestFilter{};
-		int exit_code = test(test_dir.slice(), filter, TestMode::Test);
+		auto filter = SubstrTestFilter { "simple" }; // EveryTestFilter{};
+		int exit_code = test(test_dir.slice(), filter, TestMode::Accept);
 		std::cout << "done" << std::endl;
 		return exit_code;
 	}

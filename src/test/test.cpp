@@ -12,19 +12,6 @@ namespace {
 		return out;
 	}
 
-	std::ostream& operator<<(std::ostream& out, const Path& path) {
-		const Option<Path>& parent = path.parent();
-		if (parent.has()) {
-			out << parent.get();
-			out << '/';
-		}
-		return out << path.base_name();
-	}
-
-	std::ostream& operator<<(std::ostream& out, const FileLocator& loc) {
-		return out << loc.root << '/' << loc.path << '.' << loc.extension;
-	}
-
 	const char* baseline_name(TestFailure::Kind kind) {
 		switch (kind) {
 			case TestFailure::Kind::BaselineAdded:
@@ -39,7 +26,7 @@ namespace {
 	}
 
 	std::ostream& operator<<(std::ostream& out, const TestFailure& failure) {
-		return out << failure.loc << ' ' << baseline_name(failure.kind);
+		return out << failure.loc.slice() << ' ' << baseline_name(failure.kind);
 	}
 
 	struct TestDirectoryIteratee : DirectoryIteratee {

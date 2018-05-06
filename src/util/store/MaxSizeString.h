@@ -25,10 +25,10 @@ struct MaxSizeStringWriter {
 template <uint capacity>
 class MaxSizeString {
 	char data[capacity];
-	char* end;
+	uint length;
 
 public:
-	StringSlice slice() { return { data, end }; }
+	StringSlice slice() const { return { data, data + length }; }
 
 	template <typename /*MaxSizeStringWriter& => void*/ Cb>
 	static MaxSizeString make(Cb cb) {
@@ -37,7 +37,7 @@ public:
 		MaxSizeStringWriter w { s.data, end };
 		cb(w);
 		assert(w.cur >= s.data && w.cur < w.end && w.end == end);
-		s.end = w.cur;
+		s.length = to_unsigned(w.cur - s.data);
 		return s;
 	}
 };

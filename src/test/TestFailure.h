@@ -1,9 +1,10 @@
 #pragma once
 
 #include "../util/io.h"
+#include "../util/store/MaxSizeString.h"
 
 struct TestFailure {
 	enum class Kind { BaselineAdded, BaselineChanged, BaselineRemoved, CppCompilationFailed };
 	Kind kind;
-	FileLocator loc;
+	MaxSizeString<128> loc;
 };
