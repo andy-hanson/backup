@@ -64,16 +64,19 @@ ParseDiagnostic Lexer::unexpected() {
 }
 
 void Lexer::validate_file(const StringSlice& source) {
-	assert(source.size() >= 2 && *(source.end() - 1) == '\0');
+	assert(!source.is_empty() && *(source.end() - 1) == '\0'); // Should be guaranteed by file reader
+
+	// Look for trailing whitespace.
 	for (const char* ptr = source.begin() + 1; *ptr != '\0'; ++ptr)
 		if (*ptr == '\n' && (*(ptr - 1) == ' ' || *(ptr - 1) == '\t'))
-			throw ParseDiagnostic { source.range_from_inner_slice({ ptr - 1, ptr }), ParseDiag::Kind::TrailingSpace };
-	if (*(source.end() - 2) != '\n')
-		throw ParseDiagnostic { source.range_from_inner_slice({ source.end() - 1, source.end() }), ParseDiag::Kind::MustEndInBlankLine };
+			throw ParseDiagnostic { SourceRange::inner_slice(source, { ptr - 1, ptr }), ParseDiag::Kind::TrailingSpace };
+
+	if (source.size() == 1 || *(source.end() - 2) != '\n')
+		throw ParseDiagnostic { SourceRange::inner_slice(source, { source.end() - 1, source.end() }), ParseDiag::Kind::MustEndInBlankLine };
 }
 
 ParseDiagnostic Lexer::diag_at_char(ParseDiag diag) {
-	return { source.range_from_inner_slice({ ptr, ptr + 1 }), diag };
+	return { SourceRange::inner_slice(source, { ptr, ptr + 1 }), diag };
 }
 
 StringBuilder Lexer::string_builder(Arena& arena) {
@@ -237,7 +240,7 @@ Option<ArenaString> Lexer::try_take_comment(Arena& arena) {
 	do {
 		++ptr;
 		take(' ');
-		if (!b.empty()) b << '\n';
+		if (!b.is_empty()) b << '\n';
 		for (uint i = _indent; i != 0; --i) take('\t');
 		b << take_rest_of_line(ptr);
 	} while (*ptr == '|');

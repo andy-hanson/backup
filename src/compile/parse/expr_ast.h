@@ -4,6 +4,7 @@
 #include "../../util/ArenaString.h"
 #include "../../util/assert.h"
 #include "../../util/StringSlice.h"
+#include "../diag/SourceRange.h"
 #include "./type_ast.h"
 
 class ExprAst;

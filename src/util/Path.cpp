@@ -76,14 +76,11 @@ Writer& operator<<(Writer& out, const Path& path) {
 	return out;
 }
 
-void Path::write(MutableStringSlice& out, const StringSlice& root, Option<const StringSlice&> extension) const {
-	out << root;
-	out << '/';
+void Path::write(MaxSizeStringWriter& out, const StringSlice& root, Option<const StringSlice&> extension) const {
+	out << root << '/';
 	Path::Impl::to_string_worker(out, impl);
-	if (extension.has()) {
-		out << '.';
-		out << extension.get();
-	}
+	if (extension.has())
+		out << '.' << extension.get();
 }
 
 hash_t Path::hash::operator()(const Path& p) const {
@@ -134,7 +131,7 @@ Option<Path> PathCache::resolve(Path resolve_from, const RelPath& rel) {
 	for (; p.has(); p = p.get().parent())
 		parents.push(p.get().base_name());
 
-	while (!parents.empty())
+	while (!parents.is_empty())
 		p = resolve(p, parents.pop_and_return());
 	return Option { resolve(p, rel.path.base_name()) };
 }

@@ -3,7 +3,6 @@
 #include "./assert.h"
 #include "./int.h"
 
-// TODO: MOVE
 template <uint capacity, typename T>
 class MaxSizeVector {
 	uint _size;
@@ -34,9 +33,9 @@ public:
 		push(first);
 	}
 
-	uint size() const { return _size; }
+	inline uint size() const { return _size; }
 
-	bool empty() const { return _size == 0; }
+	inline bool is_empty() const { return _size == 0; }
 
 	void push(T value) {
 		assert(_size != capacity);
@@ -53,31 +52,32 @@ public:
 		++_size;
 	}
 
-	const T& peek() const {
+	inline const T& peek() const {
+		assert(!is_empty());
 		return (*this)[_size - 1];
 	}
 
-	T& operator[](uint i) {
+	inline T& operator[](uint i) {
 		assert(i < _size);
 		return data.values[i];
 	}
-	const T& operator[](uint i) const {
+	inline const T& operator[](uint i) const {
 		assert(i < _size);
 		return data.values[i];
 	}
 
-	void pop() {
+	inline void pop() {
 		assert(_size != 0);
 		--_size;
 	}
 
-	T pop_and_return() {
+	inline T pop_and_return() {
 		T res = peek();
 		pop();
 		return res;
 	}
 
 	using const_iterator = const T*;
-	const_iterator begin() const { return &data.values[0]; }
-	const_iterator end() const { return begin() + _size; }
+	inline const_iterator begin() const { return &data.values[0]; }
+	inline const_iterator end() const { return begin() + _size; }
 };

@@ -18,7 +18,7 @@ class BlockedList {
 	};
 
 	T* get_next_ptr(Arena& arena) {
-		if (empty()) {
+		if (is_empty()) {
 			head = arena.allocate_uninitialized<Node>();
 			head.get()->next = {};
 			tail = head;
@@ -56,12 +56,12 @@ public:
 		return n_nodes == 0 ? 0 : (n_nodes - 1) * elements_per_node + next_index_in_node;
 	}
 
-	bool empty() const {
+	bool is_empty() const {
 		return !head.has();
 	}
 
 	const T& back() const {
-		assert(!empty() && next_index_in_node > 0);
+		assert(!is_empty() && next_index_in_node > 0);
 		return tail.get()->values[next_index_in_node - 1];
 	}
 
@@ -107,10 +107,10 @@ public:
 
 	template <typename Cb>
 	void each_reverse(Cb cb) const {
-		if (empty()) return;
+		if (is_empty()) return;
 
-		MaxSizeVector<32, Ref<Node>> stack;
-		Ref<Node> n = head.get();
+		MaxSizeVector<32, Ref<const Node>> stack;
+		Ref<const Node> n = head.get();
 		while (n->next.has()) {
 			stack.push(n);
 			n = n->next.get();
@@ -121,7 +121,7 @@ public:
 			if (i == 0) break;
 		}
 
-		while (!stack.empty()) {
+		while (!stack.is_empty()) {
 			n = stack.pop_and_return();
 			for (uint i = elements_per_node - 1; ; --i) {
 				cb(n->values[i]);

@@ -37,7 +37,7 @@ template <typename Out>
 struct MapWithPrevs {
 	template <typename In, typename /*const In&, const Arr<Out>&, uint => Out*/ Cb>
 	Slice<Out> operator()(Arena& arena, const Slice<In>& inputs, Cb cb) {
-		if (inputs.empty()) return {};
+		if (inputs.is_empty()) return {};
 		Slice<Out> out = uninitialized_array<Out>(arena, inputs.size());
 		uint i = 0;
 		for (const In& input : inputs) {
@@ -56,7 +56,7 @@ template <typename Out>
 struct MapOp {
 	template <typename In, typename /*const In& => Option<Out>*/ Cb>
 	Slice<Out> operator()(Arena& arena, const Slice<In>& inputs, Cb cb) {
-		if (inputs.empty()) return {};
+		if (inputs.is_empty()) return {};
 		Slice<Out> out = uninitialized_array<Out>(arena, inputs.size());
 		uint i = 0;
 		for (const In& input : inputs) {
@@ -138,13 +138,13 @@ template <typename Out>
 struct Mapper {
 	template <typename In, typename /*const In& => Out*/ Cb>
 	Slice<Out> operator()(Arena& arena, const Slice<In>& in, Cb cb) {
-		if (in.empty()) return {};
+		if (in.is_empty()) return {};
 		return fill_array<Out>()(arena, in.size(), [&](uint i) { return cb(in[i]); });
 	}
 
 	template <typename In, typename /*const In& => Out*/ Cb>
 	Slice<Out> operator()(Arena& arena, const List<In> in, Cb cb) {
-		if (in.empty()) return {};
+		if (in.is_empty()) return {};
 		uint size = in.size();
 		Slice<Out> arr = uninitialized_array<Out>(arena, size);
 		uint i = 0;

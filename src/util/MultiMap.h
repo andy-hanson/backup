@@ -28,7 +28,7 @@ public:
 
 	template <typename /*const V& => void*/ Cb>
 	void each_with_key(const K& key, Cb cb) const {
-		assert(!arr.empty());
+		assert(!arr.is_empty());
 
 		hash_t hash = Hash{}(key);
 		const Option<MultiMapPair<K, V>>* op_entry_ptr = &arr[hash % arr.size()];
@@ -58,7 +58,7 @@ struct BuildMultiMap {
 
 	template <typename /*const V& => K*/ CbGetKey>
 	MultiMap<K, Ref<const V>, Hash> operator()(const Slice<V>& values, CbGetKey get_key) {
-		if (values.empty())
+		if (values.is_empty())
 			return {};
 
 		uint arr_size = values.size() * 2;
@@ -75,7 +75,7 @@ struct BuildMultiMap {
 					//Add this to the end of the group
 					throw "tod!o";
 				} else {
-					throw "todo"; // false conflict, must re-hash
+					todo(); // false conflict, must re-hash
 				}
 			} else {
 				op_entry = MultiMapPair<K, Ref<const V>> { Option<K> { key }, Ref<const V>(&value) };

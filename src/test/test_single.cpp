@@ -39,11 +39,12 @@ namespace {
 		return list;
 	}
 
-	void no_baseline(const FileLocator& loc, TestMode mode) {
+	void no_baseline(const FileLocator& loc, TestMode mode, List<TestFailure>::Builder& failures, Arena& failures_arena) {
 		if (file_exists(loc)) {
 			switch (mode) {
 				case TestMode::Test:
-					throw "todo";
+					failures.add({ TestFailure::Kind::BaselineRemoved, loc }, failures_arena);
+					todo();
 				case TestMode::Accept:
 					delete_file(loc);
 					break;
@@ -86,7 +87,7 @@ namespace {
 
 		if (should_write_new) {
 			write_file(loc.with_extension(error_extension), actual);
-			failures.add({ TestFailure::Kind::UnexpectedBaseline, loc }, failures_arena);
+			failures.add({ expected.has() ? TestFailure::Kind::BaselineChanged : TestFailure::Kind::BaselineAdded, loc }, failures_arena);
 		} else if (should_delete_new) {
 			delete_file(loc.with_extension(error_extension));
 			if (should_overwrite)
@@ -108,9 +109,9 @@ void test_single(const StringSlice& root, TestMode mode, PathCache& paths, List<
 	FileLocator cpp_path = { root, main_path, "cpp" };
 	FileLocator exe_path { root, main_path, "exe" };
 
-	if (out.diagnostics.empty()) {
+	if (out.diagnostics.is_empty()) {
 		Arena temp; //TODO:PERF
-		no_baseline(diags_path, mode);
+		no_baseline(diags_path, mode, failures, failures_arena);
 		baseline({ root, main_path, "cpp" }, "cpp.new", emit(out.modules, temp), mode, failures, failures_arena);
 		compile_cpp_file(cpp_path, exe_path); // No error if this produces different code... that's clang's problem
 		int exit_code = execute_file(exe_path);
@@ -119,7 +120,7 @@ void test_single(const StringSlice& root, TestMode mode, PathCache& paths, List<
 	} else {
 		Arena temp; //TODO:PERF
 		baseline(diags_path, "txt.new", diagnostics_baseline(out.diagnostics, *document_provider, temp), mode, failures, failures_arena);
-		no_baseline(cpp_path, mode);
-		no_baseline(exe_path, mode);
+		no_baseline(cpp_path, mode, failures, failures_arena);
+		no_baseline(exe_path, mode, failures, failures_arena);
 	}
 }

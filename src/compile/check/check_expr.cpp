@@ -17,11 +17,11 @@ namespace {
 		ExprContext& ctx __attribute__((unused)),
 		const Slice<TypeAst> type_arguments __attribute__((unused)),
 		Expected& expected __attribute__((unused))) {
-		throw "todo";
+		todo();
 	}
 
 	Type struct_field_type(const InstStruct& inst_struct __attribute__((unused)), uint i __attribute__((unused))) {
-		throw "todo";
+		todo();
 	}
 
 	Expression check_struct_create(const StructCreateAst& create, ExprContext& ctx, Expected& expected) {

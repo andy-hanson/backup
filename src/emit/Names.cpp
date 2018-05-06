@@ -5,7 +5,7 @@
 namespace {
 	void write_type_for_fun_name(StringBuilder& sb, const InstStruct& i) {
 		sb << mangle { i.strukt->name };
-		if (!i.type_arguments.empty()) throw "todo";
+		if (!i.type_arguments.is_empty()) todo();
 	}
 
 	void write_type_for_fun_name(StringBuilder& sb, const Type& type) {
@@ -73,8 +73,10 @@ namespace {
 				write_type_for_fun_name(sb, i);
 			}
 			for (const Slice<Ref<const ConcreteFun>>& spec_impl : f.spec_impls)
-				for (Ref<const ConcreteFun> c : spec_impl)
-					sb << '_' << ids.get_id(c);
+				for (Ref<const ConcreteFun> c : spec_impl) {
+					sb << '_';
+					sb.write_base_64(ids.get_id(c));
+				}
 		}
 		return sb.finish();
 	}

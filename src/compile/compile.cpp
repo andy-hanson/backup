@@ -6,7 +6,7 @@
 
 namespace {
 	Option<Path> resolve_import(Path from, const ImportAst& i, PathCache& paths) {
-		if (!i.n_parents.has()) throw "todo: global resolution";
+		if (!i.n_parents.has()) todo(); // global import resolution
 		return paths.resolve(from, RelPath { i.n_parents.get(), i.path });
 	}
 
@@ -19,7 +19,7 @@ namespace {
 		do {
 			Path path = to_parse.pop_and_return();
 			Option<StringSlice> document = document_provider.try_get_document(path, NZ_EXTENSION, ast_arena);
-			if (!document.has()) throw "todo: no such file";
+			if (!document.has()) todo(); // Imported from a file that doesn't exist
 
 			try {
 				FileAst& f = out.push({ path, document.get() }, ast_arena);
@@ -31,13 +31,13 @@ namespace {
 
 			for (const ImportAst& i : out.back().imports) {
 				Option<Path> op_dependency_path = resolve_import(path, i, path_cache);
-				if (!op_dependency_path.has()) throw "todo";
+				if (!op_dependency_path.has()) todo(); // resolution failed
 				Path dependency_path = op_dependency_path.get();
 
 				if (enqued_set.try_insert(dependency_path).was_added)
 					to_parse.push(dependency_path);
 			}
-		} while (!to_parse.empty());
+		} while (!to_parse.is_empty());
 	}
 
 	using Compiled = MaxSizeMap<32, Path, Ref<const Module>, Path::hash>;
@@ -65,20 +65,20 @@ void compile(CompiledProgram& out, DocumentProvider& document_provider, Path fir
 	Arena ast_arena;
 	List<Diagnostic>::Builder diagnostics;
 	parse_everything(parsed, diagnostics, out.arena, first_path, ast_arena, document_provider, out.paths);
-	if (diagnostics.empty()) {
+	if (diagnostics.is_empty()) {
 		// Go in reverse order -- if we ever see some dependency that's not compiled yet, it indicates a circular dependency.
 		Compiled compiled;
 		Option<Slice<Module>> modules = map_or_fail_reverse<Module>()(out.arena, parsed, [&](const FileAst& ast, Ref<Module> m) {
 			Option<Slice<Ref<const Module>>> imports = get_imports(ast.imports, ast.path, compiled, out.paths, out.arena, diagnostics);
 			if (!imports.has()) {
-				assert(!diagnostics.empty());
+				assert(!diagnostics.is_empty());
 				return false;
 			}
 			m->path = ast.path;
 			m->imports = imports.get();
 			m->comment = ast.comment.has() ? Option { str(out.arena, ast.comment.get()) } : Option<ArenaString> {};
 			check(m, ast, out.arena, diagnostics);
-			if (!diagnostics.empty())
+			if (!diagnostics.is_empty())
 				return false;
 			compiled.must_insert(m->path, m);
 			return true;

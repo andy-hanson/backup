@@ -32,7 +32,7 @@ namespace {
 		filter_unordered(candidates, [arg_index, arg_type](Candidate& candidate) {
 			return try_match_types(candidate.signature->parameters[arg_index].type, arg_type, candidate);
 		});
-		if (candidates.empty()) throw "todo";
+		if (candidates.is_empty()) todo();
 	}
 
 	template <typename /*CalledDeclaration => void*/ Cb>
@@ -47,9 +47,9 @@ namespace {
 	void get_initial_candidates(Candidates& candidates, ExprContext& ctx, const StringSlice& fun_name, const Slice<Type>& explicit_type_arguments, uint arity) {
 		each_initial_candidate(ctx, fun_name, [&](CalledDeclaration called) {
 			const FunSignature& sig = called.sig();
-			if (sig.arity() == arity && (explicit_type_arguments.empty() || sig.type_parameters.size() == explicit_type_arguments.size())) {
+			if (sig.arity() == arity && (explicit_type_arguments.is_empty() || sig.type_parameters.size() == explicit_type_arguments.size())) {
 				Slice<Option<Type>> inferring_type_arguments = fill_array<Option<Type>>()(ctx.scratch_arena, sig.type_parameters.size(), [&](uint i) {
-					return explicit_type_arguments.empty() ? Option<Type> {} : Option { explicit_type_arguments[i] };
+					return explicit_type_arguments.is_empty() ? Option<Type> {} : Option { explicit_type_arguments[i] };
 				});
 				candidates.push({ called, &sig, inferring_type_arguments });
 			}
@@ -145,7 +145,7 @@ namespace {
 	//TODO: support a function needing a sig here too. But beware infinite recursion.
 	bool signature_matches(const FunSignature& spec_signature, const FunSignature& actual, const TypeArgumentsScope& type_arguments_scope) {
 		assert(spec_signature.name == actual.name);
-		if (!spec_signature.specs.empty() || !actual.specs.empty()) throw "todo";
+		if (!spec_signature.specs.is_empty() || !actual.specs.is_empty()) todo();
 		return each_corresponds(spec_signature.type_parameters, actual.type_parameters, [](const TypeParameter& a, const TypeParameter& b) { return a.name == b.name; })
 			&& signature_types_equal(spec_signature, spec_signature.return_type, actual, actual.return_type, type_arguments_scope)
 			&& each_corresponds(spec_signature.parameters, actual.parameters, [&](const Parameter& a, const Parameter& b) {
@@ -159,18 +159,18 @@ namespace {
 		Option<CalledDeclaration> match;
 		each_initial_candidate(ctx, spec_signature.name, [&](CalledDeclaration called) {
 			if (signature_matches(spec_signature, called.sig(), type_arguments_scope)) {
-				if (match.has()) throw "todo";
+				if (match.has()) todo();
 				match = called;
 			}
 		});
-		if (!match.has()) throw "todo";
+		if (!match.has()) todo();
 		return match.get();
 	}
 
 	// If the candidate we resolved has specs, fill them in.
 	Called check_specs(ExprContext& ctx, CalledDeclaration called, Slice<Type> type_arguments) {
 		if (called.kind() == CalledDeclaration::Kind::Spec) {
-			if (called.sig().specs.size() != 0) throw "Todo: specs that have specs";
+			if (called.sig().specs.size() != 0) todo(); // specs that have specs?
 			return { called, type_arguments, {} };
 		}
 
@@ -194,7 +194,7 @@ namespace {
 			const InstStruct& inst = arg_type.inst_struct();
 			const StructDeclaration& strukt = inst.strukt;
 			if (strukt.body.is_fields()) {
-				if (!inst.type_arguments.empty()) throw "todo";
+				if (!inst.type_arguments.is_empty()) todo();
 				//TODO: substitute type arguments here!
 				Option<Ref<const StructField>> field = find(strukt.body.fields(), [fun_name](const StructField& f) { return f.name == fun_name; });
 				if (field.has()) {
@@ -213,7 +213,7 @@ Expression check_call(const StringSlice& fun_name, const Slice<ExprAst>& argumen
 	uint arity = argument_asts.size();
 
 	// Can never use an expected type in a unary call, because it might be a struct field access.
-	const Option<ExpressionAndType> first_arg_and_type = arity == 1 && explicit_type_arguments.empty() ? Option{check_and_infer(argument_asts[0], ctx)} : Option<ExpressionAndType>{};
+	const Option<ExpressionAndType> first_arg_and_type = arity == 1 && explicit_type_arguments.is_empty() ? Option{check_and_infer(argument_asts[0], ctx)} : Option<ExpressionAndType>{};
 	if (first_arg_and_type.has()) {
 		Option<Expression> e = try_convert_struct_field_access(fun_name, first_arg_and_type.get(), ctx, expected);
 		if (e.has()) return e.get();
@@ -221,7 +221,7 @@ Expression check_call(const StringSlice& fun_name, const Slice<ExprAst>& argumen
 
 	Candidates candidates;
 	get_initial_candidates(candidates, ctx, fun_name, explicit_type_arguments, arity);
-	if (candidates.empty()) throw "todo: no overload has that arity";
+	if (candidates.is_empty()) todo(); // Diagnostic: no overload has that arity
 
 	// Can't just check each overload in order because we want each argument to have an expected type.
 	bool already_checked_return_type = false;
@@ -232,7 +232,7 @@ Expression check_call(const StringSlice& fun_name, const Slice<ExprAst>& argumen
 		filter_unordered(candidates, [&](Candidate& candidate) {
 			return try_match_types(candidate.signature->return_type, expected_return_type.get(), candidate);
 		});
-		if (candidates.empty()) throw "todo: no overload returns what you wanted";
+		if (candidates.is_empty()) todo(); // no overload returns what you wanted
 	}
 
 	Slice<Expression> arguments = fill_array<Expression>()(ctx.check_ctx.arena, arity, [&](uint arg_idx) {
@@ -249,11 +249,11 @@ Expression check_call(const StringSlice& fun_name, const Slice<ExprAst>& argumen
 		}
 	});
 
-	if (candidates.size() > 1) throw "todo: two identical candidates?";
+	if (candidates.size() > 1) todo(); // two type-identical candidates? (Note: we don't allow overloading by effect)
 	const Candidate& candidate = candidates[0];
 
 	Slice<Type> candidate_type_arguments = map<Type>()(ctx.check_ctx.arena, candidate.inferring_type_arguments, [](const Option<Type>& t){
-		if (!t.has()) throw "todo: didn't infer all type arguments";
+		if (!t.has()) todo(); // didn't infer all type arguments
 		return t.get();
 	});
 

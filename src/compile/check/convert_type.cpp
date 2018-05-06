@@ -20,7 +20,7 @@ namespace {
 		}
 
 		Ref<const StructDeclaration> strukt = op_strukt.get();
-		if (type_arguments.size() != strukt->type_parameters.size()) throw "todo";
+		if (type_arguments.size() != strukt->type_parameters.size()) todo();
 		return Type { InstStruct { strukt, type_arguments_from_asts(type_arguments, ctx, structs_table, type_parameters_scope) } };
 	}
 }

@@ -61,8 +61,9 @@ hash_t Type::hash::operator()(const Type& t) const {
 	switch (t.kind()) {
 		case Type::Kind::Nil: unreachable();
 		case Type::Kind::Bogus:
+			todo();
 		case Type::Kind::Param:
-			throw "todo";
+			todo();
 		case Type::Kind::InstStruct:
 			return InstStruct::hash{}(t.inst_struct());
 	}
@@ -79,5 +80,5 @@ bool operator==(const Type& a, const Type& b) {
 }
 
 bool FunSignature::is_generic() const {
-	return !type_parameters.empty() || !specs.empty();
+	return !type_parameters.is_empty() || !specs.is_empty();
 }

@@ -73,7 +73,7 @@ namespace {
 			case Expression::Kind::Assert:
 			case Expression::Kind::Let:
 			case Expression::Kind::Seq:
-				throw "todo"; // iife?
+				todo(); // iife?
 			case Expression::Kind::Call: {
 				const Call& c = e.call();
 				// The function we're calling depends on the current ConcreteFun being emitted.
@@ -101,7 +101,7 @@ namespace {
 				write_string_literal(out, e.string_literal());
 				break;
 			case Expression::Kind::When:
-				throw "todo";
+				todo();
 			case Expression::Kind::Nil:
 			case Expression::Kind::Bogus:
 				unreachable();

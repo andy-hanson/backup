@@ -15,7 +15,7 @@ public:
 	Map() : arr() {}
 
 	Option<const V&> get(const K& key) const {
-		assert(!arr.empty());
+		assert(!arr.is_empty());
 
 		hash_t hash = Hash{}(key);
 		const Option<KeyValuePair<K, V>>& op_entry = arr[hash % arr.size()];
@@ -33,7 +33,7 @@ struct BuildMap {
 
 	template <typename /*const V& => K*/ CbGetKey, typename /*(const V&, const V&) => void*/ CbConflict>
 	Map<K, Ref<const V>, Hash> operator()(const Slice<V>& values, CbGetKey get_key, CbConflict on_conflict) {
-		if (values.empty())
+		if (values.is_empty())
 			return {};
 
 		Slice<Option<KeyValuePair<K, Ref<const V>>>> arr = fill_array<Option<KeyValuePair<K, Ref<const V>>>>()(
@@ -49,7 +49,7 @@ struct BuildMap {
 					// True conflict
 					on_conflict(entry.value, value);
 				} else {
-					throw "todo"; // false conflict, must re-hash
+					todo(); // false conflict, must re-hash
 				}
 			} else {
 				op_entry = KeyValuePair<K, Ref<const V>> { key, Ref<const V>(&value) };

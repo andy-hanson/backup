@@ -54,11 +54,11 @@ public:
 		return *this;
 	}
 
-	StringBuilder& operator<<(uint u);
+	void write_base_64(uint u);
 
 	StringBuilder& operator<<(StringSlice s);
 
-	inline bool empty() const { return ptr == slice._begin; }
+	inline bool is_empty() const { return ptr == slice._begin; }
 
 	inline char back() const {
 		assert(ptr != slice._begin);

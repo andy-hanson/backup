@@ -101,4 +101,4 @@ add_executable(oohoo
 	src/util/Writer.h
 
 	src/clang.cpp
-	src/clang.h src/util/unique_ptr.h src/util/Map.h src/util/MultiMap.h src/util/MaxSizeMap.h src/util/KeyValuePair.h src/util/assert.h src/util/List.h src/util/ArenaString.h src/util/ArenaString.cpp src/util/ArenaArrayBuilders.h src/util/SmallMap.h src/test/test_single.h src/test/test_single.cpp src/test/TestMode.h src/test/TestFailure.h)
+	src/clang.h src/util/unique_ptr.h src/util/Map.h src/util/MultiMap.h src/util/MaxSizeMap.h src/util/KeyValuePair.h src/util/assert.h src/util/List.h src/util/ArenaString.h src/util/ArenaString.cpp src/util/ArenaArrayBuilders.h src/util/SmallMap.h src/test/test_single.h src/test/test_single.cpp src/test/TestMode.h src/test/TestFailure.h src/util/MaxSizeStringStorage.h src/util/MaxSizeStringStorage.cpp src/compile/diag/SourceRange.h)

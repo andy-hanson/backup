@@ -10,9 +10,12 @@ namespace {
 LineAndColumnGetter LineAndColumnGetter::for_text(const StringSlice& text, Arena& arena) {
 	SmallArrayBuilder<uint, 1024> lines;
 	lines.add(0); // Line 0 starts at text index 0
-	for (uint i = 0; i != text.size(); ++i)
-		if (text[i] == '\n')
+	uint i = 0;
+	for (char c : text) {
+		if (c == '\n')
 			lines.add(i + 1);
+		++i;
+	}
 	return LineAndColumnGetter { lines.finish(arena) };
 }
 

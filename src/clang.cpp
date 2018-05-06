@@ -15,7 +15,7 @@ namespace {
 		const char* command = "...";
 		std::cout << "Running: " << command << std::endl;
 		FILE* file = popen(command, "r");
-		if (!file) throw "todo";
+		if (!file) todo();
 
 		char data[1000];
 		while (fgets(data, sizeof(data), file))
@@ -24,7 +24,7 @@ namespace {
 		int err = pclose(file);
 		if (err == -1) {
 			perror("ohno");
-			throw "todo";
+			todo();
 		}
 		std::cout << "exited?: " << WIFEXITED(err) << ", exit code: " << WEXITSTATUS(err) << std::endl;
 	}
@@ -36,18 +36,18 @@ namespace {
 }
 
 int execute_file(const FileLocator& file_path) {
-	MaxSizeString<128> temp;
+	MaxSizeStringStorage<128> temp;
 	return exec_command(file_path.get_cstring(temp));
 }
 
 void compile_cpp_file(const FileLocator& cpp_file_name, const FileLocator& exe_file_name) {
 	delete_file(exe_file_name);
 	Arena temp;
-	MaxSizeString<1024> to_exec;
-	MutableStringSlice m = to_exec.slice();
+	MaxSizeStringStorage<1024> to_exec;
+	MaxSizeStringWriter m = to_exec.writer();
 	m << CLANG << cpp_file_name << " -o " << exe_file_name << '\0';
 	// std::cout << "Running: " << to_exec.slice().begin << std::endl;
-	without_limits([&]() { exec_command(to_exec.slice().begin); });
+	without_limits([&]() { exec_command(to_exec.finish(m).begin()); });
 	if (!file_exists(exe_file_name))
 		throw "There was a clang error";
 }

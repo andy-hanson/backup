@@ -4,6 +4,7 @@
 #include "../util/Option.h"
 #include "../util/StringSlice.h"
 #include "../util/unique_ptr.h"
+#include "MaxSizeStringStorage.h"
 #include "../util/Writer.h"
 
 // Can only be constructed through a PathCache.
@@ -16,7 +17,7 @@ class Path {
 
 public:
 	friend Writer& operator<<(Writer& out, const Path& path);
-	void write(MutableStringSlice& out, const StringSlice& root, Option<const StringSlice&> extension) const;
+	void write(MaxSizeStringWriter& out, const StringSlice& root, Option<const StringSlice&> extension) const;
 
 	const Option<Path>& parent() const;
 	StringSlice base_name() const;

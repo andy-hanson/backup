@@ -36,7 +36,7 @@ public:
 	using const_iterator = const T*;
 
 	uint size() const { return _size; }
-	bool empty() const { return _size == 0; }
+	bool is_empty() const { return _size == 0; }
 	iterator begin() { return _begin; }
 	iterator end() { return _begin + _size; }
 	const_iterator begin() const { return _begin; }

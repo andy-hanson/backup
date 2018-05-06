@@ -22,7 +22,7 @@ class MaxSizeMap {
 		Option<KeyValuePair<K, V>>& op_entry = get_raw_entry(key);
 		if (op_entry.has()) {
 			KeyValuePair<K, V>& entry = op_entry.get();
-			if (entry.key != key) throw "todo"; // false conflict
+			if (entry.key != key) todo(); // false conflict
 			return Option<KeyValuePair<K, V>&> { entry };
 		} else
 			return {};
@@ -31,7 +31,7 @@ class MaxSizeMap {
 		const Option<KeyValuePair<K, V>>& op_entry = get_raw_entry(key);
 		if (op_entry.has()) {
 			const KeyValuePair<K, V>& entry = op_entry.get();
-			if (entry.key != key) throw "todo"; // false conflict
+			if (entry.key != key) todo(); // false conflict
 			return Option<const KeyValuePair<K, V>&> { entry };
 		} else
 			return {};
@@ -45,7 +45,7 @@ public:
 	InsertResult try_insert(const K& key, const V& value) {
 		Option<KeyValuePair<K, V>>& op_entry = get_raw_entry(key);
 		if (op_entry.has()) {
-			if (op_entry.get().key != key) throw "todo"; // false conflict
+			if (op_entry.get().key != key) todo(); // false conflict
 			return { false };
 		} else {
 			op_entry = KeyValuePair<K, V> { key, value };
@@ -57,7 +57,7 @@ public:
 		Option<KeyValuePair<K, V>>& op_entry = get_raw_entry(key);
 		if (op_entry.has()) {
 			KeyValuePair<K, V>& entry = op_entry.get();
-			if (entry.key != key) throw "todo"; // false conflict
+			if (entry.key != key) todo(); // false conflict
 			return entry.value;
 		} else {
 			op_entry = KeyValuePair<K, V> { key, {} };
@@ -69,7 +69,7 @@ public:
 		Option<KeyValuePair<K, V>>& op_entry = get_raw_entry(key);
 		if (op_entry.has()) {
 			KeyValuePair<K, V>& entry = op_entry.get();
-			if (entry.key == key) throw "todo"; // false conflict
+			if (entry.key == key) todo(); // false conflict
 			unreachable(); // true conflict
 		} else {
 			op_entry = KeyValuePair<K, V> { key, value };

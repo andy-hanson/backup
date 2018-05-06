@@ -6,7 +6,7 @@
 #include "../../util/Map.h"
 #include "../../util/MultiMap.h"
 #include "../../util/Path.h"
-
+#include "../diag/SourceRange.h"
 #include "./effect.h"
 
 using Identifier = ArenaString;

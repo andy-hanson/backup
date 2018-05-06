@@ -28,12 +28,12 @@ namespace {
 		Effect e = declared.get();
 		switch (e) {
 			case Effect::EGet:
-				throw "todo";
+				todo();
 			case Effect::ESet:
 			case Effect::EIo:
 				break;
 			case Effect::EOwn:
-				if (type_is_copy(type)) throw "todo"; //diagnostic: This isn't really necessary. We'll copy when we need it.
+				if (type_is_copy(type)) todo(); //diagnostic: This isn't really necessary. We'll copy when we need it.
 				break;
 		}
 		return e;
@@ -44,14 +44,14 @@ namespace {
 			if (declared.has()) {
 				assert(declared.get() != Effect::EOwn);
 				if (declared.get() == Effect::EIo)
-					throw "todo"; // This is pointless since EIo is the maximum by-reference effect anyway.
+					todo(); // This is pointless since EIo is the maximum by-reference effect anyway.
 				return declared.get();
 			} else {
 				return Effect::EIo;
 			}
 		} else {
 			if (declared.has())
-				throw "todo"; // Can't declare an effect, since returning by value
+				todo(); // Can't declare an effect, since returning by value
 			return Effect::EOwn;
 		}
 	}
@@ -62,7 +62,7 @@ namespace {
 		return map_with_prevs<Parameter>()(al.arena, asts, [&](const ParameterAst& ast, const Slice<Parameter>& prevs, uint index) -> Parameter {
 			check_param_or_local_shadows_fun(al, ast.name, funs_table, current_specs);
 			if (some(prevs, [&](const Parameter& prev) { return prev.name == ast.name; }))
-				throw "todo";
+				todo();
 			Type type = type_from_ast(ast.type, al, structs_table, type_parameters_scope);
 			return Parameter { ast.from, check_parameter_effect(ast.effect, type), type, id(al, ast.name), index };
 		});
@@ -107,11 +107,7 @@ namespace {
 	}
 
 	void check_type_headers(const FileAst& file_ast, CheckCtx& ctx, Ref<Module> module) {
-
-		if (!file_ast.includes.empty()) throw "todo";
-		//for (const StringSlice& include __attribute__((unused)) : file_ast.includes) {
-		//	throw "todo";
-		//}
+		if (!file_ast.includes.is_empty()) todo();
 
 		module->specs_declaration_order = map<SpecDeclaration>()(ctx.arena, file_ast.specs, [&](const SpecDeclarationAst& ast) {
 			return SpecDeclaration { module, ast.range, ctx.copy_str(ast.comment), ast.is_public, check_type_parameters(ast.type_parameters, ctx, {}), id(ctx, ast.name) };
@@ -215,7 +211,7 @@ namespace {
 void check(Ref<Module> m, const FileAst& ast, Arena& arena, List<Diagnostic>::Builder& diagnostics) {
 	CheckCtx ctx { arena, ast.source, m->path, m->imports, diagnostics };
 
-	if (!ast.imports.empty()) throw "todo";
+	if (!ast.imports.is_empty()) todo();
 
 	check_type_headers(ast, ctx, m);
 

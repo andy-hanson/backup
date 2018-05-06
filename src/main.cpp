@@ -13,23 +13,25 @@ namespace {
 		return end;
 	}
 
-	template <uint size>
-	StringSlice get_test_directory(MaxSizeString<size>& buf) {
-		char* begin = buf.slice().begin;
-		if (!getcwd(begin, buf.slice().size())) throw "todo";
-		//find the end
+	char* get_end(char* begin) {
 		char* c = begin;
 		while (*c != '\0')
 			++c;
-		c = strip_last_part(buf.slice().begin, c);
-		MutableStringSlice m { c, buf.slice().end };
-		m << "/test";
-		return { begin, m.begin };
+		return c;
+	}
+
+	void get_test_directory(MaxSizeStringWriter& buf) {
+		char* begin = buf.cur;
+		if (!getcwd(begin, buf.capacity())) todo();
+		buf.cur = strip_last_part(buf.cur, get_end(begin));
+		buf << "/test";
 	}
 
 	int go() {
-		MaxSizeString<128> test_dir;
-		int exit_code = test(get_test_directory(test_dir), TestMode::Test);
+		MaxSizeStringStorage<128> test_dir;
+		MaxSizeStringWriter slice = test_dir.writer();
+		get_test_directory(slice);
+		int exit_code = test(test_dir.finish(slice), TestMode::Test);
 		std::cout << "done" << std::endl;
 		return exit_code;
 	}

@@ -4,6 +4,11 @@ namespace {
 	Writer& operator<<(Writer& w, LineAndColumn lc) {
 		return w << lc.line + 1 << ':' << lc.column + 1;
 	}
+
+	StringSlice slice_from_range(const StringSlice& slice, const SourceRange& range) {
+		assert(range.end < slice.size());
+		return { slice.begin() + range.begin, slice.begin() + range.end };
+	}
 }
 
 Diag::Diag(ParseDiag p) : _kind(Kind::Parse) {
@@ -40,9 +45,7 @@ void Diag::operator=(const Diag& other) {
 		case Kind::MissingStringType:
 			break;
 	}
-
 }
-
 
 Diag::Diag(Kind kind) : _kind(kind) {
 	switch (_kind) {
@@ -147,5 +150,5 @@ void Diag::write(Writer& out, const StringSlice& slice) const {
 
 void Diagnostic::write(Writer& out, const StringSlice& module_source, const LineAndColumnGetter& lc) const {
 	out << this->path << ' ' << lc.line_and_column_at_pos(range.begin) << '-' << lc.line_and_column_at_pos(range.end) << ": ";
-	diag.write(out, StringSlice::from_range(module_source, range));
+	diag.write(out, slice_from_range(module_source, range));
 }

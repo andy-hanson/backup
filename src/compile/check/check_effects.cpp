@@ -133,12 +133,12 @@ namespace {
 			// Note: allowed to pass an 'own' object where a reference is expected -- we will just delete it after.
 			// But if the return *borrows* from an own object, that's a no-no.
 			if (!arg_effect.is_sufficient(parameter.effect))
-				throw "todo";
+				todo();
 
 			if (parameter.from) {
 				assert(parameter.effect != Effect::EOwn);
 				if (arg_effect.is_own())
-					throw "Todo"; // Can't borrow from 'own' arg.
+					todo(); // Can't borrow from 'own' arg.
 
 				if (return_effect.has()) {
 					return_effect.get().combine(arg_effect);
@@ -193,10 +193,10 @@ namespace {
 			case Expression::Kind::Call:
 				return infer_call_effect(e.call(), ctx);
 			case Expression::Kind::StructCreate:
-				throw "todo"; // Need to check that struct members can be made own
+				todo(); // Need to check that struct members can be made own
 				//return ExprEffect::own();
 			case Expression::Kind::When:
-				throw "todo";
+				todo();
 			case Expression::Kind::Assert:
 				ExprEffect eff = infer_effect(e.asserted(), ctx);
 				assert(eff.is_own());
@@ -211,10 +211,10 @@ namespace {
 		//TODO:PERF
 		for (const Parameter& p : actual_from_params)
 			if (!p.from)
-				throw "todo"; //parameter should be marked 'from'
+				todo(); // parameter should be marked 'from'
 		for (const Parameter& p : params)
 			if (!contains(actual_from_params, Ref<const Parameter>(&p)))
-				throw "todo"; // Unnecessary 'from'
+				todo(); // Unnecessary 'from'
 	}
 
 	void check_return_effect(const FunSignature& sig, const ExprEffect& actual_effect) {
@@ -222,16 +222,16 @@ namespace {
 		if (declared_return_effect == Effect::EOwn) {
 			for (const Parameter& p : sig.parameters) {
 				if (p.from)
-					throw "Todo: param marked 'from' but we're not using it";
+					todo(); // param marked 'from' but we're not using it;
 			}
 			if (!actual_effect.is_own())
-				throw "todo"; // Need to return a new instance of the type.
+				todo(); // Need to return a new instance of the type.
 		} else {
 			//Don't really care what they declared, since it only *reduces* the effect from a parameter.
 			// A return effect inherits the effects of all parameters marked 'from'.
 			if (actual_effect.is_own())
-				throw "todo"; //return should be marked 'own'.
-			if (!actual_effect.locals().empty()) throw "todo";
+				todo(); //return should be marked 'own'.
+			if (!actual_effect.locals().is_empty()) todo();
 			check_params_from(sig.parameters, actual_effect.params());
 		}
 	}

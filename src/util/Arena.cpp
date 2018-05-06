@@ -1,13 +1,6 @@
-#include "Arena.h"
+#include "./Arena.h"
 
 #include "./assert.h"
-
-void* Arena::allocate(uint n_bytes) {
-	void* res = alloc_next;
-	alloc_next = static_cast<char*>(alloc_next) + n_bytes;
-	assert(alloc_next <= alloc_end);
-	return res;
-}
 
 Arena::Arena() {
 	uint size = 10000;
@@ -18,4 +11,11 @@ Arena::Arena() {
 
 Arena::~Arena() {
 	::operator delete(alloc_begin);
+}
+
+void* Arena::allocate(uint n_bytes) {
+	void* res = alloc_next;
+	alloc_next = static_cast<char*>(alloc_next) + n_bytes;
+	assert(alloc_next <= alloc_end);
+	return res;
 }

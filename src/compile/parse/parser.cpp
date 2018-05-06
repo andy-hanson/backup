@@ -49,7 +49,7 @@ namespace {
 		SmallArrayBuilder<ParameterAst> parameters;
 		lexer.take('(');
 		while (true) {
-			if (lexer.try_take(')')) throw "todo"; //error: Don't write `()`
+			if (lexer.try_take(')')) todo(); //error: Don't write `()`
 
 			bool from = false;
 			if (lexer.try_take_from_keyword()) {
@@ -183,7 +183,7 @@ void parse_file(FileAst& ast, PathCache& path_cache, Arena& arena) {
 		if (lexer.try_take('\0'))
 			break;
 		if (lexer.try_take_private_nl()) {
-			if (is_public) throw "todo: duplicate private";
+			if (!is_public) todo(); // we're already private, so this is unnecessary
 			is_public = false;
 			lexer.skip_blank_lines();
 		}

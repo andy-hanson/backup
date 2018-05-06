@@ -1,20 +1,21 @@
 #pragma once
 
-#include "Arena.h"
+#include "./Arena.h"
 #include "./int.h"
+#include "./Option.h"
 
 template <typename T>
 struct ListNode {
 	T value;
-	ListNode* next;
+	Option<Ref<const ListNode>> next;
 
 	struct const_iterator {
-		const ListNode<T>* node;
+		Option<Ref<const ListNode>> node;
 		const T& operator*() const {
-			return node->value;
+			return node.get()->value;
 		}
 		void operator++() {
-			node = node->next;
+			node = node.get()->next;
 		}
 		bool operator!=(const const_iterator& other) const {
 			return node != other.node;
@@ -30,20 +31,22 @@ class NonEmptyList {
 public:
 	NonEmptyList(const NonEmptyList& other) = default;
 	NonEmptyList& operator=(const NonEmptyList& other) = default;
-	NonEmptyList(T value) : _head({ value, nullptr }) {}
+	NonEmptyList(T value) : _head({ value, {} }) {}
 
 	// Note: this moves the current head out.
 	void prepend(T value, Arena& arena) {
-		ListNode<T>* next = arena.put<ListNode<T>>(_head).ptr();
-		_head = { value, next };
+		Ref<ListNode<T>> next = arena.put<ListNode<T>>(_head).ptr();
+		_head = ListNode<T> { value, Option<Ref<const ListNode<T>>> { next } };
 	}
 
 	using const_iterator = typename ListNode<T>::const_iterator;
-	const_iterator begin() const { return { &_head }; }
-	const_iterator end() const { return { nullptr }; }
+	inline const_iterator begin() const {
+		return { Option { Ref<const ListNode<T>> { &_head } } };
+	}
+	inline const_iterator end() const { return { {} }; }
 
 	bool has_more_than_one() const {
-		return _head.next != nullptr;
+		return _head.next.has();
 	}
 
 	const T& first() const {
@@ -53,16 +56,16 @@ public:
 
 template <typename T>
 class List {
-	ListNode<T>* _head;
+	Option<Ref<const ListNode<T>>> _head;
 	uint _size;
 
-	List(ListNode<T>* head, uint size) : _head(head), _size(size) {}
+	List(Option<Ref<const ListNode<T>>> head, uint size) : _head(head), _size(size) {}
 
 public:
-	List() : _head(nullptr), _size(0) {}
+	List() : _head{}, _size{0} {}
 
-	bool empty() const {
-		return _head == nullptr;
+	bool is_empty() const {
+		return !_head.has();
 	}
 
 	uint size() const {
@@ -71,36 +74,36 @@ public:
 
 	using const_iterator = typename ListNode<T>::const_iterator;
 	const_iterator begin() const { return { _head }; }
-	const_iterator end() const { return { nullptr }; }
+	const_iterator end() const { return { {} }; }
 
 	class Builder {
-		ListNode<T>* head;
-		ListNode<T>* tail;
+		Option<Ref<ListNode<T>>> head;
+		Option<Ref<ListNode<T>>> tail;
 		uint size;
 
 	public:
-		Builder() : head(nullptr), tail(nullptr), size(0) {}
+		Builder() : head{}, tail{}, size{0} {}
 		Builder(const Builder& other) = delete;
 
-		bool empty() const {
-			return head == nullptr;
+		bool is_empty() const {
+			return !head.has();
 		}
 
 		void add(T value, Arena& arena) {
-			ListNode<T>* next = arena.put<ListNode<T>>({ value, nullptr }).ptr();
-			if (head == nullptr) {
+			Ref<ListNode<T>> next = arena.put<ListNode<T>>({ value, {} }).ptr();
+			if (head.has()) {
+				assert(tail.has());
+				tail.get()->next = next;
+			} else {
 				assert(size == 0);
 				head = next;
-			} else {
-				assert(tail != nullptr);
-				tail->next = next;
 			}
 			tail = next;
 			++size;
 		}
 
 		List finish() {
-			return { head, size };
+			return { head.has() ? Option<Ref<const ListNode<T>>> { head.get() } : Option<Ref<const ListNode<T>>> {}, size };
 		}
 	};
 };

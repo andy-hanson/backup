@@ -64,29 +64,55 @@ public:
 	Option<const T&> as_ref() const {
 		return is_present ? Option<const T&> { get() } : Option<const T&> {};
 	}
-
-	friend bool operator==(const Option<T>& a, const Option<T>& b) {
-		return a.has() ? b.has() && a.get() == b.get() : !b.has();
-	}
 };
+template <typename T>
+inline bool operator==(const Option<T>& a, const Option<T>& b) {
+	return a.has() ? b.has() && a.get() == b.get() : !b.has();
+}
+template <typename T>
+inline bool operator!=(const Option<T>& a, const Option<T>& b) {
+	return !(a == b);
+}
 
 template <typename T>
 class Option<T&> {
 	T* ref;
 
 public:
-	Option() : ref(nullptr) {}
-	explicit Option(T& value) : ref(&value) {}
+	inline Option() : ref(nullptr) {}
+	inline explicit Option(T& value) : ref(&value) {}
 
-	bool has() const { return ref != nullptr; }
+	inline bool has() const { return ref != nullptr; }
 
-	T& get() {
+	inline T& get() {
 		assert(ref != nullptr);
 		return *ref;
 	}
-	const T& get() const {
+	inline const T& get() const {
 		assert(ref != nullptr);
 		return *ref;
+	}
+};
+
+template <typename T>
+class Option<Ref<T>> {
+	T* ref;
+
+public:
+	inline Option() : ref(nullptr) {}
+	inline explicit Option(Ref<T> value) : ref(value.ptr()) {}
+
+	void operator=(Ref<T> value) {
+		ref = value.ptr();
+	}
+
+	inline bool has() const { return ref != nullptr; }
+
+	inline Ref<T> get() {
+		return Ref<T> { ref };
+	}
+	inline Ref<const T> get() const {
+		return Ref<const T> { ref };
 	}
 };
 

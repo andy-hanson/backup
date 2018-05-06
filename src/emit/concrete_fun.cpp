@@ -99,7 +99,7 @@ namespace {
 				case Expression::Kind::Bogus:
 					unreachable();
 			}
-		} while (!stack.empty());
+		} while (!stack.is_empty());
 	}
 
 	ConcreteFun get_concrete_called(const ConcreteFun& calling_fun, const Called& called, const EveryConcreteFun& res, Arena& scratch_arena) {
@@ -113,10 +113,10 @@ namespace {
 			return map<Ref<const ConcreteFun>>()(scratch_arena, called_specs, [&](const CalledDeclaration& called_spec) {
 				switch (called_spec.kind()) {
 					case CalledDeclaration::Kind::Spec:
-						throw "todo";
+						todo();
 					case CalledDeclaration::Kind::Fun: {
 						Ref<const FunDeclaration> spec_impl = called_spec.fun();
-						if (spec_impl->signature.is_generic()) throw "todo";
+						if (spec_impl->signature.is_generic()) todo();
 						// Since it's non-generic, should have exactly 1 instantiation.
 						const NonEmptyList<ConcreteFun>& list = res.fun_instantiations.get(spec_impl).get();
 						assert(!list.has_more_than_one());
@@ -186,7 +186,7 @@ EveryConcreteFun get_every_concrete_fun(const Slice<Module>& modules, Arena& scr
 		}
 	}
 
-	while (!to_analyze.empty()) {
+	while (!to_analyze.is_empty()) {
 		Ref<const ConcreteFun> fun = to_analyze.pop_and_return();
 		const AnyBody& body = fun->fun_declaration->body;
 		if (body.kind() != AnyBody::Kind::Expr) continue;

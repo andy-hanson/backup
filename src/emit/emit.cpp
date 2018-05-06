@@ -12,7 +12,7 @@
 
 namespace {
 	void write_type_parameters(Writer& out, const Slice<TypeParameter>& type_parameters) {
-		if (type_parameters.empty()) return;
+		if (type_parameters.is_empty()) return;
 		out << "template <";
 		for (uint i = 0; i != type_parameters.size(); ++i) {
 			if (i != 0) out << ", ";
@@ -92,7 +92,7 @@ namespace {
 						each_struct_field(*s, [&](Ref<const StructDeclaration> referenced) { stack.push(referenced); });
 						break;
 				}
-			} while (!stack.empty());
+			} while (!stack.is_empty());
 		}
 	}
 
@@ -121,7 +121,7 @@ namespace {
 }
 
 BlockedList<char> emit(const Slice<Module>& modules, Arena& out_arena) {
-	assert(!modules.empty());
+	assert(!modules.is_empty());
 	BlockedList<char> list;
 	Writer out { list, out_arena };
 	out << "#include <assert.h>\n\n";

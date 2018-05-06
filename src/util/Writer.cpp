@@ -8,7 +8,7 @@ Writer& Writer::operator<<(uint u) {
 		*this << char('0' + char(u / 10));
 		*this << char('0' + char(u % 10));
 	} else
-		throw "todo";
+		todo();
 	return *this;
 }
 Writer& Writer::operator<<(ushort u) {

@@ -7,7 +7,7 @@
 #include "./ArenaString.h"
 
 namespace {
-	using PathString = MaxSizeString<128>;
+	using PathString = MaxSizeStringStorage<128>;
 
 	bool is_directory(unsigned char d_type) {
 		switch (d_type) {
@@ -42,8 +42,9 @@ Option<StringSlice> try_read_file(const FileLocator& loc, Arena& out, bool null_
 
 void list_directory(const StringSlice& loc, DirectoryIteratee& iteratee) {
 	PathString dir_path;
-	dir_path.slice() << loc << '\0';
-	Ref<DIR> dir = opendir(dir_path.slice().begin);
+	MaxSizeStringWriter slice = dir_path.writer();
+	slice << loc << '\0';
+	Ref<DIR> dir = opendir(dir_path.finish(slice).begin());
 
 	while (true) {
 		dirent* ent = readdir(dir.ptr());

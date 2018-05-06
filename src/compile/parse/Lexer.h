@@ -43,7 +43,7 @@ public:
 
 	inline const char* at() { return ptr; }
 	inline SourceRange range(const char* start) {
-		return source.range_from_inner_slice({ start, ptr });
+		return SourceRange::inner_slice(source, { start, ptr });
 	}
 
 	inline Lexer(StringSlice _source) : source(_source), ptr(_source.begin()), _indent(0) {}

@@ -15,31 +15,17 @@ struct FileLocator {
 	}
 
 	// Mutates 'out' to point to the remainder.
-	friend MutableStringSlice& operator<<(MutableStringSlice& out, const FileLocator& loc) {
+	friend MaxSizeStringWriter& operator<<(MaxSizeStringWriter& out, const FileLocator& loc) {
 		loc.path.write(out, loc.root, Option<const StringSlice&> { loc.extension });
 		return out;
 	}
+
 	template <uint size>
-	inline const char* get_cstring(MaxSizeString<size>& m) const {
-		MutableStringSlice s = m.slice();
-		s << *this;
-		s << '\0';
-		return m.slice().begin;
+	inline const char* get_cstring(MaxSizeStringStorage<size>& builder) const {
+		MaxSizeStringWriter s = builder.writer();
+		s << *this << '\0';
+		return builder.finish(s).begin();
 	}
-};
-
-class DirectoryEntry {
-	friend class DirectoryIterator;
-	MaxSizeString<64> _name;
-	uint str_len;
-	bool _is_directory;
-
-public:
-	inline StringSlice name() {
-		StringSlice s = _name.slice();
-		return s.slice(str_len);
-	}
-	inline bool is_directory() const { return _is_directory; }
 };
 
 /*abstract*/ class DirectoryIteratee {

@@ -20,7 +20,7 @@ namespace {
 					case Type::Kind::Nil:
 						unreachable();
 					case Type::Kind::Bogus:
-						throw "todo";
+						todo();
 					case Type::Kind::InstStruct:
 						return try_match_inst_structs(inferred.inst_struct(), type_from_external);
 					case Type::Kind::Param:
@@ -39,7 +39,7 @@ namespace {
 			const Type& substituted = get_type_argument(spec_use.spec->type_parameters, spec_use.type_arguments, candidate_type_parameter);
 			switch (substituted.kind()) {
 				case Type::Kind::Nil: unreachable();
-				case Type::Kind::Bogus: throw "todo";
+				case Type::Kind::Bogus: todo();
 				case Type::Kind::InstStruct: return try_match_inst_structs(substituted.inst_struct(), type_from_external);
 				case Type::Kind::Param: {
 					Ref<const TypeParameter> param = substituted.param();
@@ -57,7 +57,7 @@ namespace {
 bool try_match_types(const Type& type_from_candidate, const Type& type_from_external, Candidate& candidate) {
 	switch (type_from_candidate.kind()) {
 		case Type::Kind::Nil: unreachable();
-		case Type::Kind::Bogus: throw "todo";
+		case Type::Kind::Bogus: todo();
 		case Type::Kind::InstStruct:
 			return try_match_inst_structs(type_from_candidate.inst_struct(), type_from_external);
 		case Type::Kind::Param:

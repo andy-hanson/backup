@@ -15,7 +15,7 @@ struct CheckCtx {
 	List<Diagnostic>::Builder& diags;
 
 	inline SourceRange range(StringSlice slice) {
-		return source.range_from_inner_slice(slice);
+		return SourceRange::inner_slice(source, slice);
 	}
 	inline void diag(SourceRange range, Diag diag) {
 		diags.add({ path, range, diag }, arena);
@@ -95,9 +95,8 @@ public:
 		_was_checked = true;
 		if (type.has()) {
 			Type t = type.get();
-			if (!does_type_match_no_infer(t, actual)) {
-				throw "todo";
-			}
+			if (!does_type_match_no_infer(t, actual))
+				todo(); // diagnostic and infer Bogus
 		}
 		else {
 			assert(!_had_expectation);

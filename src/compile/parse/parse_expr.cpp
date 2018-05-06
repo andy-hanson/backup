@@ -102,7 +102,7 @@ namespace {
 		switch (et.kind) {
 			case ExpressionToken::Kind::Name: {
 				Slice<TypeAst> type_arguments = parse_type_argument_asts(lexer, arena);
-				return type_arguments.empty() ? AstAndShouldParseDot { ExprAst { et.name }, true } : AstAndShouldParseDot { ExprAst { CallAst { et.name, type_arguments, {} } }, true };
+				return type_arguments.is_empty() ? AstAndShouldParseDot { ExprAst { et.name }, true } : AstAndShouldParseDot { ExprAst { CallAst { et.name, type_arguments, {} } }, true };
 			}
 
 			case ExpressionToken::Kind::TypeName: {
