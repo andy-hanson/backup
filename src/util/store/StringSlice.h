@@ -19,6 +19,7 @@ public:
 
 	StringSlice(const char* begin, const char* end);
 
+	using value_type = char;
 	using const_iterator = const char*;
 	inline const_iterator begin() const { return _begin; }
 	inline const_iterator end() const { return _end; }

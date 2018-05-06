@@ -2,7 +2,7 @@
 
 #include "../util/store/ListBuilder.h"
 #include "../util/store/StringSlice.h"
-#include "../util/Path.h"
+#include "../util/PathCache.h"
 #include "./TestMode.h"
 #include "./TestFailure.h"
 

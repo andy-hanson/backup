@@ -7,7 +7,7 @@
 #include "./store/ArenaString.h"
 
 namespace {
-	using PathString = MaxSizeStringStorage<128>;
+	using PathString = MaxSizeString<128>;
 
 	bool is_directory(unsigned char d_type) {
 		switch (d_type) {
@@ -19,14 +19,26 @@ namespace {
 				unreachable();
 		}
 	}
+
+	PathString get_cstring(const FileLocator& loc) {
+		return PathString::make([&](MaxSizeStringWriter& w) { w << loc << '\0'; });
+	}
+
+	std::ifstream get_ifstream(const FileLocator& loc) {
+		PathString c_path = get_cstring(loc);
+		return std::ifstream { c_path.slice().begin() };
+	}
+
+	std::ofstream get_ofstream(const FileLocator& loc) {
+		PathString path = get_cstring(loc);
+		return std::ofstream { path.slice().begin() };
+	}
 }
 
 DirectoryIteratee::~DirectoryIteratee() {}
 
 Option<StringSlice> try_read_file(const FileLocator& loc, Arena& out, bool null_terminated) {
-	PathString temp;
-	const char* c_path = loc.get_cstring(temp);
-	std::ifstream i(c_path);
+	std::ifstream i = get_ifstream(loc);
 	if (!i) return {};
 
 	i.seekg(0, std::ios::end);
@@ -41,10 +53,8 @@ Option<StringSlice> try_read_file(const FileLocator& loc, Arena& out, bool null_
 }
 
 void list_directory(const StringSlice& loc, DirectoryIteratee& iteratee) {
-	PathString dir_path;
-	MaxSizeStringWriter slice = dir_path.writer();
-	slice << loc << '\0';
-	Ref<DIR> dir = opendir(dir_path.finish(slice).begin());
+	PathString dir_path = PathString::make([&](MaxSizeStringWriter& w) { w << loc << '\0'; });
+	Ref<DIR> dir = opendir(dir_path.slice().begin());
 
 	while (true) {
 		dirent* ent = readdir(dir.ptr());
@@ -65,21 +75,18 @@ void list_directory(const StringSlice& loc, DirectoryIteratee& iteratee) {
 }
 
 void write_file(const FileLocator& loc, const Writer::Output& contents) {
-	PathString temp;
-	const char* c_path = loc.get_cstring(temp);
-	std::ofstream out(c_path);
+	std::ofstream out = get_ofstream(loc);
+	assert(out);
 	for (char c : contents)
 		out << c;
 	out.close();
 }
 
 void delete_file(const FileLocator& loc) {
-	PathString temp;
-	std::remove(loc.get_cstring(temp));
+	PathString path = get_cstring(loc);
+	std::remove(path.slice().begin());
 }
 
 bool file_exists(const FileLocator& loc) {
-	//todo:c++17 std::filesystem::exists would be nice
-	PathString temp;
-	return bool(std::ifstream(loc.get_cstring(temp)));
+	return bool(get_ifstream(loc));
 }

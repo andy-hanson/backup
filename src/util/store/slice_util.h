@@ -40,19 +40,9 @@ bool operator==(Slice<T> da, Slice<T> db) {
 
 template <typename T>
 Option<uint> try_get_index(const Slice<T>& collection, Ref<const T> value) {
-	//TODO:PERF always use fast way
-	long fast_way = value.ptr() - collection.begin();
-	if (fast_way < 0 || fast_way >= long(collection.size())) return {};
-
-	uint i = 0;
-	for (const T& v : collection) {
-		if (Ref<const T>(&v) == value) {
-			assert(i == fast_way);
-			return Option<uint>{i};
-		}
-		++i;
-	}
-	unreachable();
+	long idx = value.ptr() - collection.begin();
+	if (idx < 0 || idx >= collection.size()) return {};
+	return Option<uint> { to_unsigned(idx) };
 }
 
 template <typename T>

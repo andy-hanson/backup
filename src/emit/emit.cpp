@@ -1,7 +1,7 @@
 #include "emit.h"
 
 #include "../compile/model/expr.h"
-#include "./concrete_fun.h"
+#include "ConcreteFun.h"
 #include "./emit_body.h"
 #include "./emit_comment.h"
 #include "./emit_type.h"

@@ -24,9 +24,6 @@ const T& get_type_argument(const Slice<TypeParameter>& type_parameters, const Sl
 	return type_arguments[get_index(type_parameters, type_parameter)];
 }
 
-// Recursively replaces every type parameter with a corresponding type argument.
-InstStruct substitute_type_arguments(const TypeParameter& t, const Slice<TypeParameter>& type_parameters, const Slice<InstStruct>& type_arguments);
-
 /**
 Either: try_match_types(expected return type, candidate return type)
 Or: try_match_type(actual argument type, candidate parameter type)

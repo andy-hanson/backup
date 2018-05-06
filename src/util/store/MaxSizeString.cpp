@@ -1,4 +1,4 @@
-#include "MaxSizeStringStorage.h"
+#include "MaxSizeString.h"
 
 MaxSizeStringWriter& MaxSizeStringWriter::operator<<(const StringSlice& s) {
 	for (char c : s)

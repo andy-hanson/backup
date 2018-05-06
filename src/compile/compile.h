@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../util/store/List.h"
+#include "../util/PathCache.h"
 #include "../host/DocumentProvider.h"
 #include "./diag/diag.h"
 #include "./model/model.h"

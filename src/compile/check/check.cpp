@@ -3,10 +3,24 @@
 #include "../../util/store/collection_util.h" // some
 #include "./check_effects.h"
 #include "./check_expr.h"
+#include "./check_param_or_local_shadows_fun.h"
 #include "./convert_type.h"
-#include "./scope.h"
 
 namespace {
+	Option<Ref<const SpecDeclaration>> find_spec(const StringSlice& name, CheckCtx& ctx, const SpecsTable& specs_table) {
+		Option<Ref<const SpecDeclaration>> res = copy_inner(specs_table.get(name));
+		for (Ref<const Module> m : ctx.imports) {
+			Option<Ref<const SpecDeclaration>> s = copy_inner(m->specs_table.get(name));
+			if (s.has() && s.get()->is_public) {
+				if (res.has())
+					todo();
+				else
+					res = s;
+			}
+		}
+		return res;
+	}
+
 	Slice<TypeParameter> check_type_parameters(const Slice<TypeParameterAst> asts, CheckCtx& al, const Slice<TypeParameter>& spec_type_parameters) {
 		return map_with_prevs<TypeParameter>()(al.arena, asts, [&](const TypeParameterAst& ast, const Slice<TypeParameter>& prevs, uint index) {
 			if (some(spec_type_parameters, [&](const TypeParameter& s) { return s.name == ast.name; }))

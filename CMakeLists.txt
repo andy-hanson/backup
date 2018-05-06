@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_CXX_COMPILER "/home/andy/bin/clang+llvm-6.0.0-x86_64-linux-gnu-ubuntu-14.04/bin/clang++")
 # -stdlib=libstdc++ supposedly improves debugging (https://blog.jetbrains.com/clion/2015/05/debug-clion/)
-set(CMAKE_CXX_FLAGS "-pedantic -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Werror -stdlib=libstdc++")
+set(CMAKE_CXX_FLAGS "-pedantic -Weverything -Wno-c++98-compat-pedantic -Wno-padded -Werror -stdlib=libstdc++")
 
 add_executable(oohoo
 	src/main.cpp
@@ -13,19 +13,21 @@ add_executable(oohoo
 	src/compile/check/BuiltinTypes.h
 	src/compile/check/check.cpp
 	src/compile/check/check.h
+	src/compile/check/CheckCtx.h
 	src/compile/check/check_call.cpp
 	src/compile/check/check_call.h
-	src/compile/check/check_common.h
+	src/compile/check/check_expr_call_common.cpp
+	src/compile/check/check_expr_call_common.h
 	src/compile/check/check_effects.cpp
 	src/compile/check/check_effects.h
 	src/compile/check/check_expr.cpp
 	src/compile/check/check_expr.h
+	src/compile/check/check_param_or_local_shadows_fun.cpp
+	src/compile/check/check_param_or_local_shadows_fun.h
 	src/compile/check/convert_type.cpp
 	src/compile/check/convert_type.h
-	src/compile/check/scope.cpp
-	src/compile/check/scope.h
-	src/compile/check/type_utils.cpp
-	src/compile/check/type_utils.h
+	src/compile/check/Candidate.cpp
+	src/compile/check/Candidate.h
 
 	src/compile/diag/diag.cpp
 	src/compile/diag/diag.h
@@ -34,26 +36,6 @@ add_executable(oohoo
 	src/compile/diag/LineAndColumnGetter.cpp
 	src/compile/diag/LineAndColumnGetter.h
 	src/compile/diag/SourceRange.h
-
-	src/compile/compile.h
-	src/compile/compile.cpp
-
-	src/emit/concrete_fun.cpp
-	src/emit/concrete_fun.h
-	src/emit/emit.cpp
-	src/emit/emit.h
-	src/emit/emit_body.cpp
-	src/emit/emit_body.h
-	src/emit/emit_comment.cpp
-	src/emit/emit_comment.h
-	src/emit/emit_type.h
-	src/emit/mangle.cpp
-	src/emit/mangle.h
-	src/emit/Names.cpp
-	src/emit/Names.h
-
-	src/host/DocumentProvider.cpp
-	src/host/DocumentProvider.h
 
 	src/compile/model/model.cpp
 	src/compile/model/model.h
@@ -76,8 +58,35 @@ add_executable(oohoo
 	src/compile/parse/parser.h
 	src/compile/parse/type_ast.h
 
+	src/compile/compile.h
+	src/compile/compile.cpp
+
+	src/emit/emit_type.cpp
+	src/emit/ConcreteFun.cpp
+	src/emit/ConcreteFun.h
+	src/emit/emit.cpp
+	src/emit/emit.h
+	src/emit/emit_body.cpp
+	src/emit/emit_body.h
+	src/emit/emit_comment.cpp
+	src/emit/emit_comment.h
+	src/emit/emit_type.h
+	src/emit/mangle.cpp
+	src/emit/mangle.h
+	src/emit/Names.cpp
+	src/emit/Names.h
+	src/emit/substitute_type_arguments.cpp
+	src/emit/substitute_type_arguments.h
+
+	src/host/DocumentProvider.cpp
+	src/host/DocumentProvider.h
+
 	src/test/test.cpp
 	src/test/test.h
+	src/test/test_single.cpp
+	src/test/test_single.h
+	src/test/TestMode.h
+	src/test/TestFailure.h
 
 	src/util/store/Arena.cpp
 	src/util/store/Arena.h
@@ -93,8 +102,9 @@ add_executable(oohoo
 	src/util/store/Map.h
 	src/util/store/MaxSizeMap.h
 	src/util/store/MaxSizeVector.h
-	src/util/store/MaxSizeStringStorage.cpp
-	src/util/store/MaxSizeStringStorage.h
+	src/util/store/MaxSizeSet.h
+	src/util/store/MaxSizeString.cpp
+	src/util/store/MaxSizeString.h
 	src/util/store/MultiMap.h
 	src/util/store/NonEmptyList.h
 	src/util/store/SmallMap.h
@@ -119,10 +129,5 @@ add_executable(oohoo
 	src/util/Writer.cpp
 	src/util/Writer.h
 
-	src/test/test_single.cpp
-	src/test/test_single.h
-	src/test/TestMode.h
-	src/test/TestFailure.h
-
 	src/clang.cpp
-	src/clang.h)
+	src/clang.h src/util/PathCache.h src/util/PathCache.cpp src/util/PathImpl.h)

@@ -5,7 +5,7 @@
 #include "../util/store/StringSlice.h"
 #include "../compile/model/model.h"
 
-#include "./concrete_fun.h"
+#include "ConcreteFun.h"
 
 struct Names {
 	MaxSizeMap<32, Ref<const StructDeclaration>, ArenaString, Ref<const StructDeclaration>::hash> struct_names;

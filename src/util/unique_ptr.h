@@ -1,5 +1,7 @@
 #pragma once
 
+#include "./assert.h"
+
 template <typename T>
 class unique_ptr {
 	T* _ptr; // non-null

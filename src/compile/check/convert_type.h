@@ -2,7 +2,7 @@
 
 #include "../model/model.h"
 #include "../parse/type_ast.h"
-#include "./check_common.h"
+#include "./CheckCtx.h"
 
 struct TypeParametersScope {
 	Slice<TypeParameter> outer; // This may come from a `spec`, or else be empty.

@@ -2,6 +2,7 @@
 
 #include "../../util/store/ArenaArrayBuilders.h"
 #include "./check_call.h"
+#include "./check_param_or_local_shadows_fun.h"
 #include "./convert_type.h"
 
 namespace {

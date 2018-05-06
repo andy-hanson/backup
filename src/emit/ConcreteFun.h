@@ -20,10 +20,7 @@ struct ConcreteFun {
 		hash_t operator()(const ConcreteFun& c) const;
 	};
 };
-
 bool operator==(const ConcreteFun& a, const ConcreteFun& b);
-
-InstStruct substitute_type_arguments(const Type& type_argument, const ConcreteFun& fun, Arena& arena);
 
 struct ConcreteFunAndCalled {
 	Ref<const ConcreteFun> fun;

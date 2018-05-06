@@ -36,18 +36,18 @@ namespace {
 }
 
 int execute_file(const FileLocator& file_path) {
-	MaxSizeStringStorage<128> temp;
-	return exec_command(file_path.get_cstring(temp));
+	MaxSizeString<128> temp = MaxSizeString<128>::make([&](MaxSizeStringWriter& w) { w << file_path << '\0'; });
+	return exec_command(temp.slice().begin());
 }
 
 void compile_cpp_file(const FileLocator& cpp_file_name, const FileLocator& exe_file_name) {
 	delete_file(exe_file_name);
 	Arena temp;
-	MaxSizeStringStorage<1024> to_exec;
-	MaxSizeStringWriter m = to_exec.writer();
-	m << CLANG << cpp_file_name << " -o " << exe_file_name << '\0';
+	MaxSizeString<256> o = MaxSizeString<256>::make([&](MaxSizeStringWriter& m) {
+		m << CLANG << cpp_file_name << " -o " << exe_file_name << '\0';
+	});
 	// std::cout << "Running: " << to_exec.slice().begin << std::endl;
-	without_limits([&]() { exec_command(to_exec.finish(m).begin()); });
+	without_limits([&]() { exec_command(o.slice().begin()); });
 	if (!file_exists(exe_file_name))
 		throw "There was a clang error";
 }

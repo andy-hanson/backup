@@ -1,5 +1,6 @@
 #include "./Names.h"
 
+#include "../util/store/MaxSizeSet.h"
 #include "./mangle.h"
 
 namespace {

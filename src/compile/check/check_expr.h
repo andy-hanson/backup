@@ -2,7 +2,7 @@
 
 #include "../model/model.h"
 #include "../parse/expr_ast.h"
-#include "./check_common.h"
+#include "check_expr_call_common.h"
 
 Expression check(const ExprAst& ast, ExprContext& ctx, Expected& expected);
 inline Expression check_and_expect(const ExprAst& ast, ExprContext& ctx, const Type& expected_type) {

@@ -1,9 +1,22 @@
 #include "./convert_type.h"
 
 #include "../../util/store/collection_util.h" // find_in_either
-#include "./scope.h"
 
 namespace {
+	Option<Ref<const StructDeclaration>> find_struct(const StringSlice& name, CheckCtx& ctx, const StructsTable& structs_table) {
+		Option<Ref<const StructDeclaration>> res = copy_inner(structs_table.get(name));
+		for (Ref<const Module> m : ctx.imports) {
+			Option<Ref<const StructDeclaration>> s = copy_inner(m->structs_table.get(name));
+			if (s.has() && s.get()->is_public) {
+				if (res.has())
+					todo();
+				else res =
+					 s;
+			}
+		}
+		return res;
+	}
+
 	Type type_from_parameter(const StringSlice& name, CheckCtx& ctx, const TypeParametersScope& type_parameters_scope) {
 		Option<Ref<const TypeParameter>> tp = find_in_either(type_parameters_scope.outer, type_parameters_scope.inner, [&](const TypeParameter& t) { return t.name == name; });
 		if (!tp.has()) {

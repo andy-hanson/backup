@@ -2,6 +2,7 @@
 
 #include "../util/store/ListBuilder.h"
 #include "../util/store/MaxSizeMap.h"
+#include "../util/store/MaxSizeSet.h"
 #include "./check/check.h"
 #include "./parse/parser.h"
 

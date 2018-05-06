@@ -1,6 +1,7 @@
 #pragma once
 
 #include "./store/Arena.h"
+#include "store/MaxSizeString.h"
 #include "./Option.h"
 #include "./Path.h"
 #include "./Writer.h"
@@ -18,13 +19,6 @@ struct FileLocator {
 	friend MaxSizeStringWriter& operator<<(MaxSizeStringWriter& out, const FileLocator& loc) {
 		loc.path.write(out, loc.root, Option<const StringSlice&> { loc.extension });
 		return out;
-	}
-
-	template <uint size>
-	inline const char* get_cstring(MaxSizeStringStorage<size>& builder) const {
-		MaxSizeStringWriter s = builder.writer();
-		s << *this << '\0';
-		return builder.finish(s).begin();
 	}
 };
 

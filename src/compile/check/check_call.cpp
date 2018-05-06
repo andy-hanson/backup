@@ -2,9 +2,18 @@
 
 #include "./check_expr.h"
 #include "./convert_type.h"
-#include "./scope.h"
+#include "Candidate.h"
 
 namespace {
+	template <typename /*CalledDeclaration => void*/ Cb>
+	void each_fun_with_name(const ExprContext& ctx, const StringSlice& name, Cb cb) {
+		ctx.funs_table.each_with_key(name, [&](Ref<const FunDeclaration> f) { cb(CalledDeclaration { f }); });
+		for (Ref<const Module> m : ctx.check_ctx.imports)
+			m->funs_table.each_with_key(name, [&](Ref<const FunDeclaration> f) {
+				if (f->is_public) cb(CalledDeclaration { f });
+			});
+	}
+
 	template <uint capacity, typename T, typename Pred>
 	void filter_unordered(MaxSizeVector<capacity, T>& collection, Pred pred) {
 		for (uint i = 0; i != collection.size(); ) {

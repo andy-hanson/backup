@@ -1,4 +1,4 @@
-#include "type_utils.h"
+#include "Candidate.h"
 
 namespace {
 	bool try_match_inst_structs(const InstStruct& expected, const Type& actual) {
@@ -62,19 +62,6 @@ bool try_match_types(const Type& type_from_candidate, const Type& type_from_exte
 			return try_match_inst_structs(type_from_candidate.inst_struct(), type_from_external);
 		case Type::Kind::Param:
 			return try_match_type_param(type_from_candidate.param(), type_from_external, candidate);
-	}
-}
-
-bool does_type_match_no_infer(const Type& expected, const Type& actual) {
-	if (expected.kind() != actual.kind()) return false;
-	switch (expected.kind()) {
-		case Type::Kind::Nil: unreachable();
-		case Type::Kind::Bogus:
-			return true;
-		case Type::Kind::InstStruct:
-			return try_match_inst_structs(expected.inst_struct(), actual);
-		case Type::Kind::Param:
-			return expected.param() == actual.param();
 	}
 }
 
