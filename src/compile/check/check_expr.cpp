@@ -55,16 +55,6 @@ namespace {
 		return Expression { StructCreate { inst_struct, arguments } };
 	}
 
-	Expression check_type_annotate(const TypeAnnotateAst& ast, ExprContext& ctx, Expected& expected) {
-		if (expected.has_expectation_or_inferred_type()) {
-			ctx.check_ctx.diag(ast.type.name(), Diag::Kind::UnnecessaryTypeAnnotate);
-			return Expression::bogus(); // Note: could continue anyway, but must check that the actual type here matches the actual type.
-		}
-		Type type = type_from_ast(ast.type, ctx.check_ctx, ctx.structs_table, ctx.current_fun->signature.type_parameters);
-		expected.set_inferred(type);
-		return check_and_expect(ast.expression, ctx, type);
-	}
-
 	Expression check_let(const LetAst& ast, ExprContext& ctx, Expected& expected) {
 		StringSlice name = ast.name;
 		check_param_or_local_shadows_fun(ctx.check_ctx, name, ctx.funs_table, ctx.current_fun->signature.specs);
@@ -199,8 +189,6 @@ Expression check(const ExprAst& ast, ExprContext& ctx, Expected& expected) {
 		}
 		case ExprAst::Kind::StructCreate:
 			return check_struct_create(ast.struct_create(), ctx, expected);
-		case ExprAst::Kind::TypeAnnotate:
-			return check_type_annotate(ast.type_annotate(), ctx, expected);
 		case ExprAst::Kind::Let:
 			return check_let(ast.let(), ctx, expected);
 		case ExprAst::Kind::Seq:

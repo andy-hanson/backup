@@ -30,7 +30,6 @@ public:
 		// Check-expr diags
 		CantCreateNonStruct,
 		WrongNumberNewStructArguments,
-		UnnecessaryTypeAnnotate,
 		LocalShadowsFun,
 		LocalShadowsSpecSig,
 		LocalShadowsParameter,

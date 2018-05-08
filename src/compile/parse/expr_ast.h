@@ -60,7 +60,6 @@ public:
 		NoCallLiteral,
 		Call,
 		StructCreate,
-		TypeAnnotate,
 		Let,
 		Seq,
 		When,
@@ -110,9 +109,6 @@ public:
 	inline explicit ExprAst(StructCreateAst struct_create) : _kind(Kind::StructCreate) {
 		data.struct_create = struct_create;
 	}
-	inline explicit ExprAst(Ref<TypeAnnotateAst> type_annotate) : _kind(Kind::TypeAnnotate) {
-		data.type_annotate = type_annotate;
-	}
 	inline explicit ExprAst(LetAst let) : _kind(Kind::Let) {
 		data.let = let;
 	}
@@ -149,10 +145,6 @@ public:
 	inline const StructCreateAst& struct_create() const {
 		assert(_kind == Kind::StructCreate);
 		return data.struct_create;
-	}
-	inline const TypeAnnotateAst& type_annotate() const {
-		assert(_kind == Kind::TypeAnnotate);
-		return data.type_annotate;
 	}
 	inline const LetAst& let() const {
 		assert(_kind == Kind::Let);

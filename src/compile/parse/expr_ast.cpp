@@ -19,9 +19,6 @@ void ExprAst::operator=(const ExprAst& other) {
 		case Kind::StructCreate:
 			data.struct_create = other.data.struct_create;
 			break;
-		case Kind::TypeAnnotate:
-			data.type_annotate = other.data.type_annotate;
-			break;
 		case Kind::Let:
 			data.let = other.data.let;
 			break;

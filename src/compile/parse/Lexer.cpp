@@ -291,7 +291,6 @@ StringSlice Lexer::take_cpp_type_name() {
 }
 
 namespace {
-	const StringSlice AS { "as" };
 	const StringSlice WHEN { "when" };
 	const StringSlice ASSERT { "assert" };
 	const StringSlice PASS { "pass" };
@@ -311,8 +310,7 @@ ExpressionToken Lexer::take_expression_token(Arena& arena) {
 	} else if (is_lower_case_letter(c)) {
 		++ptr;
 		StringSlice name = take_name_helper(begin, ptr, is_value_name_continue);
-		ExpressionToken::Kind kind = name == AS ? ExpressionToken::Kind::As
-			: name == WHEN ? ExpressionToken::Kind::When
+		ExpressionToken::Kind kind = name == WHEN ? ExpressionToken::Kind::When
 			: name == PASS ? ExpressionToken::Kind::Pass
 			: name == ASSERT ? ExpressionToken::Kind::Assert
 			: ExpressionToken::Kind::Name;

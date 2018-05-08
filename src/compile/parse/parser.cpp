@@ -8,7 +8,7 @@
 
 namespace {
 	// Assumes we've already taken a ' ' to indicate we want to parse at least one type parameter.
-	Slice<TypeParameterAst> parse_type_parameter_asts(Lexer& lexer, Arena& arena) {
+	Slice<TypeParameterAst> parse_type_parameters(Lexer& lexer, Arena& arena) {
 		SmallArrayBuilder<TypeParameterAst> type_parameters;
 		uint index = 0;
 		do {
@@ -24,7 +24,7 @@ namespace {
 		Slice<TypeParameterAst> type_parameters;
 		Slice<SpecUseAst> specs;
 	};
-	TypeParametersAndSpecs parse_type_parameter_and_spec_use_asts(Lexer& lexer, Arena& arena) {
+	TypeParametersAndSpecs parse_type_parameters_and_spec_uses(Lexer& lexer, Arena& arena) {
 		SmallArrayBuilder<TypeParameterAst> type_parameters;
 		SmallArrayBuilder<SpecUseAst> spec_uses;
 		uint index = 0;
@@ -33,7 +33,7 @@ namespace {
 			if (!lexer.try_take('?')) {
 				do {
 					StringSlice name = lexer.take_spec_name();
-					spec_uses.add({ name, parse_type_argument_asts(lexer, arena) });
+					spec_uses.add({ name, parse_type_arguments(lexer, arena) });
 				} while (lexer.try_take(' '));
 				break;
 			}
@@ -43,7 +43,7 @@ namespace {
 		return { type_parameters.finish(arena), spec_uses.finish(arena) };
 	}
 
-	Slice<ParameterAst> parse_parameter_asts(Lexer& lexer, Arena& arena) {
+	Slice<ParameterAst> parse_parameters(Lexer& lexer, Arena& arena) {
 		if (!lexer.try_take('(')) {
 			return {};
 		}
@@ -58,7 +58,7 @@ namespace {
 				from = true;
 			}
 			Option<Effect> effect = lexer.try_take_effect();
-			TypeAst type = parse_type_ast(lexer, arena);
+			TypeAst type = parse_type(lexer, arena);
 			lexer.take(' ');
 			parameters.add({ from, effect, type, lexer.take_value_name() });
 			if (lexer.try_take(')')) break;
@@ -68,20 +68,20 @@ namespace {
 		return parameters.finish(arena);
 	}
 
-	FunSignatureAst parse_signature_ast(Lexer& lexer, Arena& arena, StringSlice name, Option<ArenaString> comment) {
+	FunSignatureAst parse_signature(Lexer& lexer, Arena& arena, StringSlice name, Option<ArenaString> comment) {
 		Option<Effect> effect = lexer.try_take_effect();
-		TypeAst return_type = parse_type_ast(lexer, arena);
-		Slice<ParameterAst> parameters = parse_parameter_asts(lexer, arena);
-		TypeParametersAndSpecs tp = parse_type_parameter_and_spec_use_asts(lexer, arena);
+		TypeAst return_type = parse_type(lexer, arena);
+		Slice<ParameterAst> parameters = parse_parameters(lexer, arena);
+		TypeParametersAndSpecs tp = parse_type_parameters_and_spec_uses(lexer, arena);
 		return { comment, name, effect, return_type, parameters, tp.type_parameters, tp.specs };
 	}
 
-	Slice<StructFieldAst> parse_struct_field_asts(Lexer& lexer, Arena& arena) {
+	Slice<StructFieldAst> parse_struct_fields(Lexer& lexer, Arena& arena) {
 		lexer.take_indent();
 		SmallArrayBuilder<StructFieldAst> b;
 		do {
 			Option<ArenaString> comment = lexer.try_take_comment(arena);
-			TypeAst type = parse_type_ast(lexer, arena);
+			TypeAst type = parse_type(lexer, arena);
 			lexer.take(' ');
 			b.add({ comment, type, lexer.take_value_name() });
 		} while (lexer.take_newline_or_dedent() == NewlineOrDedent::Newline);
@@ -100,14 +100,14 @@ namespace {
 	SpecDeclarationAst parse_spec(Lexer& lexer, Arena& arena, bool is_public, Option<ArenaString> comment) {
 		const char* start = lexer.at();
 		StringSlice name = lexer.take_type_name();
-		Slice<TypeParameterAst> type_parameters = lexer.try_take(' ') ? parse_type_parameter_asts(lexer, arena) : Slice<TypeParameterAst>{};
+		Slice<TypeParameterAst> type_parameters = lexer.try_take(' ') ? parse_type_parameters(lexer, arena) : Slice<TypeParameterAst>{};
 		lexer.take_indent();
 		SmallArrayBuilder<FunSignatureAst> sigs;
 		do {
 			Option<ArenaString> sig_comment = lexer.try_take_comment(arena);
 			StringSlice sig_name = lexer.take_value_name();
 			lexer.take(' ');
-			sigs.add(parse_signature_ast(lexer, arena, sig_name, sig_comment));
+			sigs.add(parse_signature(lexer, arena, sig_name, sig_comment));
 		} while (lexer.take_newline_or_dedent() == NewlineOrDedent::Newline);
 		return SpecDeclarationAst { comment, lexer.range(start), is_public, name, type_parameters, sigs.finish(arena) };
 	}
@@ -124,8 +124,8 @@ namespace {
 				// is_public is irrelevant for these
 				includes.add(lexer.take_cpp_include(), arena);
 			} else {
-				FunSignatureAst signature = parse_signature_ast(lexer, arena, name.name, comment);
-				FunBodyAst body = c ? FunBodyAst { lexer.take_indented_string(arena) } : FunBodyAst { parse_body_ast(lexer, arena) };
+				FunSignatureAst signature = parse_signature(lexer, arena, name.name, comment);
+				FunBodyAst body = c ? FunBodyAst { lexer.take_indented_string(arena) } : FunBodyAst { parse_body(lexer, arena) };
 				funs.add({ is_public, signature, body }, arena);
 			}
 		} else {
@@ -134,9 +134,9 @@ namespace {
 			if (lexer.try_take(' ')) {
 				copy = lexer.try_take_copy_keyword();
 				if (!copy || lexer.try_take(' '))
-					type_parameters = parse_type_parameter_asts(lexer, arena);
+					type_parameters = parse_type_parameters(lexer, arena);
 			}
-			StructBodyAst body = c ? StructBodyAst { parse_cpp_struct_body(lexer) } : StructBodyAst { parse_struct_field_asts(lexer, arena) };
+			StructBodyAst body = c ? StructBodyAst { parse_cpp_struct_body(lexer) } : StructBodyAst { parse_struct_fields(lexer, arena) };
 			structs.add({ comment, lexer.range(start), is_public, name.name, type_parameters, copy, body }, arena);
 		}
 	}

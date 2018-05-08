@@ -8,7 +8,7 @@
 
 struct ExpressionToken {
 	enum class Kind {
-		Name, TypeName, Literal, Lparen, As, When, Assert, Pass
+		Name, TypeName, Literal, Lparen, When, Assert, Pass
 	};
 	Kind kind;
 	union {

@@ -33,7 +33,6 @@ void Diag::operator=(const Diag& other) {
 		case Kind::DuplicateDeclaration:
 		case Kind::SpecialTypeShouldNotHaveTypeParameters:
 		case Kind::CantCreateNonStruct:
-		case Kind::UnnecessaryTypeAnnotate:
 		case Kind::TypeParameterShadowsSpecTypeParameter:
 		case Kind::TypeParameterShadowsPrevious:
 		case Kind::LocalShadowsFun:
@@ -61,7 +60,6 @@ Diag::Diag(Kind kind) : _kind(kind) {
 		case Kind::DuplicateDeclaration:
 		case Kind::SpecialTypeShouldNotHaveTypeParameters:
 		case Kind::CantCreateNonStruct:
-		case Kind::UnnecessaryTypeAnnotate:
 		case Kind::TypeParameterShadowsSpecTypeParameter:
 		case Kind::TypeParameterShadowsPrevious:
 		case Kind::LocalShadowsFun:
@@ -118,9 +116,6 @@ void Diag::write(Writer& out, const StringSlice& slice) const {
 			break;
 		case Kind::WrongNumberNewStructArguments:
 			out << "Wrong number of arguments to struct. Expected " << data.wrong_number.expected << ", got " << data.wrong_number.actual << ".";
-			break;
-		case Kind::UnnecessaryTypeAnnotate:
-			out << "Unnecessary type annotation -- an expected type already exists.";
 			break;
 
 		case Kind::LocalShadowsFun:
