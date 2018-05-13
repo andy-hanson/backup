@@ -5,6 +5,7 @@
 
 class Expression;
 struct StructFieldAccess {
+	Type accessed_field_type; // TODO: compute on demand?
 	Ref<Expression> target;
 	Ref<const StructField> field;
 };
@@ -13,7 +14,7 @@ struct SpecUseSig {
 	Ref<const SpecUse> spec_use;
 	Ref<const FunSignature> signature;
 
-	inline SpecUseSig(Ref<const SpecUse> _spec_use, Ref<const FunSignature> _signature) : spec_use(_spec_use), signature(_signature) {
+	inline SpecUseSig(Ref<const SpecUse> _spec_use, Ref<const FunSignature> _signature) : spec_use{_spec_use}, signature{_signature} {
 		assert(spec_use->spec->signatures.contains_ref(signature));
 	}
 };
@@ -38,10 +39,10 @@ private:
 	Data data;
 
 public:
-	explicit CalledDeclaration(Ref<const FunDeclaration> fun_decl) : _kind(Kind::Fun) {
+	explicit CalledDeclaration(Ref<const FunDeclaration> fun_decl) : _kind{Kind::Fun} {
 		data.fun_decl = fun_decl;
 	}
-	explicit CalledDeclaration(SpecUseSig spec) : _kind(Kind::Spec) {
+	explicit CalledDeclaration(SpecUseSig spec) : _kind{Kind::Spec} {
 		data.spec_use_sig = spec;
 	}
 	inline CalledDeclaration(const CalledDeclaration& other) { *this = other; }
@@ -71,6 +72,7 @@ struct Called {
 };
 
 struct Call {
+	Type concrete_return_type; //TODO: compute on demand instead of storing eagerly?
 	Called called;
 	Slice<Expression> arguments;
 };
@@ -87,8 +89,10 @@ struct Case;
 struct When {
 	Slice<Case> cases;
 	Ref<Expression> elze;
+	// Common type of all cases and elze.
+	Type type; // TODO: compute on demand?
 
-	inline When(Slice<Case> _cases, Ref<Expression> _elze) : cases(_cases), elze(_elze) {
+	inline When(Slice<Case> _cases, Ref<Expression> _elze, Type _type) : cases{_cases}, elze{_elze}, type{_type} {
 		assert(cases.size() != 0);
 	}
 };
@@ -136,7 +140,7 @@ private:
 public:
 	inline Kind kind() const { return _kind; }
 
-	Expression() : _kind(Kind::Nil) {}
+	Expression() : _kind{Kind::Nil} {}
 
 	inline static Expression bogus() {
 		return Expression { Kind::Bogus };
@@ -147,50 +151,50 @@ public:
 		*this = e;
 	}
 
-	explicit Expression(Ref<const Parameter> p) : _kind(Kind::ParameterReference) {
+	explicit Expression(Ref<const Parameter> p) : _kind{Kind::ParameterReference} {
 		data.parameter_reference = p;
 	}
 
-	inline Expression(Ref<const Let> l, Kind kind) : _kind(kind) {
+	inline Expression(Ref<const Let> l, Kind kind) : _kind{kind} {
 		assert(kind == Kind::LocalReference);
 		data.local_reference = l;
 	}
 
-	inline Expression(Ref<Let> l, Kind kind) : _kind(kind) {
+	inline Expression(Ref<Let> l, Kind kind) : _kind{kind} {
 		assert(kind == Kind::Let);
 		data.let = l;
 	}
 
-	inline explicit Expression(Ref<Seq> seq) : _kind(Kind::Seq) {
+	inline explicit Expression(Ref<Seq> seq) : _kind{Kind::Seq} {
 		data.seq = seq;
 	}
 
-	inline explicit Expression(StructFieldAccess s) : _kind(Kind::StructFieldAccess) {
+	inline explicit Expression(StructFieldAccess s) : _kind{Kind::StructFieldAccess} {
 		data.struct_field_access = s;
 	}
 
-	inline explicit Expression(Call call) : _kind(Kind::Call) {
+	inline explicit Expression(Call call) : _kind{Kind::Call} {
 		data.call = call;
 	}
 
-	inline explicit Expression(StructCreate create) : _kind(Kind::StructCreate) {
+	inline explicit Expression(StructCreate create) : _kind{Kind::StructCreate} {
 		data.struct_create = create;
 	}
 
-	inline explicit Expression(ArenaString value) : _kind(Kind::StringLiteral) {
+	inline explicit Expression(ArenaString value) : _kind{Kind::StringLiteral} {
 		data.string_literal = value;
 	}
 
-	inline explicit Expression(When when) : _kind(Kind::When) {
+	inline explicit Expression(When when) : _kind{Kind::When} {
 		data.when = when;
 	}
 
-	Expression(Ref<Expression> asserted, Kind kind) : _kind(kind) {
+	Expression(Ref<Expression> asserted, Kind kind) : _kind{kind} {
 		assert(kind == Kind::Assert);
 		data.asserted = asserted;
 	}
 
-	Expression(Kind kind) : _kind(Kind::Pass) {
+	Expression(Kind kind) : _kind{Kind::Pass} {
 		assert(kind == Kind::Pass || kind == Kind::Bogus);
 	}
 
@@ -198,7 +202,7 @@ public:
 		// Nothing to do, none have destructors
 	}
 
-	inline Ref<const Parameter> parameter() const {
+	inline Ref<const Parameter> parameter_reference() const {
 		assert(_kind == Kind::ParameterReference);
 		return data.parameter_reference;
 	}
@@ -263,6 +267,8 @@ public:
 };
 
 struct Let {
+	// Type of 'name', not of the final expression.
+	// Note that during type-checking, the
 	Type type;
 	Identifier name;
 	Expression init;

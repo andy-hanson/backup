@@ -4,11 +4,6 @@
 #include "./parse_type.h"
 
 namespace {
-	template <typename T>
-	Slice<T> single_element_array(Arena& arena, T elem) {
-		return Slice<T> { arena.put(elem).ptr(), 1 };
-	}
-
 	// In Statement allow anything; in EqualsRhs anything but `=`; in Case anything single-line.
 	enum class ExprCtx { Statement, EqualsRhs, Case };
 
@@ -138,7 +133,7 @@ namespace {
 
 	ExprAst parse_dots(ExprAst initial, Lexer& lexer, Arena& arena) {
 		return lexer.try_take('.')
-			? parse_dots(ExprAst { CallAst { lexer.take_value_name(), {}, single_element_array(arena, initial) } }, lexer, arena)
+			? parse_dots(ExprAst { CallAst { lexer.take_value_name(), {}, single_element_slice(arena, initial) } }, lexer, arena)
 			: initial;
 	}
 

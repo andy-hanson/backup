@@ -9,19 +9,6 @@ namespace {
 		if (!i.type_arguments.is_empty()) todo();
 	}
 
-	void write_type_for_fun_name(StringBuilder& sb, const Type& type) {
-		switch (type.kind()) {
-			case Type::Kind::Nil:
-			case Type::Kind::Bogus:
-				unreachable();
-			case Type::Kind::Param:
-				sb << mangle { type.param()->name };
-				break;
-			case Type::Kind::InstStruct:
-				write_type_for_fun_name(sb, type.inst_struct());
-		}
-	}
-
 	ArenaString escape_struct_name(const StringSlice& module_name, const Identifier& struct_name, Arena& arena, bool is_multiple_with_same_name) {
 		StringBuilder sb { arena, 100 };
 		sb << mangle{struct_name};
@@ -52,23 +39,13 @@ namespace {
 		}
 	};
 
-	const StringSlice OVERLOAD = "_overload_";
-	const StringSlice INST = "_inst";
 
 	ArenaString escape_fun_name(const ConcreteFun& f, bool is_overloaded, bool is_instantiated, FunIds& ids, Arena& arena) {
 		StringBuilder sb { arena, 100 };
 		const FunSignature& sig = f.fun_declaration->signature;
 		sb << mangle{sig.name};
-		if (is_overloaded) {
-			sb << OVERLOAD << mangle { f.fun_declaration->containing_module->name() };
-			write_type_for_fun_name(sb, sig.return_type);
-			for (const Parameter& p : sig.parameters) {
-				sb << '_';
-				write_type_for_fun_name(sb, p.type);
-			}
-		}
-		if (is_instantiated) {
-			sb << INST;
+		if (is_overloaded || is_instantiated) {
+			sb << "___";
 			for (const InstStruct& i : f.type_arguments) {
 				sb << '_';
 				write_type_for_fun_name(sb, i);

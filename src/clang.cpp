@@ -7,7 +7,7 @@
 namespace {
 	const StringSlice CLANG =
 	// /home/andy/bin/clang+llvm-6.0.0-x86_64-linux-gnu-ubuntu-14.04/bin/clang++
-	"clang++ -pedantic -Weverything -Werror -Wno-missing-prototypes "; //-std=c++17-Wno-c++98-compat -Wno-c++98-compat-pedantic
+	"clang++ -pedantic -Weverything -Werror -Wno-missing-prototypes -Wno-unused-parameter -Wno-missing-noreturn "; //-std=c++17-Wno-c++98-compat -Wno-c++98-compat-pedantic
 	//"g++ -pedantic -Werror -Wextra -Wall ";
 
 	/*

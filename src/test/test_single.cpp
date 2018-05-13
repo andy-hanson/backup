@@ -115,7 +115,7 @@ void test_single(const StringSlice& root, TestMode mode, PathCache& paths, ListB
 	if (out.diagnostics.is_empty()) {
 		Arena temp; //TODO:PERF
 		no_baseline(diags_path, mode, failures, failures_arena);
-		baseline({ root, main_path, "cpp" }, "cpp.new", emit(out.modules, temp), mode, failures, failures_arena);
+		baseline({ root, main_path, "cpp" }, "cpp.new", emit(out.modules, out.builtin_types, temp), mode, failures, failures_arena);
 		compile_cpp_file(cpp_path, exe_path); // No error if this produces different code... that's clang's problem
 		int exit_code = execute_file(exe_path);
 		if (exit_code != 0)

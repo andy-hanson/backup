@@ -17,7 +17,7 @@ class MaxSizeVector {
 	Data data;
 
 public:
-	MaxSizeVector() : _size(0) {}
+	MaxSizeVector() : _size{0} {}
 	MaxSizeVector(const MaxSizeVector& other) { *this = other; }
 	~MaxSizeVector() {
 		for (uint i = 0; i < _size; ++i)
@@ -29,7 +29,7 @@ public:
 			data.values[i] = other.data.values[i];
 	}
 
-	MaxSizeVector(T first) : MaxSizeVector() {
+	MaxSizeVector(T first) : MaxSizeVector{} {
 		push(first);
 	}
 
@@ -81,4 +81,16 @@ public:
 	using const_iterator = const T*;
 	inline const_iterator begin() const { return &data.values[0]; }
 	inline const_iterator end() const { return begin() + _size; }
+};
+
+template <uint capacity, typename Out>
+struct max_size_map {
+	template <typename InCollection, typename /*const In& => Out*/ Cb>
+	MaxSizeVector<capacity, Out> operator()(const InCollection& in, Cb cb) {
+		MaxSizeVector<capacity, Out> out;
+		assert(in.size() <= capacity);
+		for (const typename InCollection::value_type& i : in)
+			out.push(cb(i));
+		return out;
+	}
 };

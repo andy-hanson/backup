@@ -17,17 +17,6 @@ void StructBody::operator=(const StructBody& other) {
 	}
 }
 
-void Type::operator=(const Type& other) {
-	_kind = other._kind;
-	switch (other._kind) {
-		case Kind::Nil:
-		case Kind::Bogus:
-			break;
-		case Kind::InstStruct: data.inst_struct = other.data.inst_struct; break;
-		case Kind::Param: data.param = other.data.param; break;
-	}
-}
-
 void AnyBody::operator=(const AnyBody& other) {
 	_kind = other._kind;
 	switch (other._kind) {
@@ -42,41 +31,28 @@ void AnyBody::operator=(const AnyBody& other) {
 	}
 }
 
-SpecUse::SpecUse(Ref<const SpecDeclaration> _spec, Slice<Type> _type_arguments) : spec(_spec), type_arguments(_type_arguments) {
+SpecUse::SpecUse(Ref<const SpecDeclaration> _spec, Slice<Type> _type_arguments) : spec{_spec}, type_arguments{_type_arguments} {
 	assert(spec->type_parameters.size() == type_arguments.size());
 }
 
 bool InstStruct::is_deeply_concrete() const {
-	return every(type_arguments, [](const Type& t) {  return t.is_inst_struct() && t.inst_struct().is_deeply_concrete(); });
+	return every(type_arguments, [](const Type& t) {  return t.stored_type().is_inst_struct() && t.stored_type().inst_struct().is_deeply_concrete(); });
 }
 
-hash_t InstStruct::hash::operator()(const InstStruct& i) {
-	return hash_combine(Ref<const StructDeclaration>::hash{}(i.strukt), hash_arr(i.type_arguments, Type::hash {}));
+hash_t InstStruct::hash_deeply_concrete::operator()(const InstStruct& i) {
+	return hash_combine(Ref<const StructDeclaration>::hash{}(i.strukt), hash_arr(i.type_arguments, [&](const Type& t) {
+		return InstStruct::hash_deeply_concrete{}(t.stored_type().inst_struct());
+	}));
 }
 
-bool operator==(const InstStruct& a, const InstStruct& b) {
-	return a.strukt == b.strukt && a.type_arguments == b.type_arguments;
-}
-
-hash_t Type::hash::operator()(const Type& t) const {
-	switch (t.kind()) {
-		case Type::Kind::Nil: unreachable();
-		case Type::Kind::Bogus:
-			todo();
-		case Type::Kind::Param:
-			todo();
-		case Type::Kind::InstStruct:
-			return InstStruct::hash{}(t.inst_struct());
-	}
-}
-
-bool operator==(const Type& a, const Type& b) {
-	if (a.kind() != b.kind()) return false;
-	switch (a.kind()) {
-		case Type::Kind::Nil: unreachable();
-		case Type::Kind::Bogus: return true;
-		case Type::Kind::InstStruct: return a.inst_struct() == b.inst_struct();
-		case Type::Kind::Param: return a.param() == b.param();
+void StoredType::operator=(const StoredType& other) {
+	_kind = other._kind;
+	switch (other._kind) {
+		case Kind::Nil:
+		case Kind::Bogus:
+			break;
+		case Kind::InstStruct: data.inst_struct = other.data.inst_struct; break;
+		case Kind::TypeParameter: data.param = other.data.param; break;
 	}
 }
 

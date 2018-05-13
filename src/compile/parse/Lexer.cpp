@@ -187,6 +187,17 @@ void Lexer::take_newline_same_indent() {
 	_indent = new_indent;
 }
 
+bool Lexer::try_take_indent() {
+	take('\n');
+	uint new_indent = take_tabs();
+	if (new_indent == _indent)
+		return false;
+	if (new_indent != _indent + 1)
+		throw unexpected();
+	_indent = new_indent;
+	return true;
+}
+
 void Lexer::take_indent() {
 	take('\n');
 	uint new_indent = take_tabs();
@@ -301,6 +312,7 @@ ExpressionToken Lexer::take_expression_token(Arena& arena) {
 	const char* begin = ptr;
 	char c = *ptr;
 	if (c == '(') {
+		++ptr;
 		return { ExpressionToken::Kind::Lparen, {} };
 	} else if (c == '"') {
 		return { ExpressionToken::Kind::Literal, { take_string_literal(ptr, string_builder(arena)) } };

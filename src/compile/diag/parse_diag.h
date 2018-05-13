@@ -27,10 +27,10 @@ public:
 	ParseDiag(const ParseDiag& other) { *this = other; }
 	void operator=(const ParseDiag& other);
 
-	ParseDiag(Kind kind) : _kind(kind) {
+	ParseDiag(Kind kind) : _kind{kind} {
 		assert(kind == Kind::TrailingSpace || kind == Kind::MustEndInBlankLine);
 	}
-	ParseDiag(Kind kind, char c) : _kind(kind) {
+	ParseDiag(Kind kind, char c) : _kind{kind} {
 		assert(kind == Kind::ExpectedCharacter || kind == Kind::UnexpectedCharacter);
 		_data.expected_character = c;
 	}

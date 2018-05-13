@@ -1,13 +1,18 @@
 #pragma once
 
 #include "../diag/diag.h"
+#include "../model/BuiltinTypes.h"
 #include "../model/model.h"
 #include "../model/expr.h" // Let
 #include "../../util/store/Arena.h"
 #include "../../util/store/ListBuilder.h"
-#include "./BuiltinTypes.h"
 
 #include "./CheckCtx.h"
+
+struct ExpressionAndLifetime {
+	Expression expression;
+	Lifetime lifetime;
+};
 
 struct ExprContext {
 	CheckCtx& check_ctx;
@@ -23,21 +28,23 @@ struct ExprContext {
 	void operator=(const ExprContext& other) = delete;
 };
 
+// In the type checker we don't consider lifetime information. So only keep a StoredType, not Type.
+// So if the StoredType is an InstStrcut, its type parameters will not have lifetimes.
 class Expected {
 	const bool _had_expectation;
 	bool _was_checked = false; // For asserting
-	Option<Type> type;
+	Option<StoredType> type;
 
 public:
-	inline Expected() : _had_expectation(false) {}
-	inline Expected(Type t) : _had_expectation(true), type(t) {}
+	inline Expected() : _had_expectation{false} {}
+	inline Expected(StoredType t) : _had_expectation{true}, type{t} {}
 
 	inline ~Expected() {
 		assert(_was_checked);
 	}
 
 	// Either an initial expectation, or one inferred from something previous.
-	inline const Option<Type>& get_current_expectation() const {
+	inline const Option<StoredType>& get_current_expectation() const {
 		return type;
 	}
 
@@ -48,7 +55,7 @@ public:
 		return type.has();
 	}
 
-	inline const Type& inferred_type() const {
+	inline const StoredType& inferred_stored_type() const {
 		return type.get();
 	}
 
@@ -58,7 +65,12 @@ public:
 		_was_checked = true;
 	}
 
-	void check_no_infer(Type actual);
+	ExpressionAndLifetime bogus() {
+		check_no_infer(StoredType::bogus());
+		return { Expression::bogus(), Lifetime::noborrow() };
+	}
 
-	void set_inferred(Type actual);
+	void check_no_infer(StoredType actual);
+
+	void set_inferred(StoredType actual);
 };

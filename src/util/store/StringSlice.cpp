@@ -1,6 +1,6 @@
 #include "./StringSlice.h"
 
-StringSlice::StringSlice(const char* begin, const char* end) : _begin(begin), _end(end) {
+StringSlice::StringSlice(const char* begin, const char* end) : _begin{begin}, _end{end} {
 	assert(end > begin);
 	assert(begin != nullptr && end != nullptr);
 	assert(size() < 1000); // Indicates memory was corrupted, since identifiers shouldn't get this big.

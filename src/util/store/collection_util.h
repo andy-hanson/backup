@@ -29,3 +29,23 @@ template <typename Collection>
 bool contains(const Collection& collection, const typename Collection::value_type& value) {
 	return some(collection, [&](const typename Collection::value_type& v) { return v == value; });
 }
+
+template <typename Collection1, typename Collection2, typename /*const T&, U& => void*/ Cb>
+void zip(const Collection1& a, Collection2& b, Cb cb) {
+	assert(a.size() == b.size());
+	uint i = 0;
+	for (const typename Collection1::value_type& t : a) {
+		cb(t, b[i]);
+		++i;
+	}
+}
+
+template <typename Collection1, typename Collection2, typename /*const T&, U&, bool => void*/ Cb>
+void zip_with_is_last(const Collection1& a, Collection2& b, Cb cb) {
+	assert(a.size() == b.size());
+	uint i = 0;
+	for (const typename Collection1::value_type& t : a) {
+		cb(t, b[i], i == b.size() - 1);
+		++i;
+	}
+}

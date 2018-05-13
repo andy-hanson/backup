@@ -13,4 +13,3 @@ __attribute__((__noreturn__))
 inline void todo() {
 	throw "todo";
 }
-

@@ -15,8 +15,8 @@ struct TypeParameterAst {
 
 struct StructFieldAst {
 	Option<ArenaString> comment;
-	TypeAst type;
 	StringSlice name;
+	TypeAst type;
 };
 
 class StructBodyAst {
@@ -46,10 +46,8 @@ public:
 
 
 struct ParameterAst {
-	bool from;
-	Option<Effect> effect;
-	TypeAst type;
 	StringSlice name;
+	TypeAst type;
 };
 
 struct SpecUseAst {

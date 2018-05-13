@@ -6,4 +6,4 @@
 
 #include "check_expr_call_common.h"
 
-Expression check_call(const StringSlice& fun_name, const Slice<ExprAst>& argument_asts, const Slice<TypeAst>& type_argument_asts, ExprContext& ctx, Expected& expected);
+ExpressionAndLifetime check_call(const StringSlice& fun_name, const Slice<ExprAst>& argument_asts, const Slice<TypeAst>& type_argument_asts, ExprContext& ctx, Expected& expected);

@@ -14,7 +14,7 @@ public:
 	Slice(T* _data, uint _len) : _begin(_data), _size(_len) {}
 
 	Slice slice(uint lo, uint hi) {
-		assert(lo < hi && hi < _size);
+		assert(lo <= hi && hi <= _size);
 		return { _begin + lo, hi - lo };
 	}
 

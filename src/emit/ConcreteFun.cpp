@@ -2,6 +2,7 @@
 
 #include "../util/store/slice_util.h" // get_index
 #include "../util/hash_util.h"
+#include "../compile/model/types_equal_ignore_lifetime.h"
 #include "./substitute_type_arguments.h"
 
 namespace {
@@ -83,7 +84,7 @@ namespace {
 
 	ConcreteFun get_concrete_called(const ConcreteFun& calling_fun, const Called& called, const EveryConcreteFun& res, Arena& scratch_arena) {
 		Slice<InstStruct> called_type_arguments = map<InstStruct>()(scratch_arena, called.type_arguments, [&](const Type& type_argument) {
-			return substitute_type_arguments(type_argument, calling_fun, scratch_arena);
+			return substitute_type_arguments(type_argument.stored_type(), calling_fun, scratch_arena);
 		});
 
 		//NOTE: currently, the function that matches a spec must be an exact match, not an instantiation of some generic function. So no recursive instantiations to worry about.
@@ -132,11 +133,13 @@ ConcreteFun::ConcreteFun(Ref<const FunDeclaration> _fun_declaration, Slice<InstS
 
 hash_t ConcreteFun::hash::operator()(const ConcreteFun& c) const {
 	// Don't hash the spec_impls because that could lead to infinite recursion.
-	return hash_combine(Ref<const FunDeclaration>::hash{}(c.fun_declaration), hash_arr(c.type_arguments, InstStruct::hash {}));
+	return hash_combine(Ref<const FunDeclaration>::hash{}(c.fun_declaration), hash_arr(c.type_arguments, InstStruct::hash_deeply_concrete {}));
 }
 
 bool operator==(const ConcreteFun& a, const ConcreteFun& b) {
-	return a.fun_declaration == b.fun_declaration && a.type_arguments == b.type_arguments && a.spec_impls == b.spec_impls;
+	return a.fun_declaration == b.fun_declaration
+		&& each_corresponds(a.type_arguments, b.type_arguments, [](const InstStruct& aa, const InstStruct& bb) { return types_equal_ignore_lifetime(aa, bb); })
+		&& a.spec_impls == b.spec_impls;
 }
 
 hash_t ConcreteFunAndCalled::hash::operator()(const ConcreteFunAndCalled& c) const {

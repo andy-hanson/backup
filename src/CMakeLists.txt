@@ -10,7 +10,6 @@ set(CMAKE_CXX_FLAGS "-pedantic -Weverything -Wno-c++98-compat-pedantic -Wno-padd
 add_executable(oohoo
 	./main.cpp
 
-	./compile/check/BuiltinTypes.h
 	./compile/check/check.cpp
 	./compile/check/check.h
 	./compile/check/CheckCtx.h
@@ -18,10 +17,10 @@ add_executable(oohoo
 	./compile/check/check_call.h
 	./compile/check/check_expr_call_common.cpp
 	./compile/check/check_expr_call_common.h
-	./compile/check/check_effects.cpp
-	./compile/check/check_effects.h
 	./compile/check/check_expr.cpp
 	./compile/check/check_expr.h
+	./compile/check/check_lifetime.cpp
+	./compile/check/check_lifetime.h
 	./compile/check/check_param_or_local_shadows_fun.cpp
 	./compile/check/check_param_or_local_shadows_fun.h
 	./compile/check/convert_type.cpp
@@ -37,12 +36,17 @@ add_executable(oohoo
 	./compile/diag/LineAndColumnGetter.h
 	./compile/diag/SourceRange.h
 
+	./compile/model/BuiltinTypes.h
 	./compile/model/model.cpp
 	./compile/model/model.h
 	./compile/model/effect.cpp
 	./compile/model/effect.h
 	./compile/model/expr.cpp
 	./compile/model/expr.h
+	./compile/model/type_of_expr.cpp
+	./compile/model/type_of_expr.h
+	./compile/model/types_equal_ignore_lifetime.cpp
+	./compile/model/types_equal_ignore_lifetime.h
 
 	./compile/parse/ast.cpp
 	./compile/parse/ast.h
@@ -107,6 +111,7 @@ add_executable(oohoo
 	./util/store/MaxSizeString.h
 	./util/store/MultiMap.h
 	./util/store/NonEmptyList.h
+	./util/store/NonEmptyList_utils.h
 	./util/PathCache.h
 	./util/PathCache.cpp
 	./util/PathImpl.h

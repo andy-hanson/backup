@@ -16,8 +16,8 @@ class Option {
 	OptionStorage storage;
 
 public:
-	Option() : is_present(false) {}
-	Option(const Option<T>& other) : is_present(other.is_present) {
+	Option() : is_present{false} {}
+	Option(const Option<T>& other) : is_present{other.is_present} {
 		//TODO: new(&storage.value) T(other.storage.value);
 		storage.value = other.storage.value;
 	}
@@ -35,7 +35,7 @@ public:
 				storage.value = other.storage.value;
 		}
 	}
-	explicit Option(T _value) : is_present(true) {
+	explicit Option(T _value) : is_present{true} {
 		//TODO: new(&storage.value) T(_value);
 		storage.value = _value;
 	}
@@ -79,8 +79,8 @@ class Option<T&> {
 	T* ref;
 
 public:
-	inline Option() : ref(nullptr) {}
-	inline explicit Option(T& value) : ref(&value) {}
+	inline Option() : ref{nullptr} {}
+	inline explicit Option(T& value) : ref{&value} {}
 
 	inline bool has() const { return ref != nullptr; }
 
@@ -99,8 +99,8 @@ class Option<Ref<T>> {
 	T* ref;
 
 public:
-	inline Option() : ref(nullptr) {}
-	inline explicit Option(Ref<T> value) : ref(value.ptr()) {}
+	inline Option() : ref{nullptr} {}
+	inline explicit Option(Ref<T> value) : ref{value.ptr()} {}
 
 	void operator=(Ref<T> value) {
 		ref = value.ptr();
@@ -121,20 +121,13 @@ Option<Ref<T>> copy_inner(const Option<const Ref<T>&> o) {
 	if (o.has()) return Option<Ref<T>> { o.get() }; else return {};
 }
 
-template <typename T>
-Option<Ref<T>> un_ref(const Option<const Ref<T>&> in) {
-	return in.has() ? Option { in.get() } : Option<Ref<T>>{};
-}
-
 template <typename Out>
-struct MapOption {
+struct map_option {
 	template <typename In, typename /*Option<In> => Option<Out>*/ Cb>
 	Option<Out> operator()(const Option<In>& in, Cb cb) const {
-		return in.has() ? Option { cb(in.get()) } : Option<Out>{};
+		return in.has() ? cb(in.get()) : Option<Out>{};
 	}
 };
-template <typename Out>
-MapOption<Out> map_option() { return {}; };
 
 template <typename T, typename /*() => Option<T>*/ Cb>
 Option<T> or_option(const Option<T>& op, Cb cb) {
@@ -146,11 +139,13 @@ class Late {
 	Option<T> inner;
 
 public:
-	void init(T value) {
+	inline Late() {}
+	inline Late(T value) : inner{value} {}
+
+	inline void init(T value) {
 		assert(!inner.has()); // Only set once
 		inner = value;
 	}
 
-	operator const T&() { return inner.get(); }
-	const T& explicit_borrow() const { return inner.get(); } // TODO: shouldn't be necessary?
+	inline const T& get() const { return inner.get(); }
 };

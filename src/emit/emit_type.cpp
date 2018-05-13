@@ -3,10 +3,13 @@
 #include "./substitute_type_arguments.h"
 
 void write_type(Writer& out, const Type& t, const Names& names) {
-	if (t.is_parameter())
-		out << mangle{t.param()->name};
+	const StoredType& s = t.stored_type();
+	if (s.is_type_parameter())
+		out << mangle{s.param()->name};
 	else
-		write_inst_struct(out, t.inst_struct(), names);
+		write_inst_struct(out, s.inst_struct(), names);
+
+	if (t.lifetime().is_borrow()) out << '*';
 }
 
 void write_type_arguments(Writer& out, const Slice<Type>& type_arguments, const Names& names) {
@@ -24,8 +27,8 @@ void write_inst_struct(Writer& out, const InstStruct& i, const Names& names) {
 	write_type_arguments(out, i.type_arguments, names);
 }
 
-void substitute_and_write_inst_struct(Writer& out, const ConcreteFun& current_fun, const Type& type, const Names& names, Arena& scratch_arena, bool is_own) {
-	write_inst_struct(out, substitute_type_arguments(type, current_fun, scratch_arena), names);
-	if (!is_own) out << '&';
+void substitute_and_write_inst_struct(Writer& out, const ConcreteFun& current_fun, const StoredType& type, const Names& names) {
+	Arena scratch;
+	write_inst_struct(out, substitute_type_arguments(type, current_fun, scratch), names);
 }
 

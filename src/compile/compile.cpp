@@ -92,6 +92,7 @@ void compile(CompiledProgram& out, DocumentProvider& document_provider, Path fir
 	if (diagnostics.is_empty()) {
 		// Go in reverse order -- if we ever see some dependency that's not compiled yet, it indicates a circular dependency.
 		Compiled compiled;
+		Option<BuiltinTypes> builtin_types;
 		Option<Slice<Module>> modules = map_or_fail_reverse<Module>()(out.arena, parsed, [&](const FileAst& ast, Ref<Module> m) {
 			Option<Slice<Ref<const Module>>> imports = get_imports(ast.imports, ast.path, compiled, out.paths, out.arena, diagnostics);
 			if (!imports.has()) {
@@ -101,7 +102,7 @@ void compile(CompiledProgram& out, DocumentProvider& document_provider, Path fir
 			m->path = ast.path;
 			m->imports = imports.get();
 			m->comment = ast.comment.has() ? Option { copy_string(out.arena, ast.comment.get()) } : Option<ArenaString> {};
-			check(m, ast, out.arena, diagnostics);
+			check(m, builtin_types, ast, out.arena, diagnostics);
 			if (!diagnostics.is_empty())
 				return false;
 			compiled.must_insert(m->path, m);
@@ -109,6 +110,7 @@ void compile(CompiledProgram& out, DocumentProvider& document_provider, Path fir
 		});
 		if (modules.has())
 			out.modules = modules.get();
+		out.builtin_types = builtin_types.get();
 	}
 	out.diagnostics = diagnostics.finish();
 }

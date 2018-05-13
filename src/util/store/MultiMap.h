@@ -3,90 +3,46 @@
 #include "../Option.h"
 #include "./Arena.h"
 #include "./ArenaArrayBuilders.h"
+#include "./List.h"
 
-//Key=None means this is a non-first entry
-template<typename K, typename V>
-struct MultiMapPair {
-	Option<K> key;
-	V value;
-};
 template <typename K, typename V, typename Hash>
 class MultiMap {
-	template <typename, typename, typename> friend struct BuildMultiMap;
-	Slice<Option<MultiMapPair<K, V>>> arr;
+	template <typename, typename, typename> friend struct build_multi_map;
+	Map<K, List<V>, Hash> inner;
 
-	MultiMap(Slice<Option<MultiMapPair<K, V>>> _arr) : arr(_arr) {}
+	inline explicit MultiMap(Map<K, List<V>, Hash> _inner) : inner{_inner} {}
 
 public:
-	MultiMap() : arr() {}
+	MultiMap() {}
 
 	bool has(const K& key) const {
-		hash_t hash = Hash{}(key);
-		const Option<MultiMapPair<K, V>>& op_entry = arr[hash % arr.size()];
-		return op_entry.has() && op_entry.get().key.has() && op_entry.get().key.get() == key;
+		return inner.has(key);
 	}
 
 	template <typename /*const V& => void*/ Cb>
 	void each_with_key(const K& key, Cb cb) const {
-		assert(!arr.is_empty());
-
-		hash_t hash = Hash{}(key);
-		const Option<MultiMapPair<K, V>>* op_entry_ptr = &arr[hash % arr.size()];
-		if (!op_entry_ptr->has()) return;
-
-		{
-			const MultiMapPair<K, V>& entry = op_entry_ptr->get();
-			if (!entry.key.has()) return; // This is a continuation entry of something else.
-			if (entry.key.get() != key) return;
-			cb(entry.value);
-		}
-
-		while (true) {
-			++op_entry_ptr;
-			if (op_entry_ptr == arr.end()) return;
-			if (!op_entry_ptr->has()) return;
-			const MultiMapPair<K, V>& entry = op_entry_ptr->get();
-			if (entry.key.has()) return; // This is a different group.
-			cb(entry.value);
-		}
+		Option<const List<V>&> list = inner.get(key);
+		if (!list.has()) return;
+		for (const V& v : list.get())
+			cb(v);
 	}
 };
 
 template <typename K, typename V, typename Hash>
-struct BuildMultiMap {
-	Arena& arena;
-
-	template <typename /*const V& => K*/ CbGetKey>
-	MultiMap<K, Ref<const V>, Hash> operator()(const Slice<V>& values, CbGetKey get_key) {
-		if (values.is_empty())
-			return {};
-
-		uint arr_size = values.size() * 2;
-		Slice<Option<MultiMapPair<K, Ref<const V>>>> arr = fill_array<Option<MultiMapPair<K, Ref<const V>>>>()(
-			arena, arr_size, [](uint i __attribute__((unused))) { return Option<MultiMapPair<K, Ref<const V>>> {}; });
-
-		for (const V& value : values) {
-			const K& key = get_key(value);
-			hash_t hash = Hash{}(key);
-			Option<MultiMapPair<K, Ref<const V>>>& op_entry = arr[hash % arr.size()];
-			if (op_entry.has()) {
-				const MultiMapPair<K, Ref<const V>>& entry = op_entry.get();
-				if (entry.key.has() && entry.key.get() == key) {
-					//Add this to the end of the group
-					throw "tod!o";
-				} else {
-					todo(); // false conflict, must re-hash
-				}
-			} else {
-				op_entry = MultiMapPair<K, Ref<const V>> { Option<K> { key }, Ref<const V>(&value) };
+struct build_multi_map {
+	template <typename Input, typename /*const Input& => K*/ CbGetKey, typename /*const Input& => V*/ CbGetValue>
+	MultiMap<K, V, Hash> operator()(Arena& arena, const Slice<Input>& inputs, CbGetKey get_key, CbGetValue get_value) {
+		Map<K, List<V>, Hash> inner = build_map<K, List<V>, Hash>()(
+			arena,
+			inputs,
+			get_key,
+			/*get_value*/ [&](const Input& input) {
+				return List<V> { get_value(input), arena };
+			},
+			/*on_conflict*/ [&](List<V>& list, const Input& input) {
+				list.prepend(get_value(input), arena);
 			}
-		}
-
-		return { arr };
+		);
+		return MultiMap { inner };
 	}
-};
-
-template <typename K, typename V, typename Hash>
-BuildMultiMap<K, V, Hash> build_multi_map(Arena& arena) {
-	return { arena };
 };

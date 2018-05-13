@@ -19,7 +19,7 @@ class Ref {
 	T* _ptr;
 
 public:
-	inline Ref(T* ptr) : _ptr(ptr) {
+	inline Ref(T* ptr) : _ptr{ptr} {
 		assert(ptr != nullptr);
 	}
 

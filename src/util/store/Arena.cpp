@@ -14,6 +14,7 @@ Arena::~Arena() {
 }
 
 void* Arena::allocate(uint n_bytes) {
+	assert(n_bytes != 0);
 	void* res = alloc_next;
 	alloc_next = static_cast<char*>(alloc_next) + n_bytes;
 	assert(alloc_next <= alloc_end);

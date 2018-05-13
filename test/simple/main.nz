@@ -1,10 +1,14 @@
-c Void
-	void
-c Bool
+Void copy
+c Bool copy
 	bool
 c true Bool
-	return true;
+	*_ret = true;
+
+pointer-to Bool *b(b Bool)
+	b
 
 | Main function
 run Void
-	assert true
+	b = true
+	bp = b pointer-to
+	assert bp

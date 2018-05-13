@@ -44,23 +44,16 @@ namespace {
 	}
 
 	Slice<ParameterAst> parse_parameters(Lexer& lexer, Arena& arena) {
-		if (!lexer.try_take('(')) {
+		if (!lexer.try_take('('))
 			return {};
-		}
 		SmallArrayBuilder<ParameterAst> parameters;
-		lexer.take('(');
 		while (true) {
 			if (lexer.try_take(')')) todo(); //error: Don't write `()`
 
-			bool from = false;
-			if (lexer.try_take_from_keyword()) {
-				lexer.take(' ');
-				from = true;
-			}
-			Option<Effect> effect = lexer.try_take_effect();
-			TypeAst type = parse_type(lexer, arena);
+			StringSlice name = lexer.take_value_name();
 			lexer.take(' ');
-			parameters.add({ from, effect, type, lexer.take_value_name() });
+			TypeAst type = parse_type(lexer, arena);
+			parameters.add({ name, type });
 			if (lexer.try_take(')')) break;
 			lexer.take(',');
 			lexer.take(' ');
@@ -77,13 +70,16 @@ namespace {
 	}
 
 	Slice<StructFieldAst> parse_struct_fields(Lexer& lexer, Arena& arena) {
-		lexer.take_indent();
+		if (!lexer.try_take_indent())
+			return {};
+
 		SmallArrayBuilder<StructFieldAst> b;
 		do {
 			Option<ArenaString> comment = lexer.try_take_comment(arena);
-			TypeAst type = parse_type(lexer, arena);
+			StringSlice name = lexer.take_value_name();
 			lexer.take(' ');
-			b.add({ comment, type, lexer.take_value_name() });
+			TypeAst type = parse_type(lexer, arena);
+			b.add({ comment, name, type });
 		} while (lexer.take_newline_or_dedent() == NewlineOrDedent::Newline);
 		return b.finish(arena);
 	}

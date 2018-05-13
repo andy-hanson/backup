@@ -46,7 +46,7 @@ public:
 		return SourceRange::inner_slice(source, { start, ptr });
 	}
 
-	inline Lexer(StringSlice _source) : source(_source), ptr(_source.begin()), _indent(0) {}
+	inline Lexer(StringSlice _source) : source{_source}, ptr{_source.begin()}, _indent{0} {}
 
 	ParseDiagnostic diag_at_char(ParseDiag diag);
 
@@ -90,6 +90,7 @@ public:
 	void take_dedent();
 
 	void take_newline_same_indent();
+	bool try_take_indent();
 	void take_indent();
 	ArenaString take_indented_string(Arena& arena);
 

@@ -12,4 +12,4 @@ void write_type_arguments(Writer& out, const Slice<Type>& type_arguments, const 
 
 void write_inst_struct(Writer& out, const InstStruct& i, const Names& names);
 
-void substitute_and_write_inst_struct(Writer& out, const ConcreteFun& current_fun, const Type& type, const Names& names, Arena& scratch_arena, bool is_own);
+void substitute_and_write_inst_struct(Writer& out, const ConcreteFun& current_fun, const StoredType& type, const Names& names);

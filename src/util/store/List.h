@@ -13,6 +13,7 @@ class List {
 public:
 	inline List() : _head{}, _size{0} {}
 	inline List(Option<Ref<const ListNode<T>>> head, uint size) : _head{head}, _size{size} {}
+	inline List(T value, Arena& arena) : _head{Option<Ref<const ListNode<T>>> { arena.put(ListNode<T> { value, {} }) }}, _size{1} {}
 
 	inline bool is_empty() const {
 		return !_head.has();
@@ -22,6 +23,12 @@ public:
 		return _size;
 	}
 
+	void prepend(T value, Arena& arena) {
+		_head = arena.put(ListNode<T> { value, _head });
+		++_size;
+	}
+
+	using value_type = T;
 	using const_iterator = typename ListNode<T>::const_iterator;
 	inline const_iterator begin() const { return { _head }; }
 	inline const_iterator end() const { return { {} }; }

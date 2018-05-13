@@ -65,8 +65,8 @@ struct Diagnostic {
 	SourceRange range;
 	Diag diag;
 
-	Diagnostic(Path _path, SourceRange _range, Diag _diag) : path(_path), range(_range), diag(_diag) {}
-	Diagnostic(Path _path, ParseDiagnostic p) : path(_path), range(p.range), diag(p.diag) {}
+	inline Diagnostic(Path _path, SourceRange _range, Diag _diag) : path{_path}, range{_range}, diag{_diag} {}
+	inline Diagnostic(Path _path, ParseDiagnostic p) : path{_path}, range{p.range}, diag{p.diag} {}
 
 	void write(Writer& out, const StringSlice& source, const LineAndColumnGetter& lc) const;
 };

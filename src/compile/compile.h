@@ -4,6 +4,7 @@
 #include "../util/PathCache.h"
 #include "../host/DocumentProvider.h"
 #include "./diag/diag.h"
+#include "./model/BuiltinTypes.h"
 #include "./model/model.h"
 
 struct CompiledProgram {
@@ -11,6 +12,7 @@ struct CompiledProgram {
 	PathCache paths;
 	Slice<Module> modules;
 	List<Diagnostic> diagnostics;
+	BuiltinTypes builtin_types;
 };
 
 extern const StringSlice NZ_EXTENSION;
