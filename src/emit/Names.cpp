@@ -1,117 +1,122 @@
 #include "./Names.h"
 
-#include "../util/store/MaxSizeSet.h"
-#include "./mangle.h"
-
 namespace {
-	void write_type_for_fun_name(StringBuilder& sb, const InstStruct& i) {
-		sb << mangle { i.strukt->name };
-		if (!i.type_arguments.is_empty()) todo();
+	Option<StringSlice> mangle_char(char c) {
+		switch (c) {
+			case '+':
+				return Option<StringSlice> { "_add" };
+			case '-':
+				// '-' often used as a hyphen
+				return Option<StringSlice> { "__" };
+			case '*':
+				return Option<StringSlice> { "_times" };
+			case '/':
+				return Option<StringSlice> { "_div" };
+			case '<':
+				return Option<StringSlice> { "_lt" };
+			case '>':
+				return Option<StringSlice> { "_gt" };
+			case '=':
+				return Option<StringSlice> { "_eq" };
+			default:
+				assert(('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z'));
+				return {};
+		}
 	}
 
-	ArenaString escape_struct_name(const StringSlice& module_name, const Identifier& struct_name, Arena& arena, bool is_multiple_with_same_name) {
-		StringBuilder sb { arena, 100 };
-		sb << mangle{struct_name};
-		if (is_multiple_with_same_name)
-			sb << '_' << mangle{module_name};
+	const StringSlice MAIN = "main";
+	const StringSlice TRUE = "true";
+	const StringSlice FALSE = "false";
+
+	bool needs_special_mangle(const StringSlice& name) {
+		return name == MAIN || name == TRUE || name == FALSE;
+	}
+
+	bool needs_mangle(const StringSlice& name) {
+		return needs_special_mangle(name) || some(name, [](char c) { return mangle_char(c).has(); });
+	}
+
+	template <typename WriterLike>
+	void write_mangled(WriterLike& out, const StringSlice& name) {
+		if (needs_special_mangle(name))
+			out << '_' << name;
+		else {
+			for (char c : name) {
+				auto m = mangle_char(c);
+				if (m.has())
+					out << m.get();
+				else
+					out << c;
+			}
+		}
+	}
+
+	ArenaString mangled(const StringSlice& name, Arena& out) {
+		assert(needs_mangle(name));
+		StringBuilder sb { out, name.size() * 2 };
+		write_mangled(sb, name);
 		return sb.finish();
 	}
 
-	ArenaString escape_field_name(const Identifier& field_name, Arena& arena) {
-		StringBuilder sb { arena, 100 };
-		sb << mangle{field_name};
+	ArenaString mangled(const StringSlice& name, uint id, Arena& out) {
+		StringBuilder sb { out, name.size() * 2 };
+		write_mangled(sb, name);
+		sb << id;
 		return sb.finish();
 	}
-
-	class FunIds {
-		// Filled lazily, because we won't need ids for most funs.
-		MaxSizeMap<32, Ref<const ConcreteFun>, uint, Ref<const ConcreteFun>::hash> ids;
-		uint next_id = 1;
-
-	public:
-		uint get_id(Ref<const ConcreteFun> f) {
-			uint& i = ids.get_or_insert_default(f);
-			if (i == 0) {
-				i = next_id;
-				++next_id;
-			}
-			return i;
-		}
-	};
-
-
-	ArenaString escape_fun_name(const ConcreteFun& f, bool is_overloaded, bool is_instantiated, FunIds& ids, Arena& arena) {
-		StringBuilder sb { arena, 100 };
-		const FunSignature& sig = f.fun_declaration->signature;
-		sb << mangle{sig.name};
-		if (is_overloaded || is_instantiated) {
-			sb << "___";
-			for (const InstStruct& i : f.type_arguments) {
-				sb << '_';
-				write_type_for_fun_name(sb, i);
-			}
-			for (const Slice<Ref<const ConcreteFun>>& spec_impl : f.spec_impls)
-				for (Ref<const ConcreteFun> c : spec_impl) {
-					sb << '_';
-					sb.write_base_64(ids.get_id(c));
-				}
-		}
-		return sb.finish();
-	}
-
-	class DuplicateNamesGetter {
-		enum class Dup { Zero, One, Many };
-		MaxSizeMap<64, Identifier, Dup, Identifier::hash> map;
-
-	public:
-		void add(const Identifier& i) {
-			Dup& d = map.get_or_insert_default(i);
-			switch (d) {
-				case Dup::Zero: d = Dup::One; break;
-				case Dup::One: d = Dup::Many; break;
-				case Dup::Many: break;
-			}
-		}
-
-		bool has_duplicate(const Identifier& i) const {
-			Option<const Dup&> o = map.get(i);
-			return o.has() && o.get() == Dup::Many;
-		}
-	};
 }
 
-Names get_names(const Slice<Module>& modules, const FunInstantiations& fun_instantiations, Arena& arena) {
-	MaxSizeSet<64, StringSlice, StringSlice::hash> all_module_names;
-	DuplicateNamesGetter all_struct_names;
-	DuplicateNamesGetter all_fun_names;
+Names get_names(const EmittableTypeCache& types, const ConcreteFunsCache& funs, Arena& out_arena) {
+	Names names { { 32, out_arena }, { 32, out_arena }, { 32, out_arena } };
 
-	for (const Module& module : modules) {
-		for (const StructDeclaration& strukt : module.structs_declaration_order)
-			all_struct_names.add(strukt.name);
-		for (const FunDeclaration& f : module.funs_declaration_order)
-			all_fun_names.add(f.name());
-		all_module_names.must_insert(module.name()); // TODO: if there are two modules with the same name, need to improve escaping
-	}
+	types.each([&](const StructDeclaration& strukt, const NonEmptyList<EmittableStruct> emittables) {
+		if (emittables.has_more_than_one()) {
+			uint id = 0;
+			for (const EmittableStruct& e : emittables) {
+				names.struct_names.must_insert(&e, mangled(strukt.name, id, out_arena));
+				++id;
+			}
+		} else if (needs_mangle(strukt.name))
+			names.struct_names.must_insert(&emittables.only(), mangled(strukt.name, out_arena));
 
-	FunIds ids;
-	Names names;
+		if (strukt.body.is_fields())
+			for (const StructField& f : strukt.body.fields())
+				if (needs_mangle(f.name))
+					names.field_names.must_insert(&f, mangled(f.name, out_arena));
+	});
 
-	for (const Module& module : modules) {
-		for (const StructDeclaration& strukt : module.structs_declaration_order) {
-			names.struct_names.must_insert(&strukt, escape_struct_name(strukt.containing_module->name(), strukt.name, arena, all_struct_names.has_duplicate(strukt.name)));
-			if (strukt.body.is_fields())
-				for (const StructField& field : strukt.body.fields())
-					names.field_names.must_insert(&field, escape_field_name(field.name, arena));
+	funs.each([&](const FunDeclaration& fun, const NonEmptyList<ConcreteFun>& concretes) {
+		const StringSlice& name = fun.name();
+		if (concretes.has_more_than_one()) {
+			uint id = 0;
+			for (const ConcreteFun& cf : concretes) {
+				names.fun_names.must_insert(&cf, mangled(name, id, out_arena));
+				++id;
+			}
+		} else if (needs_mangle(name)) {
+			names.fun_names.must_insert(&concretes.only(), mangled(name, out_arena));
 		}
-
-		for (const FunDeclaration& f : module.funs_declaration_order) {
-			const NonEmptyList<ConcreteFun>& instances = fun_instantiations.must_get(&f);
-			bool is_overloaded = all_fun_names.has_duplicate(f.name());
-			bool is_instantiated = instances.has_more_than_one();
-			for (const ConcreteFun& cf : instances)
-				names.fun_names.must_insert(&cf, escape_fun_name(cf, is_overloaded, is_instantiated, ids, arena));
-		}
-	}
+	});
 
 	return names;
+}
+
+Writer& operator<<(Writer& out, const Names::StructNameWriter& s) {
+	Option<const ArenaString&> name = s.names.struct_names.get(&s.strukt);
+	return out << (name.has() ? name.get() : s.strukt.strukt->name);
+}
+
+Writer& operator<<(Writer& out, const Names::FieldNameWriter& s) {
+	Option<const ArenaString&> name = s.names.field_names.get(&s.field);
+	return out << (name.has() ? name.get() : s.field.name);
+}
+
+Writer& operator<<(Writer& out, const Names::FunNameWriter& f) {
+	Option<const ArenaString&> name = f.names.fun_names.get(&f.fun);
+	return out << (name.has() ? name.get() : f.fun.fun_declaration->name());
+}
+
+Writer& operator<<(Writer& out, const Names::ParameterNameWriter& p) {
+	write_mangled(out, p.parameter.name);
+	return out;
 }

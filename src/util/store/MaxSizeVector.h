@@ -18,16 +18,7 @@ class MaxSizeVector {
 
 public:
 	MaxSizeVector() : _size{0} {}
-	MaxSizeVector(const MaxSizeVector& other) { *this = other; }
-	~MaxSizeVector() {
-		for (uint i = 0; i < _size; ++i)
-			data.values[i].~T();
-	}
-	void operator=(const MaxSizeVector& other) {
-		_size = other._size;
-		for (uint i = 0; i < _size; ++i)
-			data.values[i] = other.data.values[i];
-	}
+	MaxSizeVector(const MaxSizeVector& other) = delete;
 
 	MaxSizeVector(T first) : MaxSizeVector{} {
 		push(first);
@@ -40,15 +31,6 @@ public:
 	void push(T value) {
 		assert(_size != capacity);
 		data.values[_size] = value;
-		++_size;
-	}
-
-	void insert(uint index, T value) {
-		assert(_size != capacity);
-		assert(index <= _size);
-		for (uint i = _size; i != index; --i)
-			data.values[i] = data.values[i - 1];
-		data.values[index] = value;
 		++_size;
 	}
 

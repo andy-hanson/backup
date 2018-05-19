@@ -5,176 +5,72 @@
 #include "../compile/model/types_equal_ignore_lifetime.h"
 #include "./substitute_type_arguments.h"
 
-namespace {
-	template <typename V>
-	struct InsertResult { bool was_added; Ref<const V> value; };
-	template<uint capacity, typename K, typename V, typename KH>
-	InsertResult<V> add_to_map_of_lists(MaxSizeMap<capacity, K, NonEmptyList<V>, KH>& map, K key, V value, Arena& arena) {
-		//TODO:PERF avoid repeated map lookup
-		if (!map.has(key)) {
-			return { true, &map.must_insert(key, { value })->value.first() };
-		} else {
-			NonEmptyList<V>& list = map.must_get(key);
-			Option<Ref<const V>> found = find(list, [&](const V& v) { return v == value; });
-			if (found.has())
-				return { false, found.get() };
-			else {
-				list.prepend(value, arena);
-				return { true, &list.first() };
-			}
-		}
-	}
-
-	// Iterates over every Called in the body.
-	template<typename Cb>
-	void each_dependent_fun(const Expression& body, Cb cb) {
-		MaxSizeVector<16, Ref<const Expression>> stack;
-		stack.push(&body);
-		do {
-			const Expression& e = *stack.pop_and_return();
-			switch (e.kind()) {
-				case Expression::Kind::ParameterReference:
-				case Expression::Kind::LocalReference:
-				case Expression::Kind::StructFieldAccess:
-				case Expression::Kind::StringLiteral:
-					break;
-				case Expression::Kind::Let: {
-					const Let& l = e.let();
-					stack.push(&l.init);
-					stack.push(&l.then);
-					break;
-				}
-				case Expression::Kind::Seq: {
-					const Seq& s = e.seq();
-					stack.push(&s.first);
-					stack.push(&s.then);
-					break;
-				}
-				case Expression::Kind::Call: {
-					const Call& c = e.call();
-					cb(&c.called);
-					for (const Expression& arg : c.arguments)
-						stack.push(&arg);
-					break;
-				}
-				case Expression::Kind::StructCreate:
-					for (const Expression& arg : e.struct_create().arguments)
-						stack.push(&arg);
-					break;
-				case Expression::Kind::When: {
-					const When& when = e.when();
-					for (const Case& c : when.cases) {
-						stack.push(&c.cond);
-						stack.push(&c.then);
-					}
-					stack.push(when.elze);
-					break;
-				}
-				case Expression::Kind::Assert:
-					stack.push(&e.asserted());
-					break;
-				case Expression::Kind::Pass:
-					break;
-				case Expression::Kind::Nil:
-				case Expression::Kind::Bogus:
-					unreachable();
-			}
-		} while (!stack.is_empty());
-	}
-
-	ConcreteFun get_concrete_called(const ConcreteFun& calling_fun, const Called& called, const EveryConcreteFun& res, Arena& scratch_arena) {
-		Slice<InstStruct> called_type_arguments = map<InstStruct>()(scratch_arena, called.type_arguments, [&](const Type& type_argument) {
-			return substitute_type_arguments(type_argument.stored_type(), calling_fun, scratch_arena);
-		});
-
-		//NOTE: currently, the function that matches a spec must be an exact match, not an instantiation of some generic function. So no recursive instantiations to worry about.
-		Slice<Slice<Ref<const ConcreteFun>>> concrete_spec_impls =
-		map<Slice<Ref<const ConcreteFun>>>()(scratch_arena, called.spec_impls, [&](const Slice<CalledDeclaration>& called_specs) {
-			return map<Ref<const ConcreteFun>>()(scratch_arena, called_specs, [&](const CalledDeclaration& called_spec) {
-				switch (called_spec.kind()) {
-					case CalledDeclaration::Kind::Spec:
-						todo();
-					case CalledDeclaration::Kind::Fun: {
-						Ref<const FunDeclaration> spec_impl = called_spec.fun();
-						if (spec_impl->signature.is_generic()) todo();
-						// Since it's non-generic, should have exactly 1 instantiation.
-						const NonEmptyList<ConcreteFun>& list = res.fun_instantiations.get(spec_impl).get();
-						assert(!list.has_more_than_one());
-						return &list.first();
-					}
-				}
-			});
-		});
-
-		switch (called.called_declaration.kind()) {
-			case CalledDeclaration::Kind::Spec: {
-				// Get the corresponding spec_impl.
-				const SpecUseSig& s = called.called_declaration.spec();
-				uint spec_index = get_index(calling_fun.fun_declaration->signature.specs, s.spec_use);
-				uint sig_index = get_index(s.spec_use->spec->signatures, s.signature);
-				return calling_fun.spec_impls[spec_index][sig_index];
-			}
-			case CalledDeclaration::Kind::Fun:
-				//Called a FunDeclaration directly, easy.
-				return ConcreteFun { called.called_declaration.fun(), called_type_arguments, concrete_spec_impls };
-		}
-	}
-}
-
-ConcreteFun::ConcreteFun(Ref<const FunDeclaration> _fun_declaration, Slice<InstStruct> _type_arguments, Slice<Slice<Ref<const ConcreteFun>>> _spec_impls)
-	: fun_declaration(_fun_declaration), type_arguments(_type_arguments), spec_impls(_spec_impls) {
+ConcreteFun::ConcreteFun(
+	Ref<const FunDeclaration> _fun_declaration,
+	Slice<EmittableType> _type_arguments,
+	Slice<Slice<Ref<const ConcreteFun>>> _spec_impls,
+	EmittableType _return_type,
+	Slice<EmittableType> _parameter_types)
+	: fun_declaration{_fun_declaration}, type_arguments{_type_arguments}, spec_impls{_spec_impls}, return_type{_return_type}, parameter_types{_parameter_types} {
 	assert(fun_declaration->signature.type_parameters.size() == type_arguments.size());
 	assert(fun_declaration->signature.specs.size() == spec_impls.size());
 	assert(each_corresponds(fun_declaration->signature.specs, spec_impls, [](const SpecUse& spec_use, const Slice<Ref<const ConcreteFun>>& sig_impls) {
 		return spec_use.spec->signatures.size() == sig_impls.size();
 	}));
-	assert(every(type_arguments, [](const InstStruct& p) { return p.is_deeply_concrete(); }));
+	assert(parameter_types.size() == fun_declaration->signature.arity());
 }
 
-hash_t ConcreteFun::hash::operator()(const ConcreteFun& c) const {
-	// Don't hash the spec_impls because that could lead to infinite recursion.
-	return hash_combine(Ref<const FunDeclaration>::hash{}(c.fun_declaration), hash_arr(c.type_arguments, InstStruct::hash_deeply_concrete {}));
+Ref<const ConcreteFun> ConcreteFunsCache::get_concrete_fun_for_main(const FunDeclaration& main, EmittableTypeCache& type_cache) {
+	const FunSignature& sig = main.signature;
+	if (sig.is_generic()) todo(); //compile error
+	auto get_type = [&](const Type& t) -> EmittableType { return type_cache.get_type(t, {}, {}); };
+	EmittableType return_type = type_cache.get_type(sig.return_type, {}, {});
+	Slice<EmittableType> parameter_types = map<EmittableType>{}(arena, sig.parameters, [&](const Parameter& p) { return get_type(p.type); });
+	return &funs_map.must_insert(&main, NonEmptyList<ConcreteFun> { ConcreteFun { &main, {}, {}, return_type, parameter_types } }).value.first();
 }
 
-bool operator==(const ConcreteFun& a, const ConcreteFun& b) {
-	return a.fun_declaration == b.fun_declaration
-		&& each_corresponds(a.type_arguments, b.type_arguments, [](const InstStruct& aa, const InstStruct& bb) { return types_equal_ignore_lifetime(aa, bb); })
-		&& a.spec_impls == b.spec_impls;
-}
+TryInsertResult<ConcreteFun> ConcreteFunsCache::get_concrete_fun_for_call(
+	Ref<const ConcreteFun> current_concrete_fun, const Called& called, EmittableTypeCache& type_cache) {
 
-hash_t ConcreteFunAndCalled::hash::operator()(const ConcreteFunAndCalled& c) const {
-	return hash_combine(Ref<const ConcreteFun>::hash{}(c.fun), Ref<const Called>::hash{}(c.called));
-}
+	Ref<const FunDeclaration> called_fun = called.called_declaration.fun(); //TODO: handle spec calls
+	const FunSignature& called_sig = called.called_declaration.sig();
 
-bool operator==(const ConcreteFunAndCalled& a, const ConcreteFunAndCalled& b) {
-	return a.fun == b.fun && a.called == b.called;
-}
+	//TODO: don't always allocate this in out arena. Only if we need to insert it into the map.
+	Arena temp;
+	// Allocated in temp arena because we'll probably use a cached result and not need this.
+	Slice<EmittableType> temp_type_arguments = map<EmittableType>{}(temp, called.type_arguments, [&](const Type& type_argument) {
+		return type_cache.get_type(type_argument, current_concrete_fun->fun_declaration->signature.type_parameters, current_concrete_fun->type_arguments);
+	});
 
-EveryConcreteFun get_every_concrete_fun(const Slice<Module>& modules, Arena& scratch_arena) {
-	EveryConcreteFun res;
-	// Stack of ConcreteFun_s whose bodies we need to analyze for references.
-	MaxSizeVector<16, Ref<const ConcreteFun>> to_analyze;
-
-	for (const Module& m : modules) {
-		for (const FunDeclaration& f : m.funs_declaration_order) {
-			if (!f.signature.is_generic()) {
-				InsertResult<ConcreteFun> a = add_to_map_of_lists(res.fun_instantiations, Ref<const FunDeclaration>{&f}, ConcreteFun { &f, {}, {}}, scratch_arena);
-				if (a.was_added) to_analyze.push(a.value);
+	Slice<Slice<Ref<const ConcreteFun>>> temp_concrete_spec_impls = map<Slice<Ref<const ConcreteFun>>>{}(temp, called.spec_impls, [&](const Slice<CalledDeclaration>& called_specs) {
+		return map<Ref<const ConcreteFun>>{}(arena, called_specs, [&](const CalledDeclaration& called_spec) {
+			switch (called_spec.kind()) {
+				case CalledDeclaration::Kind::Spec:
+					todo();
+				case CalledDeclaration::Kind::Fun: {
+					Ref<const FunDeclaration> spec_impl = called_spec.fun();
+					if (spec_impl->signature.is_generic()) todo();
+					// Since it's non-generic, should have exactly 1 instantiation.
+					const NonEmptyList<ConcreteFun>& list = funs_map.get(spec_impl).get();
+					assert(!list.has_more_than_one());
+					return &list.first();
+				}
 			}
-		}
-	}
-
-	while (!to_analyze.is_empty()) {
-		Ref<const ConcreteFun> fun = to_analyze.pop_and_return();
-		const AnyBody& body = fun->fun_declaration->body;
-		if (body.kind() != AnyBody::Kind::Expr) continue;
-		each_dependent_fun(body.expression(), [&](Ref<const Called> called) {
-			ConcreteFun concrete_called = get_concrete_called(*fun, called, res, scratch_arena);
-			auto added = add_to_map_of_lists(res.fun_instantiations, concrete_called.fun_declaration, concrete_called, scratch_arena);
-			if (added.was_added) to_analyze.push(added.value);
-			res.resolved_calls.must_insert({ fun, called }, added.value );
 		});
-	}
+	});
 
-	return res;
+	return add_to_map_of_lists(
+		funs_map, called_fun, arena,
+		/*is_match*/ [&](const ConcreteFun& cf) {
+			return cf.fun_declaration == called_fun && cf.type_arguments == temp_type_arguments && cf.spec_impls == temp_concrete_spec_impls;
+		},
+		/*create_value*/ [&]() {
+			auto get_type = [&](const Type& t) -> EmittableType {
+				return type_cache.get_type(t, called_sig.type_parameters, temp_type_arguments);
+			};
+			Slice<EmittableType> type_arguments = clone(temp_type_arguments, arena);
+			Slice<Slice<Ref<const ConcreteFun>>> concrete_spec_impls = clone(temp_concrete_spec_impls, arena);
+			Slice<EmittableType> parameter_types = map<EmittableType> {}(arena, called_sig.parameters, [&](const Parameter& p) { return get_type(p.type); });
+			return ConcreteFun { called_fun, type_arguments, concrete_spec_impls, get_type(called_sig.return_type), parameter_types };
+		});
 }

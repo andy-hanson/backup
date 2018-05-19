@@ -233,7 +233,7 @@ namespace {
 	}
 
 	Lifetime get_return_lifetime(const Lifetime& declared_return_lifetime, const Slice<Parameter>& parameters, const Slice<Lifetime>& argument_lifetimes) {
-		if (!declared_return_lifetime.is_borrow())
+		if (!declared_return_lifetime.is_pointer())
 			return Lifetime::noborrow();
 
 		if (declared_return_lifetime.has_ret() || declared_return_lifetime.has_loc()) {
@@ -247,12 +247,12 @@ namespace {
 			if (declared_return_lifetime.has_parameter(p.index)) {
 				const Lifetime& argument_lifetime = argument_lifetimes[p.index];
 				// If the argument is new, it gets made into a local.
-				builder.add(argument_lifetime.is_borrow() ? argument_lifetime : Lifetime::local_borrow());
+				builder.add(argument_lifetime.is_pointer() ? argument_lifetime : Lifetime::local_borrow());
 			}
 		}
 
 		Lifetime res = builder.finish();
-		assert(res.is_borrow());
+		assert(res.is_pointer());
 		return res;
 	}
 

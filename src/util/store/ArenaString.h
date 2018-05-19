@@ -53,8 +53,7 @@ public:
 		++ptr;
 		return *this;
 	}
-
-	void write_base_64(uint u);
+	StringBuilder& operator<<(uint u);
 
 	StringBuilder& operator<<(StringSlice s);
 

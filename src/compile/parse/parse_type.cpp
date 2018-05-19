@@ -13,21 +13,21 @@ namespace {
 Slice<TypeAst> parse_type_arguments(Lexer& lexer, Arena& arena) {
 	if (!lexer.try_take('<'))
 		return {};
-	SmallArrayBuilder<TypeAst> args;
-	do { args.add(parse_type(lexer, arena)); } while (lexer.try_take_comma_space());
+	MaxSizeVector<4, TypeAst> args;
+	do { args.push(parse_type(lexer, arena)); } while (lexer.try_take_comma_space());
 	lexer.take('>');
-	return args.finish(arena);
+	return to_arena(args, arena);
 }
 
 TypeAst parse_type(Lexer& lexer, Arena& arena) {
 	StoredTypeAst s = parse_stored_type(lexer, arena);
-	SmallArrayBuilder<LifetimeConstraintAst> lifetimes;
+	MaxSizeVector<4, LifetimeConstraintAst> lifetimes;
 	// Parse lifetimes
 	if (lexer.try_take(' ')) {
 		lexer.take('*');
 		LifetimeConstraintAst::Kind kind = lexer.try_take('?') ? LifetimeConstraintAst::Kind::LifetimeVariableName : LifetimeConstraintAst::Kind::ParameterName;
 		StringSlice name = lexer.take_value_name();
-		lifetimes.add(LifetimeConstraintAst { kind, name });
+		lifetimes.push(LifetimeConstraintAst { kind, name });
 	}
-	return { s, lifetimes.finish(arena) };
+	return { s, to_arena(lifetimes, arena) };
 }

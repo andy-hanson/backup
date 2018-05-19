@@ -1,5 +1,6 @@
 #pragma once
 
+#include "./Arena.h"
 #include "./ListNode.h"
 
 template <typename T>
@@ -7,14 +8,16 @@ class NonEmptyList {
 	ListNode<T> _head;
 
 public:
-	NonEmptyList(const NonEmptyList& other) = default;
-	NonEmptyList& operator=(const NonEmptyList& other) = default;
-	NonEmptyList(T value) : _head({ value, {} }) {}
+	inline NonEmptyList(const NonEmptyList& other) = default;
+	inline NonEmptyList& operator=(const NonEmptyList& other) = default;
+	inline explicit NonEmptyList(T value) : _head({ value, {} }) {}
 
-	// Note: this moves the current head out.
-	void prepend(T value, Arena& arena) {
-		Ref<ListNode<T>> next = arena.put<ListNode<T>>(_head).ptr();
-		_head = ListNode<T> { value, Option<Ref<const ListNode<T>>> { next } };
+	inline T& add(T value, Arena& arena) {
+		Ref<ListNode<T>> last = &_head;
+		while (last->next.has()) last = last->next.get();
+		Ref<ListNode<T>> new_last = arena.put<ListNode<T>>(ListNode<T> { value, /*next*/ {} });
+		last->next = new_last;
+		return new_last->value;
 	}
 
 	using value_type = T;
@@ -29,6 +32,11 @@ public:
 	}
 
 	inline const T& first() const {
+		return _head.value;
+	}
+
+	inline const T& only() const {
+		assert(!has_more_than_one());
 		return _head.value;
 	}
 };

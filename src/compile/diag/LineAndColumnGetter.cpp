@@ -8,15 +8,15 @@ namespace {
 }
 
 LineAndColumnGetter LineAndColumnGetter::for_text(const StringSlice& text, Arena& arena) {
-	SmallArrayBuilder<uint, 1024> lines;
-	lines.add(0); // Line 0 starts at text index 0
+	MaxSizeVector<1024, uint> lines;
+	lines.push(0); // Line 0 starts at text index 0
 	uint i = 0;
 	for (char c : text) {
 		if (c == '\n')
-			lines.add(i + 1);
+			lines.push(i + 1);
 		++i;
 	}
-	return LineAndColumnGetter { lines.finish(arena) };
+	return LineAndColumnGetter { to_arena(lines, arena) };
 }
 
 LineAndColumn LineAndColumnGetter::line_and_column_at_pos(uint pos) const {

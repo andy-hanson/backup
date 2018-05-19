@@ -4,39 +4,44 @@
 #include "../compile/model/expr.h" // Called
 
 #include "../util/store/collection_util.h"
-#include "../util/store/MaxSizeMap.h"
+#include "../util/store/Map.h"
 #include "../util/store/NonEmptyList.h"
+#include "../util/store/map_of_lists_util.h" // TODO: just for TryInsertResult, move that
 #include "../util/Ref.h"
+
+#include "./EmittableType.h"
 
 struct ConcreteFun {
 	Ref<const FunDeclaration> fun_declaration;
-	Slice<InstStruct> type_arguments;
+	Slice<EmittableType> type_arguments;
 	// Maps spec index -> signature index -> implementation
 	Slice<Slice<Ref<const ConcreteFun>>> spec_impls;
 
-	ConcreteFun(Ref<const FunDeclaration> _fun_declaration, Slice<InstStruct> _type_arguments, Slice<Slice<Ref<const ConcreteFun>>> _spec_impls);
+	EmittableType return_type;
+	Slice<EmittableType> parameter_types;
 
-	struct hash {
-		hash_t operator()(const ConcreteFun& c) const;
-	};
+private:
+	friend class ConcreteFunsCache;
+	ConcreteFun(
+		Ref<const FunDeclaration> _fun_declaration, Slice<EmittableType> _type_arguments, Slice<Slice<Ref<const ConcreteFun>>> _spec_impls,
+		EmittableType return_type, Slice<EmittableType> parameter_types);
 };
-bool operator==(const ConcreteFun& a, const ConcreteFun& b);
 
-struct ConcreteFunAndCalled {
-	Ref<const ConcreteFun> fun;
-	Ref<const Called> called;
+class ConcreteFunsCache {
+	Arena arena;
+	Map<Ref<const FunDeclaration>, NonEmptyList<ConcreteFun>, Ref<const FunDeclaration>::hash> funs_map;
 
-	struct hash {
-		hash_t operator()(const ConcreteFunAndCalled& c) const;
-	};
+public:
+	inline ConcreteFunsCache() : arena{}, funs_map{64, arena} {}
+
+	Ref<const ConcreteFun> get_concrete_fun_for_main(const FunDeclaration& main, EmittableTypeCache& type_cache);
+	TryInsertResult<ConcreteFun> get_concrete_fun_for_call(Ref<const ConcreteFun> current_concrete_fun, const Called& called, EmittableTypeCache& type_cache);
+	inline Option<const NonEmptyList<ConcreteFun>&> get_funs_for_declaration(const FunDeclaration& decl) const {
+		return funs_map.get(&decl);
+	}
+
+	template <typename /*Ref<const FunDeclaration>, const NonEmptyList<ConcreteFun>&*/ Cb>
+	void each(Cb cb) const {
+		funs_map.each(cb);
+	}
 };
-bool operator==(const ConcreteFunAndCalled& a, const ConcreteFunAndCalled& b);
-inline bool operator!=(const ConcreteFunAndCalled& a, const ConcreteFunAndCalled& b) { return !(a == b); }
-
-using FunInstantiations = MaxSizeMap<32, Ref<const FunDeclaration>, NonEmptyList<ConcreteFun>, Ref<const FunDeclaration>::hash>;
-using ResolvedCalls = MaxSizeMap<32, ConcreteFunAndCalled, Ref<const ConcreteFun>, ConcreteFunAndCalled::hash>;
-struct EveryConcreteFun {
-	FunInstantiations fun_instantiations;
-	ResolvedCalls resolved_calls;
-};
-EveryConcreteFun get_every_concrete_fun(const Slice<Module>& modules, Arena& scratch_arena);

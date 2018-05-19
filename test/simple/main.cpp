@@ -1,32 +1,21 @@
 #include <assert.h>
 
-struct Void {};
+struct Void {
+	
+};
 
 typedef bool Bool;
 
 void _true(Bool* _ret);
+void _main(Void* _ret);
 
-void pointer__to(Bool* _ret, Bool* b);
-
-// Main function
-void run(Void* _ret);
-
-void _true(Bool* _ret) {
-	*_ret = true;
+void _true(Bool* _ret) {*_ret = true;
 }
 
-void pointer__to(Bool* _ret, Bool* b) {
-	return b;
-}
-
-// Main function
-void run(Void* _ret) {
+void _main(Void* _ret) {
 	Bool b;
 	_true(&b);
-	Bool bp;
-	pointer__to(&bp, b);
-	assert(bp);
-	
+	assert(b);
 }
 
-int main() { Void v; run(&v); }
+int main() { Void v; _main(&v); }

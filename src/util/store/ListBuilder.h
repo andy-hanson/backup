@@ -31,6 +31,6 @@ public:
 	}
 
 	List<T> finish() {
-		return { head.has() ? Option<Ref<const ListNode<T>>> { head.get() } : Option<Ref<const ListNode<T>>> {}, size };
+		return { head.has() ? Option<Ref<ListNode<T>>> { head.get() } : Option<Ref<ListNode<T>>> {}, size };
 	}
 };

@@ -114,18 +114,6 @@ public:
 	}
 };
 
-template <typename T, uint max_size = 8>
-class SmallArrayBuilder {
-	MaxSizeVector<max_size, T> v;
-
-public:
-	inline void add(T value) { v.push(value); }
-
-	Slice<T> finish(Arena& arena) {
-		return fill_array<T>()(arena, v.size(), [&](uint i) { return v[i]; });
-	}
-};
-
 template <typename Out>
 struct map {
 	template <typename Collection, typename /*const In& => Out*/ Cb>
@@ -139,6 +127,31 @@ struct map {
 			++i;
 		}
 		assert(i == size);
+		return arr;
+	}
+};
+
+template <typename T>
+Slice<T> clone(const Slice<T>& in, Arena& arena) {
+	return map<T>{}(arena, in, [](const T& t) { return t; });
+}
+
+template <typename Out>
+struct map_with_first {
+	template <typename In, typename Cb>
+	inline Slice<Out> operator()(Arena& arena, Option<Out> first, const Slice<In>& in, Cb cb) {
+		uint offset = first.has() ? 1 : 0;
+		uint size = offset + in.size();
+		if (size == 0) return {};
+		Slice<Out> arr = uninitialized_array<Out>(arena, size);
+		if (first.has())
+			arr[0] = first.get();
+		uint i = 0;
+		for (const In& input : in) {
+			arr[i + offset] = cb(input);
+			++i;
+		}
+		assert(i == in.size());
 		return arr;
 	}
 };
@@ -162,3 +175,8 @@ struct map_to_two_arrays {
 		return { ts, us };
 	}
 };
+
+template <uint capacity, typename T>
+Slice<T> to_arena(const MaxSizeVector<capacity, T>& m, Arena& arena) {
+	return fill_array<T>()(arena, m.size(), [&](uint i) { return m[i]; });
+}

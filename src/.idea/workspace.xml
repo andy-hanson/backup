@@ -29,63 +29,33 @@
     <favorites_list name="oohoo" />
   </component>
   <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="check_call.cpp" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/compile/check/check_call.cpp">
+    <leaf>
+      <file leaf-file-name="CAst_emit.cpp" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/emit/CAst_emit.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="246">
-              <caret line="238" column="40" selection-start-line="238" selection-start-column="40" selection-end-line="238" selection-end-column="40" />
+            <state relative-caret-position="291">
+              <caret line="174" column="20" lean-forward="true" selection-start-line="174" selection-start-column="20" selection-end-line="174" selection-end-column="20" />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="model.h" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/compile/model/model.h">
+      <file leaf-file-name="emit_body.cpp" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/emit/emit_body.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="433">
-              <caret line="177" column="34" selection-start-line="177" selection-start-column="34" selection-end-line="177" selection-end-column="34" />
+            <state relative-caret-position="421">
+              <caret line="204" column="74" selection-start-line="204" selection-start-column="74" selection-end-line="204" selection-end-column="74" />
               <folding>
-                <element signature="e#14#49#0" expanded="true" />
+                <element signature="e#0#22#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="clang.cpp" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/clang.cpp">
+      <file leaf-file-name="unit_tests.cpp" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/test/unit_tests.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="289">
-              <caret line="21" column="43" lean-forward="true" selection-start-line="21" selection-start-column="43" selection-end-line="21" selection-end-column="43" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="assert.h" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/util/assert.h">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="221">
-              <caret line="13" selection-start-line="13" selection-end-line="13" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="check_expr.h" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/compile/check/check_expr.h">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="136">
-              <caret line="8" column="58" selection-start-line="8" selection-start-column="58" selection-end-line="8" selection-end-column="127" />
-              <folding>
-                <element signature="e#14#41#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="check_expr.cpp" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/compile/check/check_expr.cpp">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="468">
-              <caret line="205" column="59" selection-start-line="205" selection-start-column="59" selection-end-line="205" selection-end-column="59" />
+            <state relative-caret-position="544">
+              <caret line="32" selection-start-line="32" selection-end-line="32" />
               <folding>
                 <element signature="e#0#25#0" expanded="true" />
               </folding>
@@ -93,20 +63,14 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="check_expr_call_common.h" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/compile/check/check_expr_call_common.h">
+      <file leaf-file-name="ConcreteFun.h" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/emit/ConcreteFun.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="289">
-              <caret line="24" column="19" selection-start-line="24" selection-start-column="19" selection-end-line="24" selection-end-column="19" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="check_lifetime.h" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/compile/check/check_lifetime.h">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="136">
-              <caret line="8" selection-start-line="8" selection-end-line="8" />
+            <state relative-caret-position="261">
+              <caret line="19" column="15" selection-start-line="19" selection-start-column="15" selection-end-line="19" selection-end-column="15" />
+              <folding>
+                <element signature="e#14#49#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -115,36 +79,36 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>struct type</find>
-      <find>storedtype</find>
-      <find>struct let</find>
-      <find>noborrow</find>
-      <find>nil,</find>
-      <find>Nil,</find>
-      <find>slice&lt;bo</find>
-      <find>ctx</find>
-      <find>slice&lt;</find>
-      <find>single_</find>
-      <find>single_el</find>
-      <find>lifetime</find>
-      <find>:</find>
-      <find>_kind(kind)</find>
-      <find>structfieldacces</find>
-      <find>structfieldaccess</find>
-      <find>without_</find>
-      <find>fill_array</find>
-      <find>local()</find>
-      <find>nonemptylist</find>
-      <find>get_candidate_return</find>
-      <find>len</find>
-      <find>check_effec</find>
-      <find>equal_ignore_lifetime</find>
-      <find>get_candidate_types</find>
-      <find>from_inferred</find>
-      <find>infer</find>
-      <find>try_match</find>
-      <find>check_and_expect</find>
-      <find>and_expect_stored_type</find>
+      <find>operator=</find>
+      <find>write_type</find>
+      <find>emittableinst</find>
+      <find>operator==</find>
+      <find>emittabletype</find>
+      <find>iterator</find>
+      <find>wikip</find>
+      <find>mn</find>
+      <find>maxsizeset</find>
+      <find>const_iter</find>
+      <find>const_it</find>
+      <find>struct const_it</find>
+      <find>get_key_in_</find>
+      <find>m</find>
+      <find>maxsize</find>
+      <find>try_insert</find>
+      <find>must_insert</find>
+      <find>maxsizemap</find>
+      <find>set&lt;</find>
+      <find>write_base_64</find>
+      <find>256</find>
+      <find>concretefun</find>
+      <find>concrete_funs</find>
+      <find>test(</find>
+      <find>clang++</find>
+      <find>&quot;true&quot;</find>
+      <find>main(&amp;v</find>
+      <find>&quot;main&quot;</find>
+      <find>&quot;, &quot;</find>
+      <find>call:</find>
     </findStrings>
     <replaceStrings>
       <replace />
@@ -158,66 +122,66 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/test/test_single.cpp" />
-        <option value="$PROJECT_DIR$/compile/check/check.h" />
-        <option value="$PROJECT_DIR$/compile/compile.h" />
-        <option value="$PROJECT_DIR$/compile/compile.cpp" />
-        <option value="$PROJECT_DIR$/clang.cpp" />
-        <option value="$PROJECT_DIR$/emit/ConcreteFun.h" />
-        <option value="$PROJECT_DIR$/compile/check/convert_type.h" />
-        <option value="$PROJECT_DIR$/emit/emit.cpp" />
-        <option value="$PROJECT_DIR$/compile/parse/Lexer.cpp" />
-        <option value="$PROJECT_DIR$/util/store/collection_util.h" />
-        <option value="$PROJECT_DIR$/main.cpp" />
-        <option value="$PROJECT_DIR$/compile/parse/parser.cpp" />
-        <option value="$PROJECT_DIR$/util/store/List.h" />
-        <option value="$PROJECT_DIR$/util/store/MultiMap.h" />
-        <option value="$PROJECT_DIR$/util/store/Slice.h" />
-        <option value="$PROJECT_DIR$/compile/parse/parse_expr.cpp" />
-        <option value="$PROJECT_DIR$/compile/parse/Lexer.h" />
-        <option value="$PROJECT_DIR$/compile/model/model.cpp" />
-        <option value="$PROJECT_DIR$/emit/emit_type.cpp" />
-        <option value="$PROJECT_DIR$/util/Option.h" />
-        <option value="$PROJECT_DIR$/util/Ref.h" />
-        <option value="$PROJECT_DIR$/util/store/StringSlice.cpp" />
-        <option value="$PROJECT_DIR$/util/store/MaxSizeVector.h" />
-        <option value="$PROJECT_DIR$/util/store/Map.h" />
-        <option value="$PROJECT_DIR$/compile/diag/parse_diag.h" />
-        <option value="$PROJECT_DIR$/compile/diag/diag.h" />
-        <option value="$PROJECT_DIR$/compile/model/BuiltinTypes.h" />
-        <option value="$PROJECT_DIR$/compile/model/type_of_expr.cpp" />
-        <option value="$PROJECT_DIR$/compile/model/expr.h" />
-        <option value="$PROJECT_DIR$/compile/model/type_of_expr.h" />
-        <option value="$PROJECT_DIR$/emit/emit_body.cpp" />
-        <option value="$PROJECT_DIR$/util/store/Arena.cpp" />
-        <option value="$PROJECT_DIR$/compile/check/check_call.h" />
-        <option value="$PROJECT_DIR$/compile/check/check_expr_call_common.h" />
-        <option value="$PROJECT_DIR$/compile/check/check_effects.cpp" />
-        <option value="$PROJECT_DIR$/util/store/NonEmptyList.h" />
-        <option value="$PROJECT_DIR$/util/store/NonEmptyList_utils.h" />
-        <option value="$PROJECT_DIR$/CMakeLists.txt" />
-        <option value="$PROJECT_DIR$/compile/check/Candidate.h" />
-        <option value="$PROJECT_DIR$/compile/check/Candidate.cpp" />
-        <option value="$PROJECT_DIR$/util/store/ArenaArrayBuilders.h" />
-        <option value="$PROJECT_DIR$/compile/check/check.cpp" />
-        <option value="$PROJECT_DIR$/util/assert.h" />
-        <option value="$PROJECT_DIR$/compile/check/check_lifetime.h" />
-        <option value="$PROJECT_DIR$/compile/check/check_expr.h" />
-        <option value="$PROJECT_DIR$/compile/check/check_expr.cpp" />
         <option value="$PROJECT_DIR$/compile/parse/type_ast.h" />
         <option value="$PROJECT_DIR$/compile/check/convert_type.cpp" />
         <option value="$PROJECT_DIR$/compile/check/check_lifetime.cpp" />
         <option value="$PROJECT_DIR$/compile/check/check_call.cpp" />
+        <option value="$PROJECT_DIR$/util/hash_util.h" />
+        <option value="$PROJECT_DIR$/compile/model/model.cpp" />
+        <option value="$PROJECT_DIR$/emit/emit_type.h" />
+        <option value="$PROJECT_DIR$/emit/substitute_type_arguments.h" />
+        <option value="$PROJECT_DIR$/emit/substitute_type_arguments.cpp" />
+        <option value="$PROJECT_DIR$/compile/check/check_expr.cpp" />
+        <option value="$PROJECT_DIR$/compile/diag/LineAndColumnGetter.cpp" />
+        <option value="$PROJECT_DIR$/compile/parse/parse_expr.cpp" />
+        <option value="$PROJECT_DIR$/compile/parse/parse_type.cpp" />
+        <option value="$PROJECT_DIR$/compile/parse/parser.cpp" />
+        <option value="$PROJECT_DIR$/emit/emit_type.cpp" />
+        <option value="$PROJECT_DIR$/emit/emit_body.h" />
+        <option value="$PROJECT_DIR$/emit/emit.h" />
+        <option value="$PROJECT_DIR$/util/store/ArenaArrayBuilders.h" />
         <option value="$PROJECT_DIR$/compile/model/model.h" />
+        <option value="$PROJECT_DIR$/util/store/ListNode.h" />
+        <option value="$PROJECT_DIR$/util/store/List.h" />
+        <option value="$PROJECT_DIR$/util/store/ListBuilder.h" />
+        <option value="$PROJECT_DIR$/emit/CAst_emit.h" />
+        <option value="$PROJECT_DIR$/emit/EmittableType.cpp" />
+        <option value="$PROJECT_DIR$/util/store/MaxSizeMap.h" />
+        <option value="$PROJECT_DIR$/emit/CAst.h" />
+        <option value="$PROJECT_DIR$/emit/ConcreteFun.cpp" />
+        <option value="$PROJECT_DIR$/util/store/map_of_lists_util.h" />
+        <option value="$PROJECT_DIR$/compile/compile.cpp" />
+        <option value="$PROJECT_DIR$/CMakeLists.txt" />
+        <option value="$PROJECT_DIR$/util/PathCache.cpp" />
+        <option value="$PROJECT_DIR$/util/store/NonEmptyList.h" />
+        <option value="$PROJECT_DIR$/emit/EmittableType.h" />
+        <option value="$PROJECT_DIR$/emit/mangle.cpp" />
+        <option value="$PROJECT_DIR$/util/store/ArenaString.h" />
+        <option value="$PROJECT_DIR$/util/store/ArenaString.cpp" />
+        <option value="$PROJECT_DIR$/util/store/Map.h" />
+        <option value="$PROJECT_DIR$/util/store/Set.h" />
+        <option value="$PROJECT_DIR$/emit/ConcreteFun.h" />
+        <option value="$PROJECT_DIR$/test/test.cpp" />
+        <option value="$PROJECT_DIR$/emit/Names.h" />
+        <option value="$PROJECT_DIR$/test/unit_tests.h" />
+        <option value="$PROJECT_DIR$/main.cpp" />
+        <option value="$PROJECT_DIR$/test/unit_tests.cpp" />
+        <option value="$PROJECT_DIR$/util/Option.h" />
+        <option value="$PROJECT_DIR$/util/store/MaxSizeVector.h" />
+        <option value="$PROJECT_DIR$/clang.cpp" />
+        <option value="$PROJECT_DIR$/emit/Names.cpp" />
+        <option value="$PROJECT_DIR$/emit/emit.cpp" />
+        <option value="$PROJECT_DIR$/emit/CAst_emit.cpp" />
+        <option value="$PROJECT_DIR$/emit/emit_body.cpp" />
       </list>
     </option>
   </component>
   <component name="OCFindUsagesOptions" text="true" ivars="false" properties="true" derivedClasses="false" />
   <component name="ProjectFrameBounds">
-    <option name="x" value="49" />
+    <option name="x" value="53" />
     <option name="y" value="8" />
-    <option name="width" value="1751" />
-    <option name="height" value="1432" />
+    <option name="width" value="1527" />
+    <option name="height" value="1428" />
   </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
@@ -234,13 +198,7 @@
             <path>
               <item name="oohoo" type="b2602c69:ProjectViewProjectNode" />
               <item name="src" type="462c0819:PsiDirectoryNode" />
-              <item name="compile" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="oohoo" type="b2602c69:ProjectViewProjectNode" />
-              <item name="src" type="462c0819:PsiDirectoryNode" />
-              <item name="compile" type="462c0819:PsiDirectoryNode" />
-              <item name="check" type="462c0819:PsiDirectoryNode" />
+              <item name="test" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -250,7 +208,7 @@
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="SearchEverywhereHistoryKey" value="&#9;FILE&#9;file:///home/andy/CLionProjects/oohoo/src/util/Writer.h" />
+    <property name="SearchEverywhereHistoryKey" value="&#9;FILE&#9;file:///home/andy/CLionProjects/oohoo/src/emit/emit_type.cpp" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../../scratch" />
     <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
@@ -286,21 +244,21 @@
     </list>
   </component>
   <component name="ToolWindowManager">
-    <frame x="49" y="8" width="1751" height="1432" extended-state="0" />
+    <frame x="53" y="8" width="1527" height="1428" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49850523" weight="0.20793651" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49850523" weight="0.20674603" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="right" id="Cargo" order="3" />
-      <window_info anchor="bottom" id="Messages" order="7" weight="0.3631579" />
+      <window_info active="true" anchor="bottom" id="Messages" order="7" visible="true" weight="0.4683258" />
       <window_info anchor="bottom" id="CMake" order="7" weight="0.3291829" />
       <window_info anchor="bottom" id="Event Log" order="7" side_tool="true" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.29924813" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.2974589" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.34313726" />
       <window_info anchor="bottom" id="Version Control" order="7" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.3448276" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.36802414" />
       <window_info id="Favorites" order="2" sideWeight="0.50149477" side_tool="true" weight="0.1920635" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.36541355" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -338,6 +296,11 @@
           <line>8</line>
           <option name="timeStamp" value="176" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/emit/emit.cpp</url>
+          <line>19</line>
+          <option name="timeStamp" value="201" />
+        </line-breakpoint>
       </breakpoints>
       <breakpoints-dialog>
         <breakpoints-dialog />
@@ -347,7 +310,7 @@
           <properties />
         </breakpoint>
       </default-breakpoints>
-      <option name="time" value="188" />
+      <option name="time" value="202" />
     </breakpoint-manager>
   </component>
   <component name="debuggerHistoryManager">
@@ -405,362 +368,357 @@
     </expressions>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/compile/check/check_expr.cpp">
+    <entry file="file://$PROJECT_DIR$/test/test_single.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2006">
-          <caret line="118" column="9" selection-start-line="118" selection-start-column="9" selection-end-line="118" selection-end-column="9" />
-          <folding>
-            <element signature="e#0#25#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="561">
+          <caret line="117" column="58" selection-start-line="117" selection-start-column="58" selection-end-line="117" selection-end-column="58" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/compile/check/check_lifetime.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="136">
-          <caret line="8" lean-forward="true" selection-start-line="8" selection-end-line="8" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main.cpp">
+    <entry file="file://$PROJECT_DIR$/util/store/Arena.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="408">
-          <caret line="58" lean-forward="true" selection-start-line="58" selection-end-line="58" />
+          <caret line="24" column="11" selection-start-line="24" selection-start-column="11" selection-end-line="24" selection-end-column="11" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/compile/parse/Lexer.cpp">
+    <entry file="file://$PROJECT_DIR$/compile/check/check_call.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="245">
-          <caret line="100" selection-start-line="100" selection-end-line="100" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/compile/parse/parser.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="228">
-          <caret line="46" column="33" lean-forward="true" selection-start-line="46" selection-start-column="33" selection-end-line="46" selection-end-column="33" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/compile/parse/parse_type.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="340">
-          <caret line="22" selection-start-line="22" selection-end-line="22" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/util/store/Slice.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="629">
-          <caret line="39" selection-start-line="39" selection-end-line="39" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/emit/substitute_type_arguments.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="357">
-          <caret line="21" column="33" selection-start-line="21" selection-start-column="33" selection-end-line="21" selection-end-column="33" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/compile/parse/parse_expr.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="421">
-          <caret line="140" column="71" selection-start-line="140" selection-start-column="71" selection-end-line="140" selection-end-column="71" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/util/store/slice_util.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="187">
-          <caret line="11" column="48" lean-forward="true" selection-start-line="11" selection-start-column="48" selection-end-line="11" selection-end-column="48" />
-          <folding>
-            <element signature="e#14#33#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/compile/parse/Lexer.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="153">
-          <caret line="48" column="89" selection-start-line="48" selection-start-column="89" selection-end-line="48" selection-end-column="89" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/compile/model/model.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="273">
-          <caret line="33" column="126" selection-start-line="33" selection-start-column="126" selection-end-line="33" selection-end-column="126" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/emit/emit_type.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="153">
-          <caret line="11" column="8" selection-start-line="11" selection-start-column="8" selection-end-line="11" selection-end-column="8" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/compile/diag/diag.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="204">
-          <caret line="15" column="14" lean-forward="true" selection-start-line="15" selection-start-column="14" selection-end-line="15" selection-end-column="14" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/compile/diag/parse_diag.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="544">
-          <caret line="35" column="5" lean-forward="true" selection-start-line="35" selection-start-column="5" selection-end-line="35" selection-end-column="5" />
+        <state relative-caret-position="587">
+          <caret line="217" column="50" selection-start-line="217" selection-start-column="50" selection-end-line="217" selection-end-column="50" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/util/store/MultiMap.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="302">
-          <caret line="25" column="26" selection-start-line="25" selection-start-column="23" selection-end-line="25" selection-end-column="26" />
+        <state relative-caret-position="663">
+          <caret line="42" column="21" selection-start-line="42" selection-start-column="21" selection-end-line="42" selection-end-column="21" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/util/store/Map.h">
+    <entry file="file://$PROJECT_DIR$/emit/CAst_emit.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="408">
-          <caret line="27" column="17" selection-start-line="27" selection-start-column="17" selection-end-line="27" selection-end-column="17" />
+        <state relative-caret-position="68">
+          <caret line="6" column="87" selection-start-line="6" selection-start-column="87" selection-end-line="6" selection-end-column="87" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/util/Option.h">
+    <entry file="file://$PROJECT_DIR$/util/store/ListBuilder.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-166">
-          <caret line="102" column="50" lean-forward="true" selection-start-line="102" selection-start-column="50" selection-end-line="102" selection-end-column="50" />
+        <state relative-caret-position="544">
+          <caret line="33" column="83" selection-start-line="33" selection-start-column="83" selection-end-line="33" selection-end-column="83" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/util/store/List.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="595">
+          <caret line="38" column="4" selection-start-line="38" selection-start-column="4" selection-end-line="38" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/util/store/slice_util.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="400">
+          <caret line="37" selection-start-line="37" selection-end-line="37" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/util/store/ListNode.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="102">
+          <caret line="7" column="12" lean-forward="true" selection-start-line="7" selection-start-column="12" selection-end-line="7" selection-end-column="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/emit/EmittableType.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="459">
+          <caret line="27" column="13" selection-start-line="27" selection-start-column="13" selection-end-line="27" selection-end-column="13" />
           <folding>
-            <element signature="e#65#77#0" expanded="true" />
-            <element signature="e#1646#1658#0" expanded="true" />
+            <element signature="e#0#28#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/util/Ref.h">
+    <entry file="file://$PROJECT_DIR$/util/store/map_of_lists_util.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="340">
-          <caret line="21" column="35" selection-start-line="21" selection-start-column="35" selection-end-line="21" selection-end-column="35" />
+        <state relative-caret-position="323">
+          <caret line="19" column="38" selection-start-line="19" selection-start-column="38" selection-end-line="19" selection-end-column="38" />
+          <folding>
+            <element signature="e#14#52#0" expanded="true" />
+            <element signature="e#290#400#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/util/store/StringSlice.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="153">
-          <caret line="9" column="43" lean-forward="true" selection-start-line="9" selection-start-column="43" selection-end-line="9" selection-end-column="43" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/util/store/MaxSizeVector.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-616">
-          <caret line="19" column="30" selection-start-line="19" selection-start-column="30" selection-end-line="19" selection-end-column="30" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/compile/model/type_of_expr.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="68">
-          <caret line="6" selection-start-line="6" selection-end-line="6" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/compile/model/type_of_expr.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="34">
-          <caret line="2" column="5" selection-start-line="2" selection-start-column="5" selection-end-line="2" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/emit/emit_body.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="520">
-          <caret line="355" column="128" selection-start-line="355" selection-start-column="128" selection-end-line="355" selection-end-column="128" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/emit/emit.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="282">
-          <caret line="31" column="42" selection-start-line="31" selection-start-column="42" selection-end-line="31" selection-end-column="42" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/compile/check/check_call.h">
+    <entry file="file://$PROJECT_DIR$/emit/emit.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="102">
-          <caret line="6" column="35" selection-start-line="6" selection-start-column="35" selection-end-line="6" selection-end-column="35" />
+          <caret line="6" column="20" selection-start-line="6" selection-start-column="20" selection-end-line="6" selection-end-column="20" />
           <folding>
             <element signature="e#14#41#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/compile/model/expr.h">
+    <entry file="file://$PROJECT_DIR$/util/store/MaxSizeMap.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="265">
-          <caret line="94" column="17" selection-start-line="94" selection-start-column="17" selection-end-line="94" selection-end-column="17" />
+        <state relative-caret-position="119">
+          <caret line="8" column="6" selection-start-line="8" selection-start-column="6" selection-end-line="8" selection-end-column="6" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/util/store/List.h">
+    <entry file="file://$PROJECT_DIR$/util/store/MaxSizeSet.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="204">
-          <caret line="15" column="4" selection-start-line="15" selection-start-column="4" selection-end-line="15" selection-end-column="4" />
+        <state relative-caret-position="119">
+          <caret line="7" column="4" selection-start-line="7" selection-start-column="4" selection-end-line="7" selection-end-column="4" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/util/store/ListNode.h">
+    <entry file="file://$PROJECT_DIR$/compile/compile.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="85">
-          <caret line="6" column="7" selection-start-line="6" selection-start-column="7" selection-end-line="6" selection-end-column="7" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/util/store/NonEmptyList.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="102">
-          <caret line="6" column="22" selection-start-line="6" selection-start-column="22" selection-end-line="6" selection-end-column="22" />
+        <state relative-caret-position="267">
+          <caret line="39" column="51" selection-start-line="39" selection-start-column="51" selection-end-line="39" selection-end-column="51" />
+          <folding>
+            <element signature="e#0#22#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/CMakeLists.txt">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="200">
-          <caret line="18" column="44" selection-start-line="18" selection-start-column="44" selection-end-line="18" selection-end-column="44" />
+        <state relative-caret-position="275">
+          <caret line="104" column="4" selection-start-line="104" selection-start-column="4" selection-end-line="104" selection-end-column="4" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/compile/check/Candidate.h">
+    <entry file="file://$PROJECT_DIR$/util/store/NonEmptyList.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="663">
-          <caret line="41" selection-start-line="41" selection-end-line="41" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/compile/model/types_equal_ignore_lifetime.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="51">
-          <caret line="5" column="35" lean-forward="true" selection-start-line="5" selection-start-column="35" selection-end-line="7" selection-end-column="7" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/compile/check/check.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="656">
-          <caret line="152" column="94" selection-start-line="152" selection-start-column="94" selection-end-line="152" selection-end-column="94" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/compile/check/Candidate.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="784">
-          <caret line="103" column="21" selection-start-line="103" selection-start-column="21" selection-end-line="103" selection-end-column="21" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/util/store/Arena.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="238">
-          <caret line="16" selection-start-line="16" selection-end-line="16" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/util/store/ArenaArrayBuilders.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="654">
-          <caret line="120" column="7" lean-forward="true" selection-start-line="120" selection-start-column="7" selection-end-line="120" selection-end-column="7" />
-          <folding>
-            <element signature="e#14#36#0" expanded="true" />
-            <element signature="e#130#154#0" expanded="true" />
-            <element signature="e#2925#2980#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/util/store/NonEmptyList_utils.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="340">
-          <caret line="20" lean-forward="true" selection-start-line="20" selection-end-line="20" />
+          <caret line="39" column="27" selection-start-line="39" selection-start-column="27" selection-end-line="39" selection-end-column="27" />
           <folding>
             <element signature="e#14#34#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/compile/compile.cpp">
+    <entry file="file://$PROJECT_DIR$/emit/EmittableType.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="263">
-          <caret line="72" selection-start-line="72" selection-end-line="72" />
+        <state relative-caret-position="614">
+          <caret line="49" column="60" selection-start-line="49" selection-start-column="60" selection-end-line="49" selection-end-column="60" />
+          <folding>
+            <element signature="e#14#44#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/compile/check/check_lifetime.h">
+    <entry file="file://$PROJECT_DIR$/emit/mangle.cpp">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/emit/mangle.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="136">
+        <state relative-caret-position="119">
           <caret line="8" selection-start-line="8" selection-end-line="8" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/compile/check/check_expr.h">
+    <entry file="file://$PROJECT_DIR$/util/Writer.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="17">
+          <caret line="1" lean-forward="true" selection-start-line="1" selection-end-line="12" selection-end-column="1" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/util/store/ArenaString.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="342">
+          <caret line="54" column="5" lean-forward="true" selection-start-line="54" selection-start-column="5" selection-end-line="54" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/util/store/ArenaString.cpp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="136">
-          <caret line="8" column="58" selection-start-line="8" selection-start-column="58" selection-end-line="8" selection-end-column="127" />
+          <caret line="8" column="37" lean-forward="true" selection-start-line="8" selection-start-column="37" selection-end-line="8" selection-end-column="37" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/util/PathCache.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="367">
+          <caret line="29" column="26" selection-start-line="29" selection-start-column="26" selection-end-line="29" selection-end-column="26" />
           <folding>
-            <element signature="e#14#41#0" expanded="true" />
+            <element signature="e#0#24#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/compile/model/BuiltinTypes.h">
+    <entry file="file://$PROJECT_DIR$/util/store/Set.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="153">
-          <caret line="9" lean-forward="true" selection-start-line="9" selection-end-line="9" />
+        <state relative-caret-position="272">
+          <caret line="16" column="35" lean-forward="true" selection-start-line="16" selection-start-column="35" selection-end-line="16" selection-end-column="35" />
+          <folding>
+            <element signature="e#43#70#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/compile/check/check_expr_call_common.h">
+    <entry file="file://$PROJECT_DIR$/util/Writer.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="430">
+          <caret line="33" column="27" selection-start-line="33" selection-start-column="27" selection-end-line="33" selection-end-column="27" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test/test.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="690">
+          <caret line="63" column="30" selection-start-line="63" selection-start-column="30" selection-end-line="63" selection-end-column="30" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="324">
+          <caret line="82" column="8" selection-start-line="82" selection-start-column="8" selection-end-line="82" selection-end-column="8" />
+          <folding>
+            <element signature="e#0#27#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test/test.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="170">
+          <caret line="11" column="29" selection-start-line="11" selection-start-column="29" selection-end-line="11" selection-end-column="29" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/util/store/collection_util.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="85">
+          <caret line="5" selection-start-line="5" selection-end-line="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/util/store/Arena.cpp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="289">
-          <caret line="24" column="19" selection-start-line="24" selection-start-column="19" selection-end-line="24" selection-end-column="19" />
+          <caret line="19" selection-start-line="19" selection-end-line="19" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/compile/check/check_expr.cpp">
+    <entry file="file://$PROJECT_DIR$/util/store/ArenaArrayBuilders.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="265">
+          <caret line="29" selection-start-line="29" selection-end-line="29" />
+          <folding>
+            <element signature="e#3641#3653#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/emit/ConcreteFun.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="261">
+          <caret line="22" column="42" selection-start-line="22" selection-start-column="42" selection-end-line="22" selection-end-column="42" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/util/store/Slice.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="340">
+          <caret line="22" selection-start-line="22" selection-end-line="22" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/emit/CAst.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="159">
+          <caret line="119" selection-start-line="119" selection-end-line="119" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/util/Option.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="51">
+          <caret line="4" lean-forward="true" selection-start-line="4" selection-end-line="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/util/store/MaxSizeVector.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="210">
+          <caret line="55" column="31" lean-forward="true" selection-start-line="55" selection-start-column="31" selection-end-line="55" selection-end-column="31" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/compile/model/expr.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="278">
+          <caret line="242" selection-start-line="242" selection-end-line="242" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/compile/model/model.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="468">
-          <caret line="205" column="59" selection-start-line="205" selection-start-column="59" selection-end-line="205" selection-end-column="59" />
+          <caret line="345" selection-start-line="345" selection-end-line="345" />
+          <folding>
+            <element signature="e#14#49#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/clang.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="649">
+          <caret line="52" selection-start-line="52" selection-end-line="52" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/emit/Names.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="536">
+          <caret line="32" column="32" selection-start-line="32" selection-start-column="32" selection-end-line="32" selection-end-column="32" />
+          <folding>
+            <element signature="e#14#46#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/emit/Names.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="729">
+          <caret line="96" selection-start-line="96" selection-end-line="96" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/emit/ConcreteFun.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="261">
+          <caret line="19" column="15" selection-start-line="19" selection-start-column="15" selection-end-line="19" selection-end-column="15" />
+          <folding>
+            <element signature="e#14#49#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test/unit_tests.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="34">
+          <caret line="2" column="8" selection-start-line="2" selection-start-column="8" selection-end-line="2" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test/unit_tests.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="544">
+          <caret line="32" selection-start-line="32" selection-end-line="32" />
           <folding>
             <element signature="e#0#25#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/compile/check/convert_type.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="515">
-          <caret line="69" column="19" selection-start-line="69" selection-start-column="19" selection-end-line="69" selection-end-column="19" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/compile/parse/type_ast.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="148">
-          <caret line="16" column="21" lean-forward="true" selection-start-line="16" selection-start-column="21" selection-end-line="16" selection-end-column="21" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/compile/check/check_lifetime.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="102">
-          <caret line="6" selection-start-line="6" selection-end-line="6" />
         </state>
       </provider>
     </entry>
@@ -771,27 +729,47 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/compile/check/check_call.cpp">
+    <entry file="file://$PROJECT_DIR$/util/Ref.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="246">
-          <caret line="238" column="40" selection-start-line="238" selection-start-column="40" selection-end-line="238" selection-end-column="40" />
+        <state relative-caret-position="374">
+          <caret line="23" selection-start-line="23" selection-end-line="23" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/compile/model/model.h">
+    <entry file="file://$PROJECT_DIR$/emit/emit.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="433">
-          <caret line="177" column="34" selection-start-line="177" selection-start-column="34" selection-end-line="177" selection-end-column="34" />
+        <state relative-caret-position="547">
+          <caret line="78" selection-start-line="78" selection-end-line="78" />
           <folding>
-            <element signature="e#14#49#0" expanded="true" />
+            <element signature="e#0#19#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/clang.cpp">
+    <entry file="file://$PROJECT_DIR$/util/store/Map.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="289">
-          <caret line="21" column="43" lean-forward="true" selection-start-line="21" selection-start-column="43" selection-end-line="21" selection-end-column="43" />
+        <state relative-caret-position="227">
+          <caret line="132" column="57" lean-forward="true" selection-start-line="132" selection-start-column="57" selection-end-line="132" selection-end-column="57" />
+          <folding>
+            <element signature="e#130#154#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/emit/CAst_emit.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="291">
+          <caret line="174" column="20" lean-forward="true" selection-start-line="174" selection-start-column="20" selection-end-line="174" selection-end-column="20" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/emit/emit_body.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="421">
+          <caret line="204" column="74" selection-start-line="204" selection-start-column="74" selection-end-line="204" selection-end-column="74" />
+          <folding>
+            <element signature="e#0#22#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

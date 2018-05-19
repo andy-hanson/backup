@@ -92,10 +92,6 @@ struct InstStruct {
 		assert(type_arguments.size() == strukt->type_parameters.size());
 	}
 	bool is_deeply_concrete() const;
-
-	struct hash_deeply_concrete {
-		hash_t operator()(const InstStruct& i);
-	};
 };
 
 class StoredType {
@@ -198,8 +194,7 @@ public:
 		return { flag_of_parameter(index) };
 	}
 
-	inline bool is_borrow() const {
-		//TODO: effect should agree
+	inline bool is_pointer() const {
 		return _flags != Flags::None;
 	}
 

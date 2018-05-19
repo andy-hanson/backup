@@ -1,6 +1,7 @@
 #include <iostream> // cout
 #include <unistd.h> // getcwd
 
+#include "./test/unit_tests.h"
 #include "./test/test.h"
 
 #include "./host/DocumentProvider.h"
@@ -79,6 +80,8 @@ namespace {
 	};
 
 	int go() {
+		unit_tests();
+
 		MaxSizeString<128> test_dir = MaxSizeString<128>::make([&](MaxSizeStringWriter& w) { get_test_directory(w); });
 		auto filter = SubstrTestFilter { "simple" }; // EveryTestFilter{};
 		int exit_code = test(test_dir.slice(), filter, TestMode::Accept);

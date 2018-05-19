@@ -5,6 +5,12 @@
 #include "./ArenaArrayBuilders.h"
 #include "./KeyValuePair.h"
 
+template <typename K, typename V>
+struct InsertResult {
+	bool was_added;
+	KeyValuePair<K, V>& pair;
+};
+
 template <typename K, typename V, typename Hash>
 class Map {
 	struct Entry {
@@ -22,28 +28,115 @@ class Map {
 
 	template <typename, typename, typename> friend struct build_map;
 	Slice<Option<Entry>> arr;
-	Map(Slice<Option<Entry>> _arr) : arr(_arr) {}
+	Option<Entry>* leftmost_conflict_slot;
+	Option<Entry>* next_conflict_slot;
+
+	Map() : arr{}, leftmost_conflict_slot{nullptr}, next_conflict_slot{nullptr} {}
 
 public:
-	Map() : arr{} {}
+	Map(uint capacity, Arena& arena)
+		: arr{fill_array<Option<Entry>>{}(arena, capacity, [](uint i __attribute__((unused))) { return Option<Entry> {}; })},
+		leftmost_conflict_slot{arr.begin() + array_elements_size(capacity)},
+		next_conflict_slot{arr.begin() + capacity - 1}
+		{}
 
-	bool has(const K& key) const {
+	inline static Map empty() { return {}; }
+
+	inline bool has(const K& key) const {
 		return get(key).has();
 	}
 
-	Option<const V&> get(const K& key) const {
+	Option<const KeyValuePair<K, V>&> get_pair(const K& key) const {
 		assert(!arr.is_empty());
 		const Option<Entry>& op_entry = arr[index(key, arr.size())];
 		if (!op_entry.has())
-			// Nothing has that hash.
-			return Option<const V&> {};
-
+			return Option<const KeyValuePair<K, V>&> {};
 		Ref<const Entry> entry = &op_entry.get();
 		while (true) {
-			if (entry->pair.key == key) return Option<const V&> { entry->pair.value };
+			if (entry->pair.key == key)
+				return Option<const KeyValuePair<K, V>&> { entry->pair };
 			if (!entry->next_in_chain.has())
-				return Option<const V&> {};
+				return Option<const KeyValuePair<K, V>&> {};
 			entry = entry->next_in_chain.get();
+		}
+	}
+	Option<KeyValuePair<K, V>&> get_pair(const K& key) {
+		assert(!arr.is_empty());
+		Option<Entry>& op_entry = arr[index(key, arr.size())];
+		if (!op_entry.has())
+			return Option<KeyValuePair<K, V>&> {};
+		Ref<Entry> entry = &op_entry.get();
+		while (true) {
+			if (entry->pair.key == key)
+				return Option<KeyValuePair<K, V>&> { entry->pair };
+			if (!entry->next_in_chain.has())
+				return Option<KeyValuePair<K, V>&> {};
+			entry = entry->next_in_chain.get();
+		}
+	}
+
+	// Note that conflicts come from right, so last_conflict is the leftmost conflict slot.
+	InsertResult<K, V> try_insert(K key, V value) {
+		Option<Entry>& op_entry = arr[index(key, arr.size())];
+		if (!op_entry.has()) {
+			op_entry = Entry { KeyValuePair<K, V> { key, value }, {} };
+			return { true, op_entry.get().pair };
+		}
+
+		Ref<Entry> entry = &op_entry.get();
+		while (true) {
+			if (entry->pair.key == key) {
+				return { false, entry->pair };
+			}
+
+			if (!entry->next_in_chain.has()) {
+				if (next_conflict_slot < leftmost_conflict_slot) todo();
+				*next_conflict_slot = Entry { KeyValuePair<K, V> { key, value }, {} };
+				KeyValuePair<K, V>& res = next_conflict_slot->get().pair;
+				entry->next_in_chain = Ref<Entry> { &next_conflict_slot->get() };
+				--next_conflict_slot;
+				return { true, res };
+			}
+
+			// Else, continue
+			entry = entry->next_in_chain.get();
+		}
+	}
+
+	inline KeyValuePair<K, V>& must_insert(const K& key, V value) {
+		InsertResult<K, V> insert_result = try_insert(key, value);
+		assert(insert_result.was_added);
+		return insert_result.pair;
+	}
+
+	inline Option<const V&> get(const K& key) const {
+		Option<const KeyValuePair<K, V>&> pair = get_pair(key);
+		return pair.has() ? Option<const V&> { pair.get().value } : Option<const V&> {};
+	}
+	inline Option<V&> get(const K& key) {
+		Option<KeyValuePair<K, V>&> pair = get_pair(key);
+		return pair.has() ? Option<V&> { pair.get().value } : Option<V&> {};
+	}
+
+	inline const V& must_get(const K& key) const {
+		return get(key).get();
+	}
+	inline V& must_get(const K& key) {
+		return get(key).get();
+	}
+
+	inline Option<const K&> get_key_in_map(const K& key) const {
+		Option<const KeyValuePair<K, V>&> pair = get_pair(key);
+		return pair.has() ? Option<const K&> { pair.get().key } : Option<const K&> {};
+	}
+
+	template <typename /*const K&, const V& => void*/ Cb>
+	void each(Cb cb) const {
+		for (const Option<Entry>& op_e : arr) {
+			if (op_e.has()) {
+				const KeyValuePair<K, V>& pair = op_e.get().pair;
+				cb(pair.key, pair.value);
+			}
 		}
 	}
 };
@@ -53,53 +146,20 @@ class build_map {
 	using M = Map<K, V, Hash>;
 	using Entry = typename M::Entry;
 
-	// Note that conflicts come from right, so last_conflict is the leftmost conflict slot.
-	template <typename Input, typename CbGetKey, typename CbGetValue, typename CbConflict>
-	static void insert(
-		Slice<Option<Entry>> arr, const Input& input, Option<Entry>* leftmost_conflict_slot, Option<Entry>*& next_conflict_slot,
-		CbGetKey& get_key, CbGetValue& get_value, CbConflict& on_conflict) {
-		const K& key = get_key(input);
-		Option<Entry>& op_entry = arr[M::index(key, arr.size())];
-		if (!op_entry.has()) {
-			op_entry = Entry { KeyValuePair<K, V> { key, get_value(input) }, {} };
-			return;
-		}
-
-		Ref<Entry> entry = &op_entry.get();
-		while (true) {
-			if (entry->pair.key == key) {
-				// True conflict
-				on_conflict(entry->pair.value, input);
-				return;
-			}
-
-			if (!entry->next_in_chain.has()) {
-				if (next_conflict_slot < leftmost_conflict_slot) todo();
-				*next_conflict_slot = Entry { KeyValuePair<K, V> { key, get_value(input) }, {} };
-				entry->next_in_chain = Ref<Entry> { &next_conflict_slot->get() };
-				--next_conflict_slot;
-				return;
-			}
-
-			// Else, continue
-			entry = entry->next_in_chain.get();
-		}
-	}
 
 public:
 	template <typename Input, typename /*const Input& => K*/ CbGetKey, typename /*const Input& => V*/ CbGetValue, typename /*(const V&, const Input&) => void*/ CbConflict>
 	Map<K, V, Hash> operator()(Arena& arena, const Slice<Input>& inputs, CbGetKey get_key, CbGetValue get_value, CbConflict on_conflict) {
 		if (inputs.is_empty())
-			return {};
+			return Map<K, V, Hash>::empty();
 
-		Slice<Option<Entry>> arr = fill_array<Option<Entry>>()(arena, inputs.size() * 3, [](uint i __attribute__((unused))) { return Option<Entry> {}; });
+		Map<K, V, Hash> res { inputs.size() * 2, arena };
 
-		// Fills from right.
-		// This should never reach *begin since we have twice as many array entries as elements in the map.
-		Option<Entry>* last_conflict_slot = arr.begin() + M::array_elements_size(arr.size());
-		Option<Entry>* next_conflict_slot = arr.end() - 1;
-		for (const Input& input : inputs)
-			build_map::insert(arr, input, last_conflict_slot, next_conflict_slot, get_key, get_value, on_conflict);
-		return { arr };
+		for (const Input& input : inputs) {
+			InsertResult<K, V> insert_result = res.try_insert(get_key(input), get_value(input));
+			if (!insert_result.was_added)
+				on_conflict(insert_result.pair.value, input);
+		}
+		return res;
 	}
 };

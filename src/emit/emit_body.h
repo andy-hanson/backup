@@ -2,7 +2,16 @@
 
 #include "../util/Writer.h"
 #include "../compile/model/BuiltinTypes.h"
-#include "ConcreteFun.h"
+#include "./CAst.h"
+#include "./ConcreteFun.h"
 #include "./Names.h"
 
-void emit_body(Writer& out, Ref<const ConcreteFun> f, const Names& names, const BuiltinTypes& builtin_types, const ResolvedCalls& resolved_calls);
+using ToEmit = MaxSizeVector<16, Ref<const ConcreteFun>>;
+
+CFunctionBody emit_body(
+	Ref<const ConcreteFun> f,
+	const BuiltinTypes& builtin_types,
+	ConcreteFunsCache& concrete_funs,
+	EmittableTypeCache& types_cache,
+	ToEmit& to_emit,
+	Arena& out_arena);

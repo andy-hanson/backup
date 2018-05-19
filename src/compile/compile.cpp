@@ -1,8 +1,8 @@
 #include "./compile.h"
 
 #include "../util/store/ListBuilder.h"
-#include "../util/store/MaxSizeMap.h"
-#include "../util/store/MaxSizeSet.h"
+#include "../util/store/Map.h"
+#include "../util/store/Set.h"
 #include "./check/check.h"
 #include "./parse/parser.h"
 
@@ -33,10 +33,11 @@ namespace {
 	}
 
 	BlockedList<4, FileAst> parse_everything(ListBuilder<Diagnostic>& diagnostics, Arena& diags_arena, Path first_path, Arena& ast_arena, DocumentProvider& document_provider, PathCache& path_cache) {
+		Arena temp;
 		BlockedList<4, FileAst> out;
 		MaxSizeVector<16, Path> to_parse;
 		to_parse.push(first_path);
-		MaxSizeSet<32, Path, Path::hash> enqued_set; // Set of paths that are either already parsed, or in to_parse.
+		Set<Path, Path::hash> enqued_set { 32, temp }; // Set of paths that are either already parsed, or in to_parse.
 		enqued_set.must_insert(first_path);
 
 		do {
@@ -65,7 +66,7 @@ namespace {
 		return out;
 	}
 
-	using Compiled = MaxSizeMap<32, Path, Ref<const Module>, Path::hash>;
+	using Compiled = Map<Path, Ref<const Module>, Path::hash>;
 
 	Option<Slice<Ref<const Module>>> get_imports(
 		const Slice<ImportAst>& imports, Path cur_path, const Compiled& compiled, PathCache& paths, Arena& arena, ListBuilder<Diagnostic>& diagnostics
@@ -90,9 +91,10 @@ void compile(CompiledProgram& out, DocumentProvider& document_provider, Path fir
 	ListBuilder<Diagnostic> diagnostics;
 	auto parsed = parse_everything(diagnostics, out.arena, first_path, ast_arena, document_provider, out.paths);
 	if (diagnostics.is_empty()) {
-		// Go in reverse order -- if we ever see some dependency that's not compiled yet, it indicates a circular dependency.
-		Compiled compiled;
+		Arena temp;
+		Compiled compiled { 64, temp };
 		Option<BuiltinTypes> builtin_types;
+		// Go in reverse order -- if we ever see some dependency that's not compiled yet, it indicates a circular dependency.
 		Option<Slice<Module>> modules = map_or_fail_reverse<Module>()(out.arena, parsed, [&](const FileAst& ast, Ref<Module> m) {
 			Option<Slice<Ref<const Module>>> imports = get_imports(ast.imports, ast.path, compiled, out.paths, out.arena, diagnostics);
 			if (!imports.has()) {

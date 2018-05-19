@@ -98,7 +98,7 @@ namespace {
 	bool try_match_nested_types(const Type& from_candidate, const Type& from_external, Candidate& candidate) {
 		const StoredType& stored_from_candidate = from_candidate.stored_type();
 		if (stored_from_candidate.is_type_parameter()) {
-			if (from_candidate.lifetime().is_borrow()) todo();
+			if (from_candidate.lifetime().is_pointer()) todo();
 			return try_match_type_param(stored_from_candidate.param(), from_external.stored_type(), Option<const Lifetime&> { from_external.lifetime() }, candidate);
 		} else {
 			if ((1)) todo(); //lifetimes must match

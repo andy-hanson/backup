@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_CXX_COMPILER "/home/andy/bin/clang+llvm-6.0.0-x86_64-linux-gnu-ubuntu-14.04/bin/clang++")
 # -stdlib=libstdc++ supposedly improves debugging (https://blog.jetbrains.com/clion/2015/05/debug-clion/)
-set(CMAKE_CXX_FLAGS "-pedantic -Weverything -Wno-c++98-compat-pedantic -Wno-padded -Werror -stdlib=libstdc++")
+set(CMAKE_CXX_FLAGS "-pedantic -Weverything -Wno-c++98-compat-pedantic -Wno-padded -Werror -Wno-missing-noreturn -stdlib=libstdc++")
 
 add_executable(oohoo
 	./main.cpp
@@ -65,7 +65,6 @@ add_executable(oohoo
 	./compile/compile.h
 	./compile/compile.cpp
 
-	./emit/emit_type.cpp
 	./emit/ConcreteFun.cpp
 	./emit/ConcreteFun.h
 	./emit/emit.cpp
@@ -74,9 +73,6 @@ add_executable(oohoo
 	./emit/emit_body.h
 	./emit/emit_comment.cpp
 	./emit/emit_comment.h
-	./emit/emit_type.h
-	./emit/mangle.cpp
-	./emit/mangle.h
 	./emit/Names.cpp
 	./emit/Names.h
 	./emit/substitute_type_arguments.cpp
@@ -104,9 +100,7 @@ add_executable(oohoo
 	./util/store/ListBuilder.h
 	./util/store/ListNode.h
 	./util/store/Map.h
-	./util/store/MaxSizeMap.h
 	./util/store/MaxSizeVector.h
-	./util/store/MaxSizeSet.h
 	./util/store/MaxSizeString.cpp
 	./util/store/MaxSizeString.h
 	./util/store/MultiMap.h
@@ -138,4 +132,4 @@ add_executable(oohoo
 	./util/Writer.h
 
 	./clang.cpp
-	./clang.h)
+	./clang.h emit/EmittableType.h emit/EmittableType.cpp emit/CAst.h emit/CAst_emit.h emit/CAst_emit.cpp util/store/map_of_lists_util.h util/store/Set.h test/unit_tests.h test/unit_tests.cpp)

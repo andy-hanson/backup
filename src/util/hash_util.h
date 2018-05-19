@@ -2,6 +2,10 @@
 
 #include "./store/Slice.h"
 
+inline hash_t hash_bool(bool b) {
+	return b ? 1 : 0;
+}
+
 // https://stackoverflow.com/questions/2590677/how-do-i-combine-hash-values-in-c0x#2595226
 inline hash_t hash_combine(hash_t a, hash_t b) {
 	return b + 0x9e3779b9 + (a << 6) + (a >> 2);

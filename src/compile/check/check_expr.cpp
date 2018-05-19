@@ -43,10 +43,10 @@ namespace {
 		const StructDeclaration& strukt = inst_struct.strukt;
 		const StructField& field = strukt.body.fields()[i];
 		const Type& declared_type = field.type;
-		if (declared_type.lifetime().is_borrow() && declared_type.stored_type().is_type_parameter()) todo();
+		if (declared_type.lifetime().is_pointer() && declared_type.stored_type().is_type_parameter()) todo();
 
 		if (declared_type.stored_type().is_type_parameter()) {
-			if (declared_type.lifetime().is_borrow()) todo(); // If the field is `?T *a`, need `Int *a` here, not just `Int`
+			if (declared_type.lifetime().is_pointer()) todo(); // If the field is `?T *a`, need `Int *a` here, not just `Int`
 			assert(contains_ref(strukt.type_parameters, declared_type.stored_type().param()));
 			return inst_struct.type_arguments[declared_type.stored_type().param()->index];
 		} else {
@@ -190,11 +190,11 @@ namespace {
 			&& (!current_expectation.has() || types_equal_ignore_lifetime(current_expectation.get(), ctx.builtin_types.string_type.get().stored_type()))) {
 			return check_no_call_literal_inner(literal.literal, ctx, expected);
 		} else {
-			SmallArrayBuilder<ExprAst> b;
-			b.add(ExprAst { copy_string(ctx.check_ctx.arena, literal.literal) }); // This is a NoCallLiteral
+			MaxSizeVector<4, ExprAst> b;
+			b.push(ExprAst { copy_string(ctx.check_ctx.arena, literal.literal) }); // This is a NoCallLiteral
 			for (const ExprAst &arg : literal.arguments)
-				b.add(arg);
-			return check_call(LITERAL, b.finish(ctx.scratch_arena), literal.type_arguments, ctx, expected);
+				b.push(arg);
+			return check_call(LITERAL, to_arena(b, ctx.scratch_arena), literal.type_arguments, ctx, expected);
 		}
 	}
 
@@ -213,7 +213,7 @@ namespace {
 			const Lifetime& let_life = let->type.lifetime();
 			// If it is already a pointer, leave it that way (don't point to a pointer).
 			// If it is stored in a local variable, use a pointer to that.
-			Lifetime lifetime = let_life.is_borrow() ? let_life : Lifetime::local_borrow();
+			Lifetime lifetime = let_life.is_pointer() ? let_life : Lifetime::local_borrow();
 			return { Expression(let, Expression::Kind::LocalReference), lifetime };
 		}
 

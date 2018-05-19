@@ -9,56 +9,55 @@
 namespace {
 	// Assumes we've already taken a ' ' to indicate we want to parse at least one type parameter.
 	Slice<TypeParameterAst> parse_type_parameters(Lexer& lexer, Arena& arena) {
-		SmallArrayBuilder<TypeParameterAst> type_parameters;
+		MaxSizeVector<4, TypeParameterAst> type_parameters;
 		uint index = 0;
 		do {
 			lexer.take('?');
-			type_parameters.add({ lexer.take_type_name(), index });
+			type_parameters.push({ lexer.take_type_name(), index });
 			++index;
 		} while (lexer.try_take(' '));
-		return type_parameters.finish(arena);
+		return to_arena(type_parameters, arena);
 	}
-
 
 	struct TypeParametersAndSpecs {
 		Slice<TypeParameterAst> type_parameters;
 		Slice<SpecUseAst> specs;
 	};
 	TypeParametersAndSpecs parse_type_parameters_and_spec_uses(Lexer& lexer, Arena& arena) {
-		SmallArrayBuilder<TypeParameterAst> type_parameters;
-		SmallArrayBuilder<SpecUseAst> spec_uses;
+		MaxSizeVector<4, TypeParameterAst> type_parameters;
+		MaxSizeVector<4, SpecUseAst> spec_uses;
 		uint index = 0;
 		while (true) {
 			if (!lexer.try_take(' ')) break;
 			if (!lexer.try_take('?')) {
 				do {
 					StringSlice name = lexer.take_spec_name();
-					spec_uses.add({ name, parse_type_arguments(lexer, arena) });
+					spec_uses.push({ name, parse_type_arguments(lexer, arena) });
 				} while (lexer.try_take(' '));
 				break;
 			}
-			type_parameters.add({ lexer.take_type_name(), index });
+			type_parameters.push({ lexer.take_type_name(), index });
 			++index;
 		}
-		return { type_parameters.finish(arena), spec_uses.finish(arena) };
+		return { to_arena(type_parameters, arena), to_arena(spec_uses, arena) };
 	}
 
 	Slice<ParameterAst> parse_parameters(Lexer& lexer, Arena& arena) {
 		if (!lexer.try_take('('))
 			return {};
-		SmallArrayBuilder<ParameterAst> parameters;
+		MaxSizeVector<4, ParameterAst> parameters;
 		while (true) {
 			if (lexer.try_take(')')) todo(); //error: Don't write `()`
 
 			StringSlice name = lexer.take_value_name();
 			lexer.take(' ');
 			TypeAst type = parse_type(lexer, arena);
-			parameters.add({ name, type });
+			parameters.push({ name, type });
 			if (lexer.try_take(')')) break;
 			lexer.take(',');
 			lexer.take(' ');
 		}
-		return parameters.finish(arena);
+		return to_arena(parameters, arena);
 	}
 
 	FunSignatureAst parse_signature(Lexer& lexer, Arena& arena, StringSlice name, Option<ArenaString> comment) {
@@ -73,15 +72,15 @@ namespace {
 		if (!lexer.try_take_indent())
 			return {};
 
-		SmallArrayBuilder<StructFieldAst> b;
+		MaxSizeVector<4, StructFieldAst> b;
 		do {
 			Option<ArenaString> comment = lexer.try_take_comment(arena);
 			StringSlice name = lexer.take_value_name();
 			lexer.take(' ');
 			TypeAst type = parse_type(lexer, arena);
-			b.add({ comment, name, type });
+			b.push({ comment, name, type });
 		} while (lexer.take_newline_or_dedent() == NewlineOrDedent::Newline);
-		return b.finish(arena);
+		return to_arena(b, arena);
 	}
 
 	StringSlice parse_cpp_struct_body(Lexer& lexer) {
@@ -98,14 +97,14 @@ namespace {
 		StringSlice name = lexer.take_type_name();
 		Slice<TypeParameterAst> type_parameters = lexer.try_take(' ') ? parse_type_parameters(lexer, arena) : Slice<TypeParameterAst>{};
 		lexer.take_indent();
-		SmallArrayBuilder<FunSignatureAst> sigs;
+		MaxSizeVector<4, FunSignatureAst> sigs;
 		do {
 			Option<ArenaString> sig_comment = lexer.try_take_comment(arena);
 			StringSlice sig_name = lexer.take_value_name();
 			lexer.take(' ');
-			sigs.add(parse_signature(lexer, arena, sig_name, sig_comment));
+			sigs.push(parse_signature(lexer, arena, sig_name, sig_comment));
 		} while (lexer.take_newline_or_dedent() == NewlineOrDedent::Newline);
-		return SpecDeclarationAst { comment, lexer.range(start), is_public, name, type_parameters, sigs.finish(arena) };
+		return SpecDeclarationAst { comment, lexer.range(start), is_public, name, type_parameters, to_arena(sigs, arena) };
 	}
 
 	void parse_struct_or_fun(Lexer& lexer, Arena& arena, bool is_public, const char* start, Option<ArenaString> comment,
@@ -150,11 +149,11 @@ namespace {
 	}
 
 	Slice<ImportAst> parse_imports(Lexer& lexer, Arena& arena, PathCache& path_cache) {
-		SmallArrayBuilder<ImportAst> b;
+		MaxSizeVector<4, ImportAst> b;
 		do {
-			b.add(parse_single_import(lexer, path_cache));
+			b.push(parse_single_import(lexer, path_cache));
 		} while (lexer.try_take(' '));
-		return b.finish(arena);
+		return to_arena(b, arena);
 	}
 }
 

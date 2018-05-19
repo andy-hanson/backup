@@ -4,11 +4,6 @@ c Bool copy
 c true Bool
 	*_ret = true;
 
-pointer-to Bool *b(b Bool)
-	b
-
-| Main function
-run Void
+main Void
 	b = true
-	bp = b pointer-to
-	assert bp
+	assert b

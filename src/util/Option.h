@@ -39,11 +39,6 @@ public:
 		//TODO: new(&storage.value) T(_value);
 		storage.value = _value;
 	}
-	~Option() {
-		if (is_present) {
-			storage.value.~T();
-		}
-	}
 
 	void operator=(T value) {
 		is_present = true;
@@ -102,7 +97,7 @@ public:
 	inline Option() : ref{nullptr} {}
 	inline explicit Option(Ref<T> value) : ref{value.ptr()} {}
 
-	void operator=(Ref<T> value) {
+	inline void operator=(Ref<T> value) {
 		ref = value.ptr();
 	}
 

@@ -1,7 +1,7 @@
 #include "./PathCache.h"
 
-#include "../util/store/MaxSizeMap.h"
-#include "../util/store/MaxSizeSet.h"
+#include "../util/store/Map.h"
+#include "../util/store/Set.h"
 #include "./PathImpl.h"
 
 namespace {
@@ -19,10 +19,10 @@ namespace {
 		}
 	}
 
-	using Slices = MaxSizeMap<64, StringSlice, ArenaString, StringSlice::hash>;
+	using Slices = Map<StringSlice, ArenaString, StringSlice::hash>;
 
 	ArenaString get_name(Slices& slices, Arena& arena, const StringSlice& name) {
-		Option<const ArenaString&> already = slices.get(name);
+		Option<ArenaString&> already = slices.get(name);
 		if (already.has()) {
 			return already.get();
 		} else {
@@ -34,9 +34,11 @@ namespace {
 }
 
 struct PathCache::Impl {
-	MaxSizeSet<64, Path::Impl, Path::Impl::hash> paths;
-	Slices slices;
 	Arena arena;
+	Set<Path::Impl, Path::Impl::hash> paths;
+	Slices slices;
+
+	Impl() : arena{}, paths{32, arena}, slices{32, arena} {}
 };
 
 PathCache::PathCache() : impl(unique_ptr<PathCache::Impl> { new PathCache::Impl() }) {}
@@ -59,7 +61,7 @@ Path PathCache::resolve(Path parent, const StringSlice& child) {
 	return resolve(Option { parent }, child);
 }
 Path PathCache::resolve(Option<Path> parent, const StringSlice& child) {
-	return Path { impl->paths.get_in_set_or_insert(Path::Impl { parent, get_name(impl->slices, impl->arena, child) }) };
+	return Path { &impl->paths.get_in_set_or_insert(Path::Impl { parent, get_name(impl->slices, impl->arena, child) }) };
 }
 
 Option<Path> PathCache::resolve(Path resolve_from, const RelPath& rel) {

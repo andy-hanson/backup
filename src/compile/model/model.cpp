@@ -39,12 +39,6 @@ bool InstStruct::is_deeply_concrete() const {
 	return every(type_arguments, [](const Type& t) {  return t.stored_type().is_inst_struct() && t.stored_type().inst_struct().is_deeply_concrete(); });
 }
 
-hash_t InstStruct::hash_deeply_concrete::operator()(const InstStruct& i) {
-	return hash_combine(Ref<const StructDeclaration>::hash{}(i.strukt), hash_arr(i.type_arguments, [&](const Type& t) {
-		return InstStruct::hash_deeply_concrete{}(t.stored_type().inst_struct());
-	}));
-}
-
 void StoredType::operator=(const StoredType& other) {
 	_kind = other._kind;
 	switch (other._kind) {

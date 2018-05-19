@@ -1,29 +1,15 @@
 #include "./ArenaString.h"
 
-namespace {
-	static char encoding_table[64] = {
-		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
-		'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
-		'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
-		'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
-		'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
-		'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
-		'w', 'x', 'y', 'z', '0', '1', '2', '3',
-		'4', '5', '6', '7', '8', '9', '+', '/'
-	};
-	char base64(uint u) {
-		assert(u < 64);
-		return encoding_table[u];
-	}
-}
-
-void StringBuilder::write_base_64(uint u) {
-	if (u < 64) {
-		*this << base64(u);
-	} else {
-		assert(u < 64 * 64);
-		*this << base64(u / 64) + base64(u % 64);
-	}
+StringBuilder& StringBuilder::operator<<(uint u) {
+	//TODO: duplicate code in Writer.cpp
+	if (u < 10) {
+		*this << char('0' + char(u));
+	} else if (u < 100) {
+		*this << char('0' + char(u / 10));
+		*this << char('0' + char(u % 10));
+	} else
+		todo();
+	return *this;
 }
 
 StringBuilder& StringBuilder::operator<<(StringSlice s) {

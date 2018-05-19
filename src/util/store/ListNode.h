@@ -6,7 +6,7 @@
 template <typename T>
 struct ListNode {
 	T value;
-	Option<Ref<const ListNode>> next;
+	Option<Ref<ListNode>> next;
 
 	struct const_iterator {
 		Option<Ref<const ListNode>> node;
@@ -14,7 +14,9 @@ struct ListNode {
 			return node.get()->value;
 		}
 		void operator++() {
-			node = node.get()->next;
+			const ListNode& n = node.get();
+			// Conditional needed to keep the ref 'const'
+			node = n.next.has() ? Option<Ref<const ListNode>> { n.next.get() } : Option<Ref<const ListNode>>{};
 		}
 		bool operator!=(const const_iterator& other) const {
 			return node != other.node;

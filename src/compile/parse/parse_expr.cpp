@@ -16,30 +16,29 @@ namespace {
 	Slice<ExprAst> parse_prefix_args(Lexer& lexer, Arena& arena) {
 		if (!lexer.try_take(' '))
 			return {};
-		SmallArrayBuilder<ExprAst> args;
+		MaxSizeVector<4, ExprAst> args;
 		do {
-			args.add(parse_expr_arg(lexer, arena));
+			args.push(parse_expr_arg(lexer, arena));
 		} while (lexer.try_take_comma_space());
-		return args.finish(arena);
+		return to_arena(args, arena);
 	}
 
 	WhenAst parse_when(Lexer& lexer, Arena& arena, const char* start) {
 		lexer.take_indent();
-		SmallArrayBuilder<CaseAst> cases;
-		while (true) {
-			if (lexer.try_take_else_keyword()) {
-				lexer.take_indent();
-				Ref<ExprAst> elze = arena.put(parse_expr(lexer, arena, ExprCtx::Statement));
-				lexer.reduce_indent_by_2();
-				return { lexer.range(start), cases.finish(arena), elze };
-			}
+		MaxSizeVector<4, CaseAst> cases;
+		while (!lexer.try_take_else_keyword()) {
 
 			ExprAst cond = parse_expr(lexer, arena, ExprCtx::Case);
 			lexer.take_indent();
 			ExprAst then = parse_expr(lexer, arena, ExprCtx::Statement);
 			lexer.take_dedent();
-			cases.add({ cond, then });
+			cases.push({ cond, then });
 		}
+
+		lexer.take_indent();
+		Ref<ExprAst> elze = arena.put(parse_expr(lexer, arena, ExprCtx::Statement));
+		lexer.reduce_indent_by_2();
+		return { lexer.range(start), to_arena(cases, arena), elze };
 	}
 
 	LetAst parse_let(Lexer& lexer, Arena& arena, const StringSlice& name) {
@@ -55,13 +54,13 @@ namespace {
 		// `a f b, c, d`
 		StringSlice fn_name = lexer.take_value_name();
 		Slice<TypeAst> type_arguments = parse_type_arguments(lexer, arena);
-		SmallArrayBuilder<ExprAst> args;
-		args.add(arg0);
+		MaxSizeVector<4, ExprAst> args;
+		args.push(arg0);
 		if (lexer.try_take(' '))
 			do {
-				args.add(parse_expr_arg(lexer, arena));
+				args.push(parse_expr_arg(lexer, arena));
 			} while (lexer.try_take_comma_space());
-		return { fn_name, type_arguments, args.finish(arena) };
+		return { fn_name, type_arguments, to_arena(args, arena) };
 	}
 
 	ExprAst parse_expr(Lexer& lexer, Arena& arena, ExprCtx where) {
